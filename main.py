@@ -293,9 +293,11 @@ class AIApp(QMainWindow):
         idx = self.diagram_tabs.currentIndex()
         if idx in self.plantuml_codes:
             try:
+                code = self.plantuml_codes[idx]
+                diagram_type = self.identify_plantuml_diagram_type(code)
                 with open("output.puml", "w", encoding="utf-8") as file:
-                    file.write(self.plantuml_codes[idx])
-                self.output_box.append("Plik PlantUML został zapisany jako 'output.puml'.\n")
+                    file.write(code)
+                self.output_box.append(f"Plik PlantUML ({diagram_type}) został zapisany jako 'output.puml'.\n")
             except Exception as e:
                 self.output_box.append(f"Błąd zapisu pliku PlantUML: {e}\n")
         else:
