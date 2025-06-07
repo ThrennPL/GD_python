@@ -84,7 +84,7 @@ class AIApp(QMainWindow):
 
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("AI Client with Conversation Context")
+        self.setWindowTitle("Generator diagramów AI")
         self.setGeometry(100, 100, 800, 600)
 
         # indeks zakładki -> kod PlantUML
