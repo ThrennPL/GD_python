@@ -4,7 +4,7 @@ import requests
 import xml.dom.minidom
 from PyQt5.QtGui import QTextCharFormat, QSyntaxHighlighter, QColor, QFont
 from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QSplitter, QTextEdit, QPushButton, QWidget, QDialog, QLabel 
+from PyQt5.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QSplitter, QTextEdit, QPushButton, QWidget, QDialog, QLabel, QTabWidget
 from PyQt5.QtWidgets import QComboBox
 from PyQt5.QtSvg import QSvgWidget
 from PyQt5.QtCore import QThread, pyqtSignal
@@ -80,11 +80,15 @@ class APICallThread(QThread):
 class AIApp(QMainWindow):
     API_URL = "http://192.168.0.115:1234/v1/models"
     XML_BLOCK_PATTERN = r"```xml\n(.*?)\n```"
+    
 
     def __init__(self):
         super().__init__()
         self.setWindowTitle("AI Client with Conversation Context")
         self.setGeometry(100, 100, 800, 600)
+
+        # indeks zakładki -> kod PlantUML
+        self.plantuml_codes = {}  
 
         # Inicjalizacja listy modeli
         self.models = []
@@ -146,6 +150,17 @@ class AIApp(QMainWindow):
         
         # Historia rozmowy
         self.conversation_history = []
+
+        # Dodaj QTabWidget na diagramy PlantUML
+        self.diagram_tabs = QTabWidget(self)
+        main_layout.addWidget(self.diagram_tabs)
+        self.diagram_tabs.setTabsClosable(True)
+        self.diagram_tabs.tabCloseRequested.connect(self.close_plantuml_tab)
+
+        def close_plantuml_tab(self, idx):
+            self.diagram_tabs.removeTab(idx)
+            if idx in self.plantuml_codes:
+                del self.plantuml_codes[idx]
 
 
     def show_raw_response(self, text):
@@ -231,12 +246,13 @@ class AIApp(QMainWindow):
         else:
             self.save_xml_button.setEnabled(False)  # Dezaktywuj przycisk
 
-        # Sprawdzenie, czy odpowiedź zawiera blok PlantUML
-        plantuml_match = re.search(r"``plantuml\n(.*?)\n```", response_content, re.DOTALL)
-        if plantuml_match:
+    # Sprawdzenie, czy odpowiedź zawiera jeden lub więcej bloków PlantUML
+        plantuml_blocks = re.findall(r"``plantuml\n(.*?)\n``", response_content, re.DOTALL)
+        if plantuml_blocks:
             self.save_PlantUML_button.setEnabled(True)
-            self.latest_plantuml = plantuml_match.group(1)
-            self.show_plantuml_diagram(self.latest_plantuml)  # <-- dodaj to wywołanie
+            self.latest_plantuml = plantuml_blocks[-1]  # zapisz ostatni do ewentualnego zapisu
+            for block in plantuml_blocks:
+                self.show_plantuml_diagram(block)
         else:
             self.save_PlantUML_button.setEnabled(False)
             self.latest_plantuml = None
@@ -273,16 +289,17 @@ class AIApp(QMainWindow):
             self.output_box.append("Brak poprawnego pliku XML do zapisania.\n")
 
     def save_plantuml(self):
-        """Zapisuje ostatni poprawny kod PlantUML do pliku."""
-        if hasattr(self, "latest_plantuml") and self.latest_plantuml:
+        """Zapisuje kod PlantUML z aktywnej zakładki do pliku."""
+        idx = self.diagram_tabs.currentIndex()
+        if idx in self.plantuml_codes:
             try:
                 with open("output.puml", "w", encoding="utf-8") as file:
-                    file.write(self.latest_plantuml)
+                    file.write(self.plantuml_codes[idx])
                 self.output_box.append("Plik PlantUML został zapisany jako 'output.puml'.\n")
             except Exception as e:
                 self.output_box.append(f"Błąd zapisu pliku PlantUML: {e}\n")
         else:
-            self.output_box.append("Brak poprawnego kodu PlantUML do zapisania.\n")
+            self.output_box.append("Brak kodu PlantUML do zapisania dla tej zakładki.\n")
 
     def append_to_chat(self, sender: str, message: str):
         """
@@ -361,6 +378,11 @@ class AIApp(QMainWindow):
         except Exception as e:
             self.output_box.setPlainText(f"Błąd podczas wczytywania pliku XML: {e}")
 
+    def close_plantuml_tab(self, idx):
+        self.diagram_tabs.removeTab(idx)
+        if idx in self.plantuml_codes:
+            del self.plantuml_codes[idx]
+
     def show_plantuml_diagram(self, plantuml_code):
         encoded = plantuml_encode(plantuml_code)
         url = f"https://www.plantuml.com/plantuml/svg/{encoded}"
@@ -369,19 +391,38 @@ class AIApp(QMainWindow):
             response = requests.get(url)
             if response.status_code == 200:
                 svg_data = response.content
-                dialog = QDialog(self)
-                dialog.setWindowTitle("Diagram PlantUML")
-                layout = QVBoxLayout(dialog)
+                # Tworzymy widget do wyświetlania SVG
                 svg_widget = QSvgWidget()
                 svg_widget.load(svg_data)
+                # Tworzymy kontener na SVG (np. QWidget z layoutem)
+                tab = QWidget()
+                layout = QVBoxLayout(tab)
                 layout.addWidget(svg_widget)
-                dialog.setLayout(layout)
-                dialog.resize(600, 400)
-                dialog.exec_()
+                tab.setLayout(layout)
+                # Nazwa zakładki na podstawie typu diagramu
+                diagram_type = self.identify_plantuml_diagram_type(plantuml_code)
+                idx = self.diagram_tabs.addTab(tab, diagram_type)
+                self.diagram_tabs.setCurrentWidget(tab)
+                # Zapisz kod PlantUML dla tej zakładki
+                self.plantuml_codes[idx] = plantuml_code
             else:
                 QMessageBox.warning(self, "Błąd", "Nie udało się pobrać diagramu PlantUML.")
         except Exception as e:
             QMessageBox.warning(self, "Błąd", f"Nie udało się pobrać diagramu PlantUML: {e}")
+
+    def identify_plantuml_diagram_type(self, plantuml_code: str) -> str:
+        code = plantuml_code.lower()
+        if 'state' in code or '-->' in code and 'state' in code:
+            return "Diagram stanów"
+        if 'actor' in code and '->' in code:
+            return "Diagram sekwencji"
+        if 'class' in code or 'interface' in code or '--|' in code or '<|--' in code:
+            return "Diagram klas"
+        if 'usecase' in code:
+            return "Diagram przypadków użycia"
+        if 'component' in code or 'node' in code:
+            return "Diagram komponentów"
+        return "Diagram ogólny (typ nieokreślony)"
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
