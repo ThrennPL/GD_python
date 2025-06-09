@@ -5,7 +5,7 @@ import xml.dom.minidom
 from PyQt5.QtGui import QTextCharFormat, QSyntaxHighlighter, QColor, QFont
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QSplitter, QTextEdit, QPushButton, QWidget, QDialog, QLabel, QTabWidget
-from PyQt5.QtWidgets import QComboBox, QCheckBox
+from PyQt5.QtWidgets import QComboBox, QCheckBox, QLabel, QGroupBox, QVBoxLayout, QHBoxLayout
 from PyQt5.QtSvg import QSvgWidget
 from PyQt5.QtCore import QThread, pyqtSignal
 from xml.etree.ElementTree import fromstring, ParseError
@@ -86,7 +86,7 @@ class AIApp(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Generator diagramów AI")
-        self.setGeometry(100, 100, 800, 600)
+        self.setGeometry(100, 100, 1200, 1000)
 
 
         self.prompt_templates = {
@@ -133,6 +133,10 @@ class AIApp(QMainWindow):
             )
             }   
 
+        # Grupa dla szablonu
+        template_group = QGroupBox("Konfiguracja szablonu")
+        template_layout = QVBoxLayout()
+
         # ComboBox do wyboru modelu
         self.model_selector = QComboBox(self)
         self.model_selector.setToolTip("Wybierz model AI do użycia.")
@@ -161,10 +165,17 @@ class AIApp(QMainWindow):
         self.template_selector.setToolTip("Wybierz szablon zapytania do modelu AI.")
         self.template_selector.addItems(list(self.prompt_templates.keys()))
 
+        template_layout.addWidget(QLabel("Wybierz szablon zapytania:"))
+        template_layout.addWidget(self.template_selector)
+        template_group.setStyleSheet("background-color: #f0ffff;")
+
+
         # Splitter do zarządzania proporcjami
         splitter = QSplitter(Qt.Vertical)
-        main_layout.addWidget(self.template_selector)
+        # main_layout.addWidget(self.template_selector)
+        splitter.addWidget(QLabel("Okno konwersacji:"))
         splitter.addWidget(self.output_box)
+        splitter.addWidget(QLabel("Wprowadź opis procesu:"))
         splitter.addWidget(self.input_box)
         self.input_box.setFixedHeight(100)
 
@@ -178,12 +189,30 @@ class AIApp(QMainWindow):
             "sequence", "activity", "use case", "class", "state", 
             "communication", "component", "deployment", "timing", "collaboration"
         ])
-        main_layout.addWidget(self.diagram_type_selector)
+        # main_layout.addWidget(self.diagram_type_selector)
+        template_layout.addWidget(QLabel("Wybierz typ diagramu:"))
+        template_layout.addWidget(self.diagram_type_selector)
 
         self.use_template_checkbox = QCheckBox("Użyj szablonu do wiadomości", self)
         self.use_template_checkbox.setChecked(True)  # domyślnie zaznaczony
-        main_layout.addWidget(self.use_template_checkbox)
+        self.use_template_checkbox.stateChanged.connect(self.on_use_template_checkbox_changed)
+        # Ustaw stan początkowy
+        self.on_use_template_checkbox_changed(self.use_template_checkbox.checkState())
 
+        # main_layout.addWidget(self.use_template_checkbox)
+        template_layout.addWidget(self.use_template_checkbox)
+
+        template_group.setLayout(template_layout)
+
+        # Layout główny
+        main_layout = QVBoxLayout()
+
+        # 1. Etykieta i wybór modelu (dodaj na górze)
+        main_layout.addWidget(QLabel("Wybierz model AI:"))
+        main_layout.addWidget(self.model_selector)
+
+        # 2. Grupa dla szablonu (jak dotychczas)
+        main_layout.addWidget(template_group)
 
         # Przycisk "Wyślij zapytanie"
         self.send_button = QPushButton("Wyślij zapytanie")
@@ -196,14 +225,27 @@ class AIApp(QMainWindow):
         self.save_PlantUML_button = QPushButton("Zapisz PlantUML")
         self.save_PlantUML_button.setEnabled(False)  # Domyślnie nieaktywny
 
+        # Przycisk "Zapisz diagram" - w formie graficznej
+        self.save_diagram_button = QPushButton("Zapisz diagram")
+        self.save_diagram_button.setEnabled(False)
 
 
         # Dodanie widżetów do layoutu
-        main_layout.addWidget(self.model_selector)  # Dodanie ComboBox na górze
+        # main_layout.addWidget(self.model_selector)  # Dodanie ComboBox na górze
         main_layout.addWidget(splitter)
-        main_layout.addWidget(self.send_button)
-        main_layout.addWidget(self.save_xml_button)  # Dodaj przycisk
-        main_layout.addWidget(self.save_PlantUML_button)  # Dodaj przycisk PlantUML
+
+        
+        # --- Nowy poziomy layout na przyciski ---
+        buttons_layout = QHBoxLayout()
+        buttons_layout.addWidget(self.send_button)
+        buttons_layout.addWidget(self.save_xml_button)
+        buttons_layout.addWidget(self.save_PlantUML_button)
+        buttons_layout.addWidget(self.save_diagram_button)
+
+        self.save_diagram_button.clicked.connect(self.save_active_diagram)
+
+        # Dodaj poziomy layout do głównego layoutu
+        main_layout.addLayout(buttons_layout)
 
         # Eventy dla przycisków
         self.send_button.clicked.connect(self.send_to_api)
@@ -299,7 +341,12 @@ class AIApp(QMainWindow):
         self.input_box.clear()
 
         # Budowanie listy messages
-        messages = [{"role": "user", "content": prompt}] if not self.conversation_history[:-1] else self.conversation_history
+        if use_template:
+            # Tylko bieżące zapytanie, bez historii
+            messages = [{"role": "user", "content": prompt}]
+        else:
+            # Z historią rozmowy
+            messages = [{"role": "user", "content": prompt}] if not self.conversation_history[:-1] else self.conversation_history
 
         selected_model = self.model_selector.currentText()
         url = "http://localhost:1234/v1/chat/completions"
@@ -386,6 +433,29 @@ class AIApp(QMainWindow):
                 self.output_box.append(f"Błąd zapisu pliku PlantUML: {e}\n")
         else:
             self.output_box.append("Brak kodu PlantUML do zapisania dla tej zakładki.\n")
+
+    def save_active_diagram(self):
+        """Zapisuje aktywny diagram PlantUML jako plik SVG z nazwą na podstawie typu diagramu."""
+        idx = self.diagram_tabs.currentIndex()
+        if idx in self.plantuml_codes:
+            plantuml_code = self.plantuml_codes[idx]
+            diagram_type = self.identify_plantuml_diagram_type(plantuml_code)
+            encoded = plantuml_encode(plantuml_code)
+            url = f"https://www.plantuml.com/plantuml/svg/{encoded}"
+            try:
+                import requests
+                response = requests.get(url)
+                if response.status_code == 200:
+                    filename = f"{diagram_type.replace(' ', '_')}.svg"
+                    with open(filename, "wb") as f:
+                        f.write(response.content)
+                    self.output_box.append(f"Diagram zapisany jako '{filename}'.\n")
+                else:
+                    self.output_box.append("Nie udało się pobrać diagramu PlantUML do zapisu.\n")
+            except Exception as e:
+                self.output_box.append(f"Błąd podczas zapisu diagramu: {e}\n")
+        else:
+            self.output_box.append("Brak diagramu do zapisania.\n")
 
     def append_to_chat(self, sender: str, message: str):
         """
@@ -490,10 +560,16 @@ class AIApp(QMainWindow):
                 self.diagram_tabs.setCurrentWidget(tab)
                 # Zapisz kod PlantUML dla tej zakładki
                 self.plantuml_codes[idx] = plantuml_code
+                self.save_diagram_button.setEnabled(True)
             else:
                 QMessageBox.warning(self, "Błąd", "Nie udało się pobrać diagramu PlantUML.")
         except Exception as e:
             QMessageBox.warning(self, "Błąd", f"Nie udało się pobrać diagramu PlantUML: {e}")
+
+    def on_use_template_checkbox_changed(self, state):
+        use_template = self.use_template_checkbox.isChecked()
+        self.template_selector.setEnabled(use_template)
+        self.diagram_type_selector.setEnabled(use_template)
 
     def identify_plantuml_diagram_type(self, plantuml_code: str) -> str:
         code = plantuml_code.lower()
