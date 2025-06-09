@@ -86,6 +86,9 @@ class AIApp(QMainWindow):
         template_layout.addWidget(QLabel("Wybierz typ diagramu:"))
         template_layout.addWidget(self.diagram_type_selector)
 
+        self.template_selector.currentIndexChanged.connect(self.on_template_changed)
+        self.on_template_changed(self.template_selector.currentIndex())  # Ustaw początkowo
+
         self.use_template_checkbox = QCheckBox("Użyj szablonu do wiadomości", self)
         self.use_template_checkbox.setChecked(True)  # domyślnie zaznaczony
         self.use_template_checkbox.stateChanged.connect(self.on_use_template_checkbox_changed)
@@ -167,6 +170,27 @@ class AIApp(QMainWindow):
             if idx in self.plantuml_codes:
                 del self.plantuml_codes[idx]
 
+    def on_template_changed(self, index):
+        selected_template = self.template_selector.currentText()
+        allowed_types = self.prompt_templates[selected_template]["allowed_diagram_types"]
+        all_types = [
+            "sequence", "activity", "use case", "class", "state",
+            "communication", "component", "deployment", "timing", "collaboration"
+        ]
+        self.diagram_type_selector.blockSignals(True)
+        self.diagram_type_selector.clear()
+        if allowed_types == "all":
+            self.diagram_type_selector.addItems(all_types)
+        else:
+            self.diagram_type_selector.addItems(allowed_types)
+        self.diagram_type_selector.blockSignals(False)
+
+    def get_templates_for_diagram_type(diagram_type):
+        return [
+            name for name, data in prompt_templates.items()
+            if data["allowed_diagram_types"] == "all" or diagram_type in data["allowed_diagram_types"]
+        ]
+
     def show_raw_response(self, text):
         """Wyświetla czystą odpowiedź w oknie dialogowym."""
         msg = QMessageBox(self)
@@ -210,9 +234,9 @@ class AIApp(QMainWindow):
 
         # Budowanie promptu na podstawie typu diagramu i opisu procesu
         selected_template = self.template_selector.currentText()
-        template = self.prompt_templates[selected_template]
+        template_data = self.prompt_templates[selected_template]
         if use_template:
-            prompt = template.format(
+            prompt = template_data["template"].format(
                 diagram_type=diagram_type,
                 process_description=process_description
             )
