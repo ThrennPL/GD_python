@@ -124,12 +124,20 @@ class AIApp(QMainWindow):
                 "@enduml\n"
                 "```\n\n"
                 "Upewnij się, że diagram zawiera:\n"
+                "- Poprawną składnię PlantUML\n"
                 "- Klasy z atrybutami i metodami\n"
                 "- Relacje między klasami (np. dziedziczenie, asocjacje)\n"
                 "- Komentarze opisujące klasy i ich relacje\n"
+                "- Klasy, enumy i interfejsy, jeśli są istotne mają poprawną składnię jak w przykładzie dla klasy\n\n"
                 "Zwróć uwagę na poprawność składni PlantUML."
             )
             }   
+
+        # ComboBox do wyboru modelu
+        self.model_selector = QComboBox(self)
+        self.model_selector.setToolTip("Wybierz model AI do użycia.")
+        self.model_selector.addItem("Loading models...")  # Placeholder na czas ładowania
+        self.load_models()  # Załaduj modele przy starcie
 
         # indeks zakładki -> kod PlantUML
         self.plantuml_codes = {}  
@@ -142,12 +150,15 @@ class AIApp(QMainWindow):
 
         # Widżety
         self.input_box = QTextEdit(self)
+        self.input_box.setToolTip("Wprowadź opis procesu lub zapytanie do modelu.")
         self.output_box = QTextEdit(self)
+        self.output_box.setToolTip("Odpowiedź modelu AI. Możesz tu zobaczyć wygenerowany kod PlantUML.")
         self.output_box.setReadOnly(True)
         self.output_box.setAcceptRichText(True)  # Umożliwia kolorowanie tekstu
         self.output_box.setStyleSheet("background-color: #f0f0f0;")  # Ustawienie koloru tła
 
         self.template_selector = QComboBox(self)
+        self.template_selector.setToolTip("Wybierz szablon zapytania do modelu AI.")
         self.template_selector.addItems(list(self.prompt_templates.keys()))
 
         # Splitter do zarządzania proporcjami
@@ -162,6 +173,7 @@ class AIApp(QMainWindow):
 
         # Dodanie ComboBox do wyboru typu diagramu
         self.diagram_type_selector = QComboBox(self)
+        self.diagram_type_selector.setToolTip("Wybierz typ diagramu do wygenerowania.")
         self.diagram_type_selector.addItems([
             "sequence", "activity", "use case", "class", "state", 
             "communication", "component", "deployment", "timing", "collaboration"
@@ -184,10 +196,7 @@ class AIApp(QMainWindow):
         self.save_PlantUML_button = QPushButton("Zapisz PlantUML")
         self.save_PlantUML_button.setEnabled(False)  # Domyślnie nieaktywny
 
-        # ComboBox do wyboru modelu
-        self.model_selector = QComboBox(self)
-        self.model_selector.addItem("Loading models...")  # Placeholder na czas ładowania
-        self.load_models()  # Załaduj modele przy starcie
+
 
         # Dodanie widżetów do layoutu
         main_layout.addWidget(self.model_selector)  # Dodanie ComboBox na górze
