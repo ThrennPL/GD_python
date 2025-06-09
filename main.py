@@ -1,137 +1,30 @@
+from xml_highlighter import XMLHighlighter
+from api_thread import APICallThread
+from plantuml_utils import plantuml_encode, identify_plantuml_diagram_type, fetch_plantuml_svg
+from prompt_templates import prompt_templates
 import sys
 import re
 import requests
-import xml.dom.minidom
-from PyQt5.QtGui import QTextCharFormat, QSyntaxHighlighter, QColor, QFont
+from PyQt5.QtGui import QTextCharFormat, QColor, QFont
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QSplitter, QTextEdit, QPushButton, QWidget, QDialog, QLabel, QTabWidget
 from PyQt5.QtWidgets import QComboBox, QCheckBox, QLabel, QGroupBox, QVBoxLayout, QHBoxLayout
 from PyQt5.QtSvg import QSvgWidget
-from PyQt5.QtCore import QThread, pyqtSignal
 from xml.etree.ElementTree import fromstring, ParseError
 from PyQt5.QtWidgets import QMessageBox
 #import plantuml_encoder
-import base64
-import string
-import zlib
 from zlib import compress
-
-plantuml_alphabet = string.digits + string.ascii_uppercase + string.ascii_lowercase + '-_'
-base64_alphabet   = string.ascii_uppercase + string.ascii_lowercase + string.digits + '+/'
-b64_to_plantuml = bytes.maketrans(base64_alphabet.encode('utf-8'), plantuml_alphabet.encode('utf-8'))
-
-def plantuml_encode(plantuml_text):
-    """Kompresuje i koduje tekst PlantUML do formatu URL zgodnego z plantuml.com."""
-    zlibbed_str = compress(plantuml_text.encode('utf-8'))
-    compressed_string = zlibbed_str[2:-4]
-    return base64.b64encode(compressed_string).translate(b64_to_plantuml).decode('utf-8')
-
-
-class XMLHighlighter(QSyntaxHighlighter):
-    """Klasa definiująca reguły kolorowania składni XML."""
-    def __init__(self, document):
-        super(XMLHighlighter, self).__init__(document)
-        self.highlighting_rules = []
-
-        # Definicje reguł kolorowania
-        self.add_highlighting_rule(r"<\?xml.*?\?>", QColor("gray"))  # Deklaracja XML
-        self.add_highlighting_rule(r"</?\w+.*?>", QColor("blue"))    # Tag otwierający/zamykający
-        self.add_highlighting_rule(r"\".*?\"", QColor("red"))        # Wartości atrybutów
-        self.add_highlighting_rule(r"=\s*\".*?\"", QColor("green"))  # Atrybuty
-
-
-    def add_highlighting_rule(self, pattern, color):
-        """Dodaje regułę kolorowania."""
-        text_format = QTextCharFormat()
-        text_format.setForeground(QColor(color))
-        text_format.setFontWeight(QFont.Bold)
-        self.highlighting_rules.append((re.compile(pattern), text_format))
-
-    def highlightBlock(self, text):
-        """Koloruje blok tekstu."""
-        for pattern, text_format in self.highlighting_rules:
-            for match in pattern.finditer(text):
-                start, length = match.span()
-                self.setFormat(start, length, text_format)
-
-class APICallThread(QThread):
-    response_received = pyqtSignal(str, str)  # Sygnalizuje odebranie odpowiedzi (model, treść)
-    error_occurred = pyqtSignal(str)         # Sygnalizuje błąd
-
-    def __init__(self, url, headers, payload, model_name):
-        super().__init__()
-        self.url = url
-        self.headers = headers
-        self.payload = payload
-        self.model_name = model_name
-
-    def run(self):
-        """Wysyła żądanie API i emituje odpowiedź."""
-        try:
-            response = requests.post(self.url, headers=self.headers, json=self.payload)
-            if response.status_code == 200:
-                response_content = response.json().get("choices")[0].get("message").get("content", "No response")
-                self.response_received.emit(self.model_name, response_content)
-            else:
-                error_msg = f"Error: {response.status_code} - {response.text}"
-                self.error_occurred.emit(error_msg)
-        except Exception as e:
-            self.error_occurred.emit(f"Connection error: {e}")
 
 class AIApp(QMainWindow):
     API_URL = "http://localhost:1234/v1/models"
     XML_BLOCK_PATTERN = r"```xml\n(.*?)\n```"
     
-
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Generator diagramów AI")
         self.setGeometry(100, 100, 1200, 1000)
 
-
-        self.prompt_templates = {
-            "Standardowy": (
-                "**Przygotuj diagram {diagram_type} w notacji PlantUML dla procesu:**\n\n"
-                "{process_description}\n\n"
-                "**Wymagania:**\n"
-                "- Format: Kompletny kod PlantUML (@startuml ... @enduml)\n"
-                "- Uwzględnij wszystkich uczestników procesu\n"
-                "- Zachowaj logiczną sekwencję kroków\n\n"
-                "**Output:** Gotowy kod PlantUML"
-            ),
-            "Z checklistą": (
-                "**ZADANIE:** Stwórz diagram PlantUML dla procesu:\n\n"
-                "{process_description}\n\n"
-                "**CHECKLIST do sprawdzenia:**\n"
-                "- [ ] Kod zaczyna się od @startuml\n"
-                "- [ ] Kod kończy się na @enduml\n"
-                "- [ ] Wszyscy aktorzy są zdefiniowani\n"
-                "- [ ] Sekwencja jest logiczna\n"
-                "- [ ] Typ diagramu: {diagram_type}\n\n"
-                "**DOSTARCZ:** Kompletny, działający kod PlantUML"
-            ),
-            "Diagram klas": (
-                "Przeanalizuj poniższy proces biznesowy i przedstaw go jako diagram klas w PlantUML:\n\n"
-                "{process_description}\n\n"
-                "Oczekiwany format odpowiedzi:\n\n"
-                "```plantuml\n"
-                "@startuml\n"
-                "class ClassName {{\n"
-                "    +attribute1: Type\n"
-                "    -attribute2: Type\n"
-                "    +method1(): ReturnType\n"
-                "}}\n"
-                "@enduml\n"
-                "```\n\n"
-                "Upewnij się, że diagram zawiera:\n"
-                "- Poprawną składnię PlantUML\n"
-                "- Klasy z atrybutami i metodami\n"
-                "- Relacje między klasami (np. dziedziczenie, asocjacje)\n"
-                "- Komentarze opisujące klasy i ich relacje\n"
-                "- Klasy, enumy i interfejsy, jeśli są istotne mają poprawną składnię jak w przykładzie dla klasy\n\n"
-                "Zwróć uwagę na poprawność składni PlantUML."
-            )
-            }   
+        self.prompt_templates = prompt_templates  # Załaduj szablony z pliku
 
         # Grupa dla szablonu
         template_group = QGroupBox("Konfiguracja szablonu")
@@ -425,7 +318,7 @@ class AIApp(QMainWindow):
         if idx in self.plantuml_codes:
             try:
                 code = self.plantuml_codes[idx]
-                diagram_type = self.identify_plantuml_diagram_type(code)
+                diagram_type = identify_plantuml_diagram_type(code)
                 with open("output.puml", "w", encoding="utf-8") as file:
                     file.write(code)
                 self.output_box.append(f"Plik PlantUML ({diagram_type}) został zapisany jako 'output.puml'.\n")
@@ -435,23 +328,16 @@ class AIApp(QMainWindow):
             self.output_box.append("Brak kodu PlantUML do zapisania dla tej zakładki.\n")
 
     def save_active_diagram(self):
-        """Zapisuje aktywny diagram PlantUML jako plik SVG z nazwą na podstawie typu diagramu."""
         idx = self.diagram_tabs.currentIndex()
         if idx in self.plantuml_codes:
             plantuml_code = self.plantuml_codes[idx]
-            diagram_type = self.identify_plantuml_diagram_type(plantuml_code)
-            encoded = plantuml_encode(plantuml_code)
-            url = f"https://www.plantuml.com/plantuml/svg/{encoded}"
+            diagram_type = identify_plantuml_diagram_type(plantuml_code)
             try:
-                import requests
-                response = requests.get(url)
-                if response.status_code == 200:
-                    filename = f"{diagram_type.replace(' ', '_')}.svg"
-                    with open(filename, "wb") as f:
-                        f.write(response.content)
-                    self.output_box.append(f"Diagram zapisany jako '{filename}'.\n")
-                else:
-                    self.output_box.append("Nie udało się pobrać diagramu PlantUML do zapisu.\n")
+                svg_data = fetch_plantuml_svg(plantuml_code)
+                filename = f"{diagram_type.replace(' ', '_')}.svg"
+                with open(filename, "wb") as f:
+                    f.write(svg_data)
+                self.output_box.append(f"Diagram zapisany jako '{filename}'.\n")
             except Exception as e:
                 self.output_box.append(f"Błąd podczas zapisu diagramu: {e}\n")
         else:
@@ -539,30 +425,23 @@ class AIApp(QMainWindow):
             del self.plantuml_codes[idx]
 
     def show_plantuml_diagram(self, plantuml_code):
-        encoded = plantuml_encode(plantuml_code)
-        url = f"https://www.plantuml.com/plantuml/svg/{encoded}"
         try:
-            import requests
-            response = requests.get(url)
-            if response.status_code == 200:
-                svg_data = response.content
-                # Tworzymy widget do wyświetlania SVG
-                svg_widget = QSvgWidget()
-                svg_widget.load(svg_data)
-                # Tworzymy kontener na SVG (np. QWidget z layoutem)
-                tab = QWidget()
-                layout = QVBoxLayout(tab)
-                layout.addWidget(svg_widget)
-                tab.setLayout(layout)
-                # Nazwa zakładki na podstawie typu diagramu
-                diagram_type = self.identify_plantuml_diagram_type(plantuml_code)
-                idx = self.diagram_tabs.addTab(tab, diagram_type)
-                self.diagram_tabs.setCurrentWidget(tab)
-                # Zapisz kod PlantUML dla tej zakładki
-                self.plantuml_codes[idx] = plantuml_code
-                self.save_diagram_button.setEnabled(True)
-            else:
-                QMessageBox.warning(self, "Błąd", "Nie udało się pobrać diagramu PlantUML.")
+            svg_data = fetch_plantuml_svg(plantuml_code)
+            # Tworzymy widget do wyświetlania SVG
+            svg_widget = QSvgWidget()
+            svg_widget.load(svg_data)
+            # Tworzymy kontener na SVG (np. QWidget z layoutem)
+            tab = QWidget()
+            layout = QVBoxLayout(tab)
+            layout.addWidget(svg_widget)
+            tab.setLayout(layout)
+            # Nazwa zakładki na podstawie typu diagramu
+            diagram_type = identify_plantuml_diagram_type(plantuml_code)
+            idx = self.diagram_tabs.addTab(tab, diagram_type)
+            self.diagram_tabs.setCurrentWidget(tab)
+            # Zapisz kod PlantUML dla tej zakładki
+            self.plantuml_codes[idx] = plantuml_code
+            self.save_diagram_button.setEnabled(True)
         except Exception as e:
             QMessageBox.warning(self, "Błąd", f"Nie udało się pobrać diagramu PlantUML: {e}")
 
@@ -571,19 +450,7 @@ class AIApp(QMainWindow):
         self.template_selector.setEnabled(use_template)
         self.diagram_type_selector.setEnabled(use_template)
 
-    def identify_plantuml_diagram_type(self, plantuml_code: str) -> str:
-        code = plantuml_code.lower()
-        if 'state' in code or '-->' in code and 'state' in code:
-            return "Diagram stanów"
-        if 'actor' in code and '->' in code:
-            return "Diagram sekwencji"
-        if 'class' in code or 'interface' in code or '--|' in code or '<|--' in code:
-            return "Diagram klas"
-        if 'usecase' in code:
-            return "Diagram przypadków użycia"
-        if 'component' in code or 'node' in code:
-            return "Diagram komponentów"
-        return "Diagram ogólny (typ nieokreślony)"
+
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
