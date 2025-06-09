@@ -1,0 +1,94 @@
+# Prompty testowe dla branży bankowej - różne typy diagramów
+
+## 1. SEQUENCE DIAGRAM - Prosty przepływ sekwencyjny
+
+### Przelew BLIK
+```
+Klient w aplikacji mobilnej wybiera opcję "BLIK" i generuje 6-cyfrowy kod. Następnie w sklepie podaje kod sprzedawcy, który wprowadza go do terminala płatniczego. Terminal wysyła żądanie autoryzacji do systemu BLIK. System BLIK weryfikuje kod u banku klienta. Bank sprawdza saldo i limity, po czym autoryzuje transakcję. Potwierdzenie trafia z powrotem przez system BLIK do terminala, a klient otrzymuje powiadomienie push o realizacji płatności.
+```
+
+## 2. ACTIVITY DIAGRAM - Proces z decyzjami i rozgałęzieniami
+
+### Weryfikacja tożsamości nowego klienta (KYC)
+```
+Nowy klient rozpoczyna proces weryfikacji tożsamości online. System prosi o przesłanie zdjęcia dokumentu tożsamości oraz selfie. Automatyczne narzędzie OCR odczytuje dane z dokumentu. Jeśli OCR nie może odczytać danych, klient jest proszony o ponowne zdjęcie. System biometryczny porównuje selfie z dokumentem. Jeśli weryfikacja automatyczna się nie powiedzie, sprawa trafia do analityka, który dokonuje weryfikacji manualnej. Po pozytywnej weryfikacji (automatycznej lub manualnej), konto zostaje aktywowane i klient otrzymuje powiadomienie. W przypadku negatywnej weryfikacji, konto pozostaje zablokowane.
+```
+
+## 3. USE CASE DIAGRAM - Relacje między aktorami a funkcjami
+
+### System bankowości elektronicznej
+```
+W systemie bankowości elektronicznej działają różni użytkownicy. Klient indywidualny może sprawdzać saldo, wykonywać przelewy krajowe, płacić rachunki, zamawiać karty płatnicze oraz przeglądać historię transakcji. Klient biznesowy dodatkowo może zarządzać kontami pracowników, wykonywać przelewy zagraniczne, generować raporty finansowe oraz zarządzać limitami kart firmowych. Administrator systemu może blokować konta, resetować hasła, zarządzać uprawnieniami użytkowników oraz monitorować bezpieczeństwo systemu. Konsultant call center może pomagać klientom w odzyskiwaniu dostępu, wyjaśniać transakcje oraz inicjować zwroty błędnych operacji.
+```
+
+## 4. CLASS DIAGRAM - Struktura obiektów i relacji
+
+### System zarządzania kontami bankowymi
+```
+Bank ma wiele oddziałów i każdy oddział ma swój kod oraz adres. Klient może mieć wiele kont w banku, każde konto ma unikalny numer, typ (oszczędnościowe, rozliczeniowe, kredytowe) oraz saldo. Konto należy do jednego klienta, ale może mieć kilku pełnomocników. Każda transakcja jest powiązana z kontem, ma datę, kwotę, tytuł oraz status. Transakcje mogą być przelewami (mają odbiorcę), wypłatami z bankomatu (mają lokalizację) lub płatnościami kartą (mają dane sprzedawcy). Klient posiada dane osobowe oraz może mieć przypisanych doradców finansowych z konkretnych oddziałów.
+```
+
+## 5. STATE DIAGRAM - Cykl życia obiektu
+
+### Cykl życia karty płatniczej
+```
+Nowa karta płatnicza jest początkowo w stanie "Zamówiona" po złożeniu wniosku przez klienta. Po produkcji przechodzi do stanu "Wyprodukowana" i jest wysyłana do klienta. Po dostarczeniu karta jest w stanie "Dostarczona" i oczekuje na aktywację. Klient aktywuje kartę telefonicznie lub online, co powoduje przejście do stanu "Aktywna". Z aktywnej karty można wykonywać transakcje. Karta może zostać tymczasowo zablokowana przez klienta (stan "Zablokowana tymczasowo") i następnie odblokowana z powrotem do stanu "Aktywna". W przypadku podejrzeń o nadużycie, bank może zablokować kartę definitywnie (stan "Zablokowana przez bank"). Po upływie ważności karta przechodzi do stanu "Wygasła" i musi zostać wymieniona na nową.
+```
+
+## 6. COMMUNICATION DIAGRAM - Interakcje między obiektami
+
+### Autoryzacja płatności kartą
+```
+Klient wkłada kartę do terminala POS w sklepie. Terminal odczytuje dane karty i komunikuje się z akquirerem (operatorem terminali). Acquirer przekazuje żądanie do sieci kartowej (Visa/Mastercard), która identyfikuje bank wydający kartę. Sieć kartowa wysyła zapytanie do banku klienta. Bank sprawdza dane karty w systemie zarządzania kartami oraz weryfikuje saldo na powiązanym koncie. Dodatkowo system antyfraudowy analizuje transakcję pod kątem podejrzanych wzorców. Po pozytywnej weryfikacji bank odsyła autoryzację przez sieć kartową do acquirera, a ten do terminala. Terminal wyświetla potwierdzenie i drukuje paragon.
+```
+
+## 7. COMPONENT DIAGRAM - Architektura systemu
+
+### Architektura systemu bankowego
+```
+System bankowy składa się z kilku głównych komponentów. Frontend aplikacji mobilnej komunikuje się z API Gateway, które zarządza wszystkimi żądaniami zewnętrznymi. Za API Gateway znajduje się moduł autoryzacji i uwierzytelniania, który weryfikuje tożsamość użytkowników. Główna logika biznesowa jest podzielona na mikrousługi: serwis zarządzania kontami, serwis płatności, serwis zarządzania kartami oraz serwis historii transakcji. Każdy mikroserwis ma własną bazę danych. Dodatkowo działa serwis powiadomień, który wysyła SMS-y i emaile, oraz serwis raportowania, który generuje zestawienia finansowe. Wszystkie komponenty komunikują się przez magistralę komunikatów i są monitorowane przez system logowania.
+```
+
+## 8. DEPLOYMENT DIAGRAM - Rozmieszczenie systemów
+
+### Infrastruktura banku cyfrowego
+```
+Bank cyfrowy działa na infrastrukturze chmurowej z centrum danych głównym i zapasowym. W centrum głównym działają serwery aplikacyjne z systemem bankowości, serwery bazodanowe z danymi klientów oraz serwery cache dla wydajności. Load balancer rozdziela ruch między serwery. Centrum zapasowe ma identyczną konfigurację i synchronizuje dane w czasie rzeczywistym. Klienci łączą się przez Internet z WAF (Web Application Firewall), który kieruje ruch do load balancera. Dodatkowo bank ma dedykowane połączenia z systemami zewnętrznymi: Krajową Izbą Rozliczeniową, sieciami kartowymi oraz systemem BLIK. Wszystkie połączenia są szyfrowane, a dostęp do serwerów produkcyjnych odbywa się tylko przez serwer bastion z wielopoziomową autoryzacją.
+```
+
+## 9. TIMING DIAGRAM - Sekwencja z czasem
+
+### Proces autoryzacji transakcji w czasie rzeczywistym
+```
+O godzinie 14:00:00 klient inicjuje przelew w aplikacji mobilnej. W ciągu 100ms aplikacja wysyła żądanie do serwera banku. Serwer w czasie 200ms sprawdza saldo konta oraz limity dzienne. Równolegle, przez kolejne 300ms, system antyfraudowy analizuje wzorce transakcji klienta. Jeśli analiza wykaże podejrzaną aktywność, o 14:00:01 system generuje alert dla działu bezpieczeństwa i wstrzymuje transakcję na 5 minut oczekując na reakcję analityka. Jeśli transakcja jest bezpieczna, o 14:00:00.6 następuje księgowanie i o 14:00:01 klient otrzymuje potwierdzenie SMS, a odbiorca powiadomienie o wpływie środków.
+```
+
+## 10. COLLABORATION DIAGRAM - Współpraca obiektów w procesie
+
+### Proces przyznawania kredytu hipotecznego
+```
+Klient składa wniosek kredytowy przez system online, który przekazuje dane do systemu CRM. Doradca kredytowy z CRM pobiera dokumenty klienta i wprowadza je do systemu oceny zdolności kredytowej. System automatycznie sprawdza historię w BIK oraz weryfikuje dochody z ZUS i urzędem skarbowym. Równocześnie rzeczoznawca majątkowy wycenia nieruchomość i wprowadza wynik do systemu zabezpieczeń. Analityk kredytowy łączy wszystkie informacje w systemie decyzyjnym, który generuje rekomendację. Komitet kredytowy podejmuje ostateczną decyzję w systemie workflow. Po pozytywnej decyzji system generowania dokumentów tworzy umowę, która trafia do działu prawnego na sprawdzenie, a następnie do klienta na podpis elektroniczny.
+```
+
+---
+
+## Wskazówki do testowania:
+
+**Dla każdego typu diagramu sprawdź czy model:**
+
+1. **Sequence** - Czy poprawnie identyfikuje uczestników i sekwencję komunikacji?
+2. **Activity** - Czy rozpoznaje punkty decyzyjne i alternatywne ścieżki?
+3. **Use Case** - Czy grupuje funkcjonalności i różnicuje typy użytkowników?
+4. **Class** - Czy identyfikuje obiekty, atrybuty i relacje między nimi?
+5. **State** - Czy rozpoznaje stany obiektu i triggery przejść?
+6. **Communication** - Czy mapuje interakcje między komponentami?
+7. **Component** - Czy identyfikuje moduły systemu i interfejsy?
+8. **Deployment** - Czy rozpoznaje elementy infrastruktury i połączenia?
+9. **Timing** - Czy uwzględnia aspekt czasowy i równoległość?
+10. **Collaboration** - Czy pokazuje współpracę różnych ról i systemów?
+
+**Dodatkowe wyzwania:**
+- Prompty zawierają różne poziomy szczegółowości
+- Some procesy mają warunki błędów i obsługę wyjątków
+- Różne stopnie złożoności - od 3 do 10+ uczestników
+- Mieszanka procesów automatycznych i manualnych

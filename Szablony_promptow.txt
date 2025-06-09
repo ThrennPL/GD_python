@@ -1,0 +1,175 @@
+# Szablony promptów z instrukcjami PlantUML
+
+## Strategia 1: Bezpośrednie polecenie na końcu
+
+### Przykład:
+```
+Klient w aplikacji mobilnej wybiera opcję "BLIK" i generuje 6-cyfrowy kod. Następnie w sklepie podaje kod sprzedawcy, który wprowadza go do terminala płatniczego. Terminal wysyła żądanie autoryzacji do systemu BLIK...
+
+**Przygotuj diagram sekwencyjny w notacji PlantUML przedstawiający powyższy proces.**
+```
+
+## Strategia 2: Instrukcja na początku
+
+### Przykład:
+```
+**Zadanie: Na podstawie poniższego opisu procesu biznesowego przygotuj diagram aktywności w notacji PlantUML.**
+
+Nowy klient rozpoczyna proces weryfikacji tożsamości online. System prosi o przesłanie zdjęcia dokumentu tożsamości oraz selfie...
+```
+
+## Strategia 3: Strukturyzowany prompt z określeniem typu diagramu
+
+### Przykład:
+```
+**Opis procesu:** Klient składa wniosek kredytowy przez system online, który przekazuje dane do systemu CRM...
+
+**Wymagany output:** Diagram współpracy (Collaboration Diagram) w notacji PlantUML
+**Format:** Kod PlantUML gotowy do wygenerowania diagramu
+```
+
+## Strategia 4: Prompt z przykładem struktury
+
+### Przykład:
+```
+Przeanalizuj poniższy proces biznesowy i przedstaw go jako diagram klas w PlantUML:
+
+[OPIS PROCESU...]
+
+Oczekiwany format odpowiedzi:
+```plantuml
+@startuml
+[kod diagramu]
+@enduml
+```
+
+## Strategia 5: Jasne polecenie z kontekstem
+
+### Przykład:
+```
+**INSTRUKCJA:** Jesteś analitykiem biznesowym, który przekłada opisy procesów na diagramy PlantUML.
+
+**PROCES DO ANALIZY:**
+Bank cyfrowy działa na infrastrukturze chmurowej z centrum danych głównym i zapasowym...
+
+**ZADANIE:** Stwórz diagram wdrożeniowy (deployment diagram) w notacji PlantUML pokazujący tę architekturę.
+```
+
+## Strategia 6: Prompt z określeniem elementów do uwzględnienia
+
+### Przykład:
+```
+**Opis procesu:** [PROCES...]
+
+**Przygotuj diagram sekwencyjny PlantUML uwzględniając:**
+- Wszystkich aktorów (uczestników) procesu
+- Sekwencję komunikacji między nimi
+- Warunki i pętle w procesie
+- Komunikaty zwrotne/potwierdzenia
+
+**Format:** Kompletny kod PlantUML z @startuml i @enduml
+```
+
+## Strategia 7: Szablon z rolami i oczekiwaniami
+
+### Przykład:
+```
+**Rola:** Jesteś ekspertem od modelowania procesów w PlantUML
+**Zadanie:** Przeanalizuj proces i stwórz odpowiedni diagram
+
+**Proces biznesowy:**
+[OPIS...]
+
+**Wymagania:**
+- Użyj notacji PlantUML
+- Typ diagramu: [SEQUENCE/ACTIVITY/CLASS/etc.]
+- Uwzględnij wszystkie etapy procesu
+- Zadbaj o czytelność i logiczną strukturę
+
+**Dostarcz:** Gotowy kod PlantUML
+```
+
+## Strategia 8: Prompt z określeniem stylu i szczegółowości
+
+### Przykład:
+```
+Przekształć poniższy opis w diagram PlantUML:
+
+[OPIS PROCESU...]
+
+**Wymagania techniczne:**
+- Typ: Diagram aktywności (@startuml → @enduml)
+- Styl: Użyj swimlanes dla różnych ról
+- Szczegółowość: Uwzględnij wszystkie decyzje i alternatywne ścieżki
+- Oznaczenia: Dodaj komentarze dla kluczowych kroków
+```
+
+## Strategia 9: Dwuetapowy prompt (analiza + implementacja)
+
+### Przykład:
+```
+**ETAP 1 - ANALIZA:**
+Przeanalizuj poniższy proces i zidentyfikuj:
+- Głównych aktorów
+- Sekwencję działań
+- Punkty decyzyjne
+- Przepływy danych
+
+**ETAP 2 - IMPLEMENTACJA:**
+Na podstawie analizy stwórz diagram sekwencyjny w PlantUML.
+
+**PROCES:**
+[OPIS...]
+```
+
+## Strategia 10: Template z walidacją
+
+### Przykład:
+```
+**ZADANIE:** Stwórz diagram PlantUML dla procesu:
+
+[OPIS PROCESU...]
+
+**CHECKLIST do sprawdzenia:**
+- [ ] Kod zaczyna się od @startuml
+- [ ] Kod kończy się na @enduml  
+- [ ] Wszyscy aktorzy są zdefiniowani
+- [ ] Sekwencja jest logiczna
+- [ ] Typ diagramu: [OKREŚL TYP]
+
+**DOSTARCZ:** Kompletny, działający kod PlantUML
+```
+
+---
+
+## Rekomendowane podejście dla Twojej aplikacji:
+
+### Szablon uniwersalny:
+```
+**Przygotuj diagram [TYP_DIAGRAMU] w notacji PlantUML dla poniższego procesu:**
+
+[OPIS_PROCESU]
+
+**Wymagania:**
+- Format: Kompletny kod PlantUML (@startuml ... @enduml)
+- Uwzględnij wszystkich uczestników i ich interakcje
+- Zadbaj o logiczną sekwencję kroków
+- Dodaj warunki i alternatywne ścieżki gdzie występują
+
+**Oczekiwany output:** Gotowy do użycia kod PlantUML
+```
+
+### Dla automatyzacji możesz używać:
+```
+SYSTEM_PROMPT: "Jesteś ekspertem od przekształcania opisów procesów biznesowych w diagramy PlantUML. Zawsze odpowiadasz kodem PlantUML gotowym do wygenerowania diagramu."
+
+USER_PROMPT: "[OPIS_PROCESU] → Stwórz diagram [TYP] w PlantUML"
+```
+
+## Dodatkowe wskazówki:
+
+1. **Konsystencja** - Używaj zawsze tego samego formatu instrukcji
+2. **Jednoznaczność** - Jasno określ typ diagramu (sequence, activity, class, etc.)
+3. **Kontekst** - Dodaj informację o roli AI (analityk, ekspert PlantUML)
+4. **Walidacja** - Poproś o sprawdzenie kompletności kodu
+5. **Przykłady** - Możesz dodać przykład struktury PlantUML w pierwszych promptach treningowych

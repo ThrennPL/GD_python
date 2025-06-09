@@ -1,0 +1,89 @@
+# Prompty testowe dla aplikacji Business-to-PlantUML
+
+## E-commerce / Handel elektroniczny
+
+### 1. Prosty proces zamówienia
+```
+Klient przegląda produkty w sklepie internetowym, dodaje je do koszyka, następnie przechodzi do płatności. System weryfikuje dane płatności z bankiem, po pozytywnej weryfikacji tworzy zamówienie i wysyła potwierdzenie email do klienta. Magazyn otrzymuje informację o zamówieniu i przygotowuje paczkę do wysyłki.
+```
+
+### 2. Zwrot produktu
+```
+Klient zgłasza chęć zwrotu produktu przez formularz na stronie. System sprawdza czy zwrot jest możliwy (czy nie minął termin). Jeśli tak, generuje etykietę zwrotną i wysyła ją do klienta. Po otrzymaniu paczki, magazyn sprawdza stan produktu. Jeśli produkt jest w dobrym stanie, księgowość inicjuje zwrot pieniędzy.
+```
+
+## Bankowość
+
+### 3. Przelew bankowy
+```
+Klient loguje się do bankowości elektronicznej i wybiera opcję przelewu. Wprowadza dane odbiorcy i kwotę. System sprawdza saldo konta oraz limity dzienne. Jeśli wszystko jest w porządku, przelew jest autoryzowany kodem SMS lub podpisem elektronicznym. Po autoryzacji, system księguje operację i wysyła powiadomienie do odbiorcy.
+```
+
+### 4. Wniosek kredytowy
+```
+Klient składa wniosek kredytowy online, wypełniając formularz z danymi osobowymi i finansowymi. System automatycznie sprawdza historię kredytową w BIK. Następnie wniosek trafia do analityka kredytowego, który przeprowadza szczegółową analizę. Po pozytywnej decyzji, umowa jest wysyłana do klienta do podpisu elektronicznego.
+```
+
+## HR / Zasoby ludzkie
+
+### 5. Proces rekrutacyjny
+```
+HR publikuje ogłoszenie o pracę na portalu. Kandydaci składają aplikacje. Rekruter przegląda CV i wybiera kandydatów do pierwszej rozmowy telefonicznej. Po pozytywnej rozmowie, kandydat jest zapraszany na rozmowę z przyszłym przełożonym. Ostateczną decyzję podejmuje komisja rekrutacyjna składająca się z HR i managera działu.
+```
+
+### 6. Proces urlopowy
+```
+Pracownik składa wniosek urlopowy przez system HR. Wniosek automatycznie trafia do bezpośredniego przełożonego. Przełożony sprawdza kalendarz zespołu i obecność innych osób. Po zatwierdzeniu, HR aktualizuje system i wysyła potwierdzenie do pracownika oraz do działu księgowości w celu naliczenia wynagrodzenia.
+```
+
+## Logistyka
+
+### 7. Dostawa kurierska
+```
+Kurier odbiera paczkę od nadawcy i skanuje kod. System przypisuje paczkę do trasy dostawy. W trakcie transportu, status paczki jest aktualizowany na każdym etapie. Po dotarciu do miejsca dostawy, kurier próbuje doręczyć paczkę. Jeśli odbiorca jest niedostępny, paczka trafia do punktu odbioru, a odbiorca otrzymuje powiadomienie SMS.
+```
+
+## Opieka zdrowotna
+
+### 8. Rejestracja do lekarza
+```
+Pacjent dzwoni do przychodni lub korzysta z systemu online aby umówić wizytę. Recepcjonistka sprawdza dostępne terminy u wybranego lekarza. Po ustaleniu terminu, wizyta jest wpisywana do kalendarza lekarza, a pacjent otrzymuje potwierdzenie SMS. Dzień przed wizytą, system wysyła przypomnienie.
+```
+
+## IT / Helpdesk
+
+### 9. Zgłoszenie problemu IT
+```
+Użytkownik zgłasza problem techniczny przez system ticketowy. Ticket automatycznie trafia do pierwszej linii wsparcia. Jeśli problem jest prosty, konsultant rozwiązuje go od razu. Jeśli wymaga specjalistycznej wiedzy, ticket jest eskalowany do drugiej linii wsparcia. Po rozwiązaniu problemu, użytkownik otrzymuje powiadomienie i może ocenić jakość obsługi.
+```
+
+## Produkcja
+
+### 10. Kontrola jakości
+```
+Produkt schodzi z linii produkcyjnej i trafia do działu kontroli jakości. Kontroler przeprowadza testy zgodnie z procedurą. Jeśli produkt przechodzi testy, otrzymuje certyfikat jakości i trafia do magazynu gotowych produktów. Jeśli nie przechodzi testów, wraca do produkcji z opisem usterek do poprawy.
+```
+
+## Finanse
+
+### 11. Fakturowanie
+```
+Po zrealizowaniu usługi, dział sprzedaży tworzy fakturę w systemie. Faktura automatycznie trafia do akceptacji u managera. Po zatwierdzeniu, faktura jest wysyłana do klienta email oraz przekazywana do księgowości. Księgowość monitoruje płatności i w przypadku opóźnienia, wysyła upomnienia.
+```
+
+## Edukacja
+
+### 12. Zapis na kurs
+```
+Student przegląda dostępne kursy w systemie uczelnianym. Po wybraniu kursu, sprawdzane są wymagania wstępne oraz liczba wolnych miejsc. Jeśli wszystko się zgadza, student może się zapisać. Prowadzący kursu otrzymuje powiadomienie o nowym studencie, a student dostaje informacje o terminach zajęć i wymaganych materiałach.
+```
+
+---
+
+## Wskazówki do testowania:
+
+1. **Różnorodność złożoności** - prompty od prostych (3-4 aktorów) do bardziej złożonych
+2. **Różne branże** - sprawdzą uniwersalność twojego modelu
+3. **Różne typy decyzji** - automatyczne, wymagające ludzkiej akceptacji
+4. **Różne typy komunikacji** - email, SMS, system wewnętrzny
+5. **Obsługa błędów** - niektóre prompty zawierają warunki "jeśli nie..." do testowania ścieżek alternatywnych

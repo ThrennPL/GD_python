@@ -5,7 +5,7 @@ import xml.dom.minidom
 from PyQt5.QtGui import QTextCharFormat, QSyntaxHighlighter, QColor, QFont
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QSplitter, QTextEdit, QPushButton, QWidget, QDialog, QLabel, QTabWidget
-from PyQt5.QtWidgets import QComboBox
+from PyQt5.QtWidgets import QComboBox, QCheckBox
 from PyQt5.QtSvg import QSvgWidget
 from PyQt5.QtCore import QThread, pyqtSignal
 from xml.etree.ElementTree import fromstring, ParseError
@@ -38,6 +38,7 @@ class XMLHighlighter(QSyntaxHighlighter):
         self.add_highlighting_rule(r"</?\w+.*?>", QColor("blue"))    # Tag otwierający/zamykający
         self.add_highlighting_rule(r"\".*?\"", QColor("red"))        # Wartości atrybutów
         self.add_highlighting_rule(r"=\s*\".*?\"", QColor("green"))  # Atrybuty
+
 
     def add_highlighting_rule(self, pattern, color):
         """Dodaje regułę kolorowania."""
@@ -78,7 +79,7 @@ class APICallThread(QThread):
             self.error_occurred.emit(f"Connection error: {e}")
 
 class AIApp(QMainWindow):
-    API_URL = "http://192.168.0.115:1234/v1/models"
+    API_URL = "http://localhost:1234/v1/models"
     XML_BLOCK_PATTERN = r"```xml\n(.*?)\n```"
     
 
@@ -86,6 +87,49 @@ class AIApp(QMainWindow):
         super().__init__()
         self.setWindowTitle("Generator diagramów AI")
         self.setGeometry(100, 100, 800, 600)
+
+
+        self.prompt_templates = {
+            "Standardowy": (
+                "**Przygotuj diagram {diagram_type} w notacji PlantUML dla procesu:**\n\n"
+                "{process_description}\n\n"
+                "**Wymagania:**\n"
+                "- Format: Kompletny kod PlantUML (@startuml ... @enduml)\n"
+                "- Uwzględnij wszystkich uczestników procesu\n"
+                "- Zachowaj logiczną sekwencję kroków\n\n"
+                "**Output:** Gotowy kod PlantUML"
+            ),
+            "Z checklistą": (
+                "**ZADANIE:** Stwórz diagram PlantUML dla procesu:\n\n"
+                "{process_description}\n\n"
+                "**CHECKLIST do sprawdzenia:**\n"
+                "- [ ] Kod zaczyna się od @startuml\n"
+                "- [ ] Kod kończy się na @enduml\n"
+                "- [ ] Wszyscy aktorzy są zdefiniowani\n"
+                "- [ ] Sekwencja jest logiczna\n"
+                "- [ ] Typ diagramu: {diagram_type}\n\n"
+                "**DOSTARCZ:** Kompletny, działający kod PlantUML"
+            ),
+            "Diagram klas": (
+                "Przeanalizuj poniższy proces biznesowy i przedstaw go jako diagram klas w PlantUML:\n\n"
+                "{process_description}\n\n"
+                "Oczekiwany format odpowiedzi:\n\n"
+                "```plantuml\n"
+                "@startuml\n"
+                "class ClassName {{\n"
+                "    +attribute1: Type\n"
+                "    -attribute2: Type\n"
+                "    +method1(): ReturnType\n"
+                "}}\n"
+                "@enduml\n"
+                "```\n\n"
+                "Upewnij się, że diagram zawiera:\n"
+                "- Klasy z atrybutami i metodami\n"
+                "- Relacje między klasami (np. dziedziczenie, asocjacje)\n"
+                "- Komentarze opisujące klasy i ich relacje\n"
+                "Zwróć uwagę na poprawność składni PlantUML."
+            )
+            }   
 
         # indeks zakładki -> kod PlantUML
         self.plantuml_codes = {}  
@@ -103,14 +147,31 @@ class AIApp(QMainWindow):
         self.output_box.setAcceptRichText(True)  # Umożliwia kolorowanie tekstu
         self.output_box.setStyleSheet("background-color: #f0f0f0;")  # Ustawienie koloru tła
 
+        self.template_selector = QComboBox(self)
+        self.template_selector.addItems(list(self.prompt_templates.keys()))
+
         # Splitter do zarządzania proporcjami
         splitter = QSplitter(Qt.Vertical)
+        main_layout.addWidget(self.template_selector)
         splitter.addWidget(self.output_box)
         splitter.addWidget(self.input_box)
         self.input_box.setFixedHeight(100)
 
         # Dodanie kolorowania składni
         self.highlighter = XMLHighlighter(self.output_box.document())
+
+        # Dodanie ComboBox do wyboru typu diagramu
+        self.diagram_type_selector = QComboBox(self)
+        self.diagram_type_selector.addItems([
+            "sequence", "activity", "use case", "class", "state", 
+            "communication", "component", "deployment", "timing", "collaboration"
+        ])
+        main_layout.addWidget(self.diagram_type_selector)
+
+        self.use_template_checkbox = QCheckBox("Użyj szablonu do wiadomości", self)
+        self.use_template_checkbox.setChecked(True)  # domyślnie zaznaczony
+        main_layout.addWidget(self.use_template_checkbox)
+
 
         # Przycisk "Wyślij zapytanie"
         self.send_button = QPushButton("Wyślij zapytanie")
@@ -162,7 +223,6 @@ class AIApp(QMainWindow):
             if idx in self.plantuml_codes:
                 del self.plantuml_codes[idx]
 
-
     def show_raw_response(self, text):
         """Wyświetla czystą odpowiedź w oknie dialogowym."""
         msg = QMessageBox(self)
@@ -200,25 +260,40 @@ class AIApp(QMainWindow):
 
     def send_to_api(self):
         """Wysyła zapytanie do API bez blokowania GUI."""
-        self.send_button.setEnabled(False)  # Dezaktywuj przycisk podczas wysyłania zapytania
-        input_text = self.input_box.toPlainText().strip()
-        if not input_text:
+        diagram_type = self.diagram_type_selector.currentText()
+        process_description = self.input_box.toPlainText().strip()
+        use_template = self.use_template_checkbox.isChecked()
+
+        # Budowanie promptu na podstawie typu diagramu i opisu procesu
+        selected_template = self.template_selector.currentText()
+        template = self.prompt_templates[selected_template]
+        if use_template:
+            prompt = template.format(
+                diagram_type=diagram_type,
+                process_description=process_description
+            )
+        else:
+            prompt = process_description
+        
+        self.send_button.setEnabled(False)
+        if not process_description:
             self.output_box.setText("Nie wysyłaj pustego zapytania.")
-            self.send_button.setEnabled(True)  # Ponownie aktywuj przycisk w przypadku pustego zapytania
+            self.send_button.setEnabled(True)
             return
 
         # Dodaj wiadomość użytkownika do historii rozmowy
-        self.conversation_history.append({"role": "user", "content": input_text})
-        self.append_to_chat("User", input_text)
+        self.conversation_history.append({"role": "user", "content": prompt})
+        self.append_to_chat("User", prompt)
+        self.input_box.clear()
 
         # Wyczyszczenie okna zapytania
         self.input_box.clear()
 
         # Budowanie listy messages
-        messages = [{"role": "user", "content": input_text}] if not self.conversation_history[:-1] else self.conversation_history
+        messages = [{"role": "user", "content": prompt}] if not self.conversation_history[:-1] else self.conversation_history
 
         selected_model = self.model_selector.currentText()
-        url = "http://192.168.0.115:1234/v1/chat/completions"
+        url = "http://localhost:1234/v1/chat/completions"
         headers = {"Content-Type": "application/json"}
         payload = {
             "model": selected_model,
@@ -356,7 +431,6 @@ class AIApp(QMainWindow):
         html = html.replace('\n', '<br>')
         return html
     
-
     def display_models(self):
         """Wyświetla listę załadowanych modeli w oknie output_box."""
         models = self.get_loaded_models()
