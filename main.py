@@ -8,7 +8,7 @@ import requests
 from PyQt5.QtGui import QTextCharFormat, QColor, QFont
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QSplitter, QTextEdit, QPushButton, QWidget, QDialog, QLabel, QTabWidget
-from PyQt5.QtWidgets import QComboBox, QCheckBox, QLabel, QGroupBox, QVBoxLayout, QHBoxLayout
+from PyQt5.QtWidgets import QComboBox, QCheckBox, QLabel, QGroupBox, QVBoxLayout, QHBoxLayout, QRadioButton, QButtonGroup
 from PyQt5.QtSvg import QSvgWidget
 from xml.etree.ElementTree import fromstring, ParseError
 from PyQt5.QtWidgets import QMessageBox
@@ -54,6 +54,23 @@ class AIApp(QMainWindow):
         self.output_box.setAcceptRichText(True)  # Umożliwia kolorowanie tekstu
         self.output_box.setStyleSheet("background-color: #f0f0f0;")  # Ustawienie koloru tła
 
+        # Radiobuttony do wyboru typu szablonu
+        self.radio_plantuml = QRadioButton("PlantUML")
+        self.radio_xml = QRadioButton("XML")
+        self.radio_plantuml.setChecked(True)  # domyślnie PlantUML
+
+        radio_layout = QHBoxLayout()
+        radio_layout.addWidget(self.radio_plantuml)
+        radio_layout.addWidget(self.radio_xml)
+        template_layout.addLayout(radio_layout)
+
+        self.template_type_group = QButtonGroup(self)
+        self.template_type_group.addButton(self.radio_plantuml)
+        self.template_type_group.addButton(self.radio_xml)
+
+        self.radio_plantuml.toggled.connect(self.update_template_selector)
+        self.radio_xml.toggled.connect(self.update_template_selector)
+
         self.template_selector = QComboBox(self)
         self.template_selector.setToolTip("Wybierz szablon zapytania do modelu AI.")
         self.template_selector.addItems(list(self.prompt_templates.keys()))
@@ -61,7 +78,6 @@ class AIApp(QMainWindow):
         template_layout.addWidget(QLabel("Wybierz szablon zapytania:"))
         template_layout.addWidget(self.template_selector)
         template_group.setStyleSheet("background-color: #f0ffff;")
-
 
         # Splitter do zarządzania proporcjami
         splitter = QSplitter(Qt.Vertical)
@@ -88,6 +104,8 @@ class AIApp(QMainWindow):
 
         self.template_selector.currentIndexChanged.connect(self.on_template_changed)
         self.on_template_changed(self.template_selector.currentIndex())  # Ustaw początkowo
+
+        self.update_template_selector()
 
         self.use_template_checkbox = QCheckBox("Użyj szablonu do wiadomości", self)
         self.use_template_checkbox.setChecked(True)  # domyślnie zaznaczony
@@ -169,6 +187,16 @@ class AIApp(QMainWindow):
             self.diagram_tabs.removeTab(idx)
             if idx in self.plantuml_codes:
                 del self.plantuml_codes[idx]
+
+    def update_template_selector(self):
+        selected_type = "PlantUML" if self.radio_plantuml.isChecked() else "XML"
+        self.template_selector.blockSignals(True)
+        self.template_selector.clear()
+        filtered = [name for name, data in self.prompt_templates.items() if data.get("type") == selected_type]
+        self.template_selector.addItems(filtered)
+        self.template_selector.blockSignals(False)
+        # Odśwież typy diagramów dla nowego szablonu
+        self.on_template_changed(self.template_selector.currentIndex())
 
     def on_template_changed(self, index):
         selected_template = self.template_selector.currentText()
