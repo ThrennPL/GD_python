@@ -23,7 +23,8 @@ class AIApp(QMainWindow):
         super().__init__()
         self.setWindowTitle("Generator diagramów AI")
         self.setGeometry(100, 100, 1200, 1000)
-
+        self.verification_attempts = 0
+        self.last_prompt_type = None 
         self.prompt_templates = prompt_templates  # Załaduj szablony z pliku
 
         # Grupa dla szablonu
@@ -192,10 +193,12 @@ class AIApp(QMainWindow):
         selected_type = "PlantUML" if self.radio_plantuml.isChecked() else "XML"
         self.template_selector.blockSignals(True)
         self.template_selector.clear()
-        filtered = [name for name, data in self.prompt_templates.items() if data.get("type") == selected_type]
+        filtered = [
+            name for name, data in self.prompt_templates.items()
+            if data.get("type") == selected_type
+        ]
         self.template_selector.addItems(filtered)
         self.template_selector.blockSignals(False)
-        # Odśwież typy diagramów dla nowego szablonu
         self.on_template_changed(self.template_selector.currentIndex())
 
     def on_template_changed(self, index):
@@ -322,16 +325,33 @@ class AIApp(QMainWindow):
         else:
             self.save_xml_button.setEnabled(False)  # Dezaktywuj przycisk
 
-    # Sprawdzenie, czy odpowiedź zawiera jeden lub więcej bloków PlantUML
-        plantuml_blocks = re.findall(r"``plantuml\n(.*?)\n``", response_content, re.DOTALL)
+        # Sprawdzenie, czy odpowiedź zawiera blok PlantUML
+        plantuml_blocks = re.findall(r"```plantuml\n(.*?)\n```", response_content, re.DOTALL)
         if plantuml_blocks:
             self.save_PlantUML_button.setEnabled(True)
-            self.latest_plantuml = plantuml_blocks[-1]  # zapisz ostatni do ewentualnego zapisu
+            self.latest_plantuml = plantuml_blocks[-1]
             for block in plantuml_blocks:
                 self.show_plantuml_diagram(block)
-        else:
-            self.save_PlantUML_button.setEnabled(False)
-            self.latest_plantuml = None
+            return
+
+        # Jeśli to była odpowiedź na weryfikację, sprawdź czy model uznał kod za poprawny
+        if self.last_prompt_type == "Verification":
+            if "kod jest poprawny" in response_content.lower():
+                self.output_box.append("Model uznał kod PlantUML za poprawny. Przerywam dalsze próby.\n")
+                self.verification_attempts = 0
+                return
+            # Jeśli nie, spróbuj jeszcze raz (ale show_plantuml_diagram już to obsłuży)
+            plantuml_blocks = re.findall(r"```plantuml\n(.*?)\n```", response_content, re.DOTALL)
+            if plantuml_blocks:
+                self.show_plantuml_diagram(plantuml_blocks[-1])
+            else:
+                error_msg = ("Nie udało się uzyskać poprawionego kodu PlantUML.\n")
+                self.append_to_chat("System", error_msg)
+
+            return
+
+        self.save_PlantUML_button.setEnabled(False)
+        self.latest_plantuml = None
 
 
     def handle_api_error(self, error_msg):
@@ -358,11 +378,15 @@ class AIApp(QMainWindow):
             try:
                 with open("output.xml", "w", encoding="utf-8") as file:
                     file.write(self.latest_xml)
-                self.output_box.append("Plik XML został zapisany jako 'output.xml'.\n")
+                ok_msg = ("Plik XML został zapisany jako 'output.xml'.\n")
+                self.append_to_chat("System", ok_msg)
+                
             except Exception as e:
-                self.output_box.append(f"Błąd zapisu pliku XML: {e}\n")
+                error_msg = (f"Błąd zapisu pliku XML: {e}\n")
+                self.append_to_chat("System", error_msg)
         else:
-            self.output_box.append("Brak poprawnego pliku XML do zapisania.\n")
+            error_msg = ("Brak poprawnego pliku XML do zapisania.\n")
+            self.append_to_chat("System", error_msg)
 
     def save_plantuml(self):
         """Zapisuje kod PlantUML z aktywnej zakładki do pliku."""
@@ -373,11 +397,14 @@ class AIApp(QMainWindow):
                 diagram_type = identify_plantuml_diagram_type(code)
                 with open("output.puml", "w", encoding="utf-8") as file:
                     file.write(code)
-                self.output_box.append(f"Plik PlantUML ({diagram_type}) został zapisany jako 'output.puml'.\n")
+                ok_msg = (f"Plik PlantUML ({diagram_type}) został zapisany jako 'output.puml'.\n")
+                self.append_to_chat("System", ok_msg)
             except Exception as e:
-                self.output_box.append(f"Błąd zapisu pliku PlantUML: {e}\n")
+                error_msg = (f"Błąd zapisu pliku PlantUML: {e}\n")
+                self.append_to_chat("System", error_msg)
         else:
-            self.output_box.append("Brak kodu PlantUML do zapisania dla tej zakładki.\n")
+            error_msg = ("Brak kodu PlantUML do zapisania dla tej zakładki.\n")
+            self.append_to_chat("System", error_msg)
 
     def save_active_diagram(self):
         idx = self.diagram_tabs.currentIndex()
@@ -389,11 +416,14 @@ class AIApp(QMainWindow):
                 filename = f"{diagram_type.replace(' ', '_')}.svg"
                 with open(filename, "wb") as f:
                     f.write(svg_data)
-                self.output_box.append(f"Diagram zapisany jako '{filename}'.\n")
+                ok_msg = (f"Diagram zapisany jako '{filename}'.\n")
+                self.append_to_chat("System", ok_msg)
             except Exception as e:
-                self.output_box.append(f"Błąd podczas zapisu diagramu: {e}\n")
+                error_msg = (f"Błąd podczas zapisu diagramu: {e}\n")
+                self.append_to_chat("System", error_msg)
         else:
-            self.output_box.append("Brak diagramu do zapisania.\n")
+            error_msg = ("Brak diagramu do zapisania.\n")
+            self.append_to_chat("System", error_msg)
 
     def append_to_chat(self, sender: str, message: str):
         """
@@ -469,7 +499,9 @@ class AIApp(QMainWindow):
             # Ładujemy jako zwykły tekst, highlighter zadziała automatycznie
             self.output_box.setPlainText(xml_content)
         except Exception as e:
-            self.output_box.setPlainText(f"Błąd podczas wczytywania pliku XML: {e}")
+            error_msg = (f"Błąd podczas wczytywania pliku XML: {e}")
+            self.append_to_chat("System", error_msg)
+            
 
     def close_plantuml_tab(self, idx):
         self.diagram_tabs.removeTab(idx)
@@ -494,8 +526,46 @@ class AIApp(QMainWindow):
             # Zapisz kod PlantUML dla tej zakładki
             self.plantuml_codes[idx] = plantuml_code
             self.save_diagram_button.setEnabled(True)
+            self.verification_attempts = 0  # Reset liczby prób po sukcesie
         except Exception as e:
-            QMessageBox.warning(self, "Błąd", f"Nie udało się pobrać diagramu PlantUML: {e}")
+            error_msg = (f"Nie udało się pobrać diagramu PlantUML: {e}\n")
+            self.append_to_chat("System", error_msg)
+            if self.diagram_type_selector.isEnabled():
+                diagram_type = self.diagram_type_selector.currentText()
+            else:
+                diagram_type = identify_plantuml_diagram_type(plantuml_code)
+            # Automatycznie wyślij prompt do weryfikacji kodu
+            if self.last_prompt_type == "Verification" and self.verification_attempts >= 2:
+                error_msg = ("Próbowano dwukrotnie zweryfikować kod PlantUML. Przerywam dalsze próby.\n")
+                self.append_to_chat("System", error_msg)
+                QMessageBox.warning(
+                    self, "Weryfikacja kodu PlantUML",
+                    "Próbowano dwukrotnie zweryfikować kod PlantUML. Przerywam dalsze próby."
+                )
+                return
+            self.verification_attempts += 1
+            verification_template = self.prompt_templates["Weryfikacja kodu PlantUML"]["template"]
+            prompt = verification_template.format(plantuml_code=plantuml_code, diagram_type=diagram_type)
+            print(f"Sending custom prompt to API: {prompt}")
+            self.last_prompt_type = "Verification"
+            error_msg = (f"Wysyłam kod do weryfikacji\n")
+            self.append_to_chat("System", error_msg)
+            self.send_to_api_custom_prompt(prompt)
+
+    def send_to_api_custom_prompt(self, prompt):
+        self.send_button.setEnabled(False)
+        model_name = self.model_selector.currentText()
+        # Zbuduj payload jak w send_to_api, ale użyj gotowego promptu
+        payload = {
+            "model": model_name,
+            "messages": [{"role": "user", "content": prompt}]
+        }
+        url = "http://localhost:1234/v1/chat/completions"
+        headers = {"Content-Type": "application/json"}
+        self.api_thread = APICallThread(url, headers, payload, model_name)
+        self.api_thread.response_received.connect(self.handle_api_response)
+        self.api_thread.error_occurred.connect(self.handle_api_error)
+        self.api_thread.start()
 
     def on_use_template_checkbox_changed(self, state):
         use_template = self.use_template_checkbox.isChecked()

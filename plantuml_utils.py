@@ -27,6 +27,12 @@ def identify_plantuml_diagram_type(plantuml_code: str) -> str:
         return "Diagram przypadków użycia"
     if 'component' in code or 'node' in code:
         return "Diagram komponentów"
+    if 'activity' in code or 'start' in code or 'end' in code:
+        return "Diagram aktywności"
+    if 'object' in code or 'note' in code:
+        return "Diagram obiektów"   
+    if 'deployment' in code or 'artifact' in code:
+        return "Diagram wdrożenia"
     return "Diagram ogólny (typ nieokreślony)"
 
 def fetch_plantuml_svg(plantuml_code: str) -> bytes:

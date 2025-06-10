@@ -175,5 +175,21 @@ prompt_templates = {
                 ),
                 "allowed_diagram_types": ["BPMN"],  # Tylko diagram procesu biznesowego
                 "type": "XML"
+            },
+            "Weryfikacja kodu PlantUML": {
+                "template": (
+                    "**Sprawdź poniższy kod PlantUML pod kątem poprawności składni oraz brakujących lub błędnych elementów.**\n"
+                    "Uwzględnij że powinien to być kod PlantUML dla diagramu o typie: {diagram_type}\n"
+                    "Kod do weryfikacji:\n"
+                    "```plantuml\n"
+                    "{plantuml_code}\n"
+                    "```\n\n"
+                    "**Wymagania:**\n"
+                    "- Wskaż dokładnie, które linie lub fragmenty są niepoprawne lub niezgodne z notacją PlantUML\n"
+                    "- Zasugeruj poprawki lub uzupełnienia\n"
+                    "- Jeśli kod jest poprawny, napisz: 'Kod jest poprawny i kompletny.'"
+                ),
+                "allowed_diagram_types": "all",
+                "type": "Verification"  # szablon do weryfikacji kodu PlantUML
             }
 }
