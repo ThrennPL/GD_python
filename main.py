@@ -55,7 +55,7 @@ class AIApp(QMainWindow):
         self.output_box.setReadOnly(True)
         self.output_box.setAcceptRichText(True)  # Umożliwia kolorowanie tekstu
         self.output_box.setStyleSheet("background-color: #f0f0f0;")  # Ustawienie koloru tła
-        self.output_box.setMinimumHeight(100)
+        self.output_box.setMinimumHeight(200)
 
         # Radiobuttony do wyboru typu szablonu
         self.radio_plantuml = QRadioButton("PlantUML")
