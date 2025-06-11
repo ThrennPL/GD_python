@@ -191,5 +191,17 @@ prompt_templates = {
                 ),
                 "allowed_diagram_types": "all",
                 "type": "Verification"  # szablon do weryfikacji kodu PlantUML
-            }
+            },
+            "Weryfikacja opisu procesu": {
+               "template": (
+                    "**Sprawdź poniższy opis procesu pod kątem kompletności i poprawności biznesowej.**\n\n"
+                    "{process_description}\n\n"
+                    "**Wymagania:**\n"
+                    "- Wskaż, czy opis zawiera wszystkie kluczowe kroki procesu\n"
+                    "- Zasugeruj ewentualne poprawki lub uzupełnienia\n"
+                    "- Jeśli opis jest poprawny, napisz: 'Opis jest poprawny i kompletny.'"
+                ),
+                "allowed_diagram_types": "all",
+                "type": "Validation"
+    }
 }

@@ -1,4 +1,5 @@
 from xml_highlighter import XMLHighlighter
+from input_validator import validate_input_text
 from api_thread import APICallThread
 from plantuml_utils import plantuml_encode, identify_plantuml_diagram_type, fetch_plantuml_svg
 from prompt_templates import prompt_templates
@@ -29,7 +30,7 @@ class AIApp(QMainWindow):
 
         # Grupa dla szablonu
         template_group = QGroupBox("Konfiguracja szablonu")
-        template_layout = QVBoxLayout()
+        template_layout = QHBoxLayout()
 
         # ComboBox do wyboru modelu
         self.model_selector = QComboBox(self)
@@ -54,6 +55,7 @@ class AIApp(QMainWindow):
         self.output_box.setReadOnly(True)
         self.output_box.setAcceptRichText(True)  # Umożliwia kolorowanie tekstu
         self.output_box.setStyleSheet("background-color: #f0f0f0;")  # Ustawienie koloru tła
+        self.output_box.setMinimumHeight(100)
 
         # Radiobuttony do wyboru typu szablonu
         self.radio_plantuml = QRadioButton("PlantUML")
@@ -90,7 +92,7 @@ class AIApp(QMainWindow):
         self.input_box.setFixedHeight(100)
 
         # Dodanie kolorowania składni
-        self.highlighter = XMLHighlighter(self.output_box.document())
+        #self.highlighter = XMLHighlighter(self.output_box.document())
 
         # Dodanie ComboBox do wyboru typu diagramu
         self.diagram_type_selector = QComboBox(self)
@@ -114,9 +116,10 @@ class AIApp(QMainWindow):
         # Ustaw stan początkowy
         self.on_use_template_checkbox_changed(self.use_template_checkbox.checkState())
 
+
         # main_layout.addWidget(self.use_template_checkbox)
         template_layout.addWidget(self.use_template_checkbox)
-
+        
         template_group.setLayout(template_layout)
 
         # Layout główny
@@ -144,6 +147,7 @@ class AIApp(QMainWindow):
         self.save_diagram_button = QPushButton("Zapisz diagram")
         self.save_diagram_button.setEnabled(False)
 
+        self.validate_input_button = QPushButton("Sprawdź poprawność opisu procesu", self)
 
         # Dodanie widżetów do layoutu
         # main_layout.addWidget(self.model_selector)  # Dodanie ComboBox na górze
@@ -152,10 +156,13 @@ class AIApp(QMainWindow):
         
         # --- Nowy poziomy layout na przyciski ---
         buttons_layout = QHBoxLayout()
+        buttons_layout.addWidget(self.validate_input_button)
         buttons_layout.addWidget(self.send_button)
         buttons_layout.addWidget(self.save_xml_button)
         buttons_layout.addWidget(self.save_PlantUML_button)
         buttons_layout.addWidget(self.save_diagram_button)
+
+        self.validate_input_button.clicked.connect(self.validate_input_button_pressed)
 
         self.save_diagram_button.clicked.connect(self.save_active_diagram)
 
@@ -188,6 +195,10 @@ class AIApp(QMainWindow):
             self.diagram_tabs.removeTab(idx)
             if idx in self.plantuml_codes:
                 del self.plantuml_codes[idx]
+
+    def validate_input_button_pressed(self):
+        """Sprawdza poprawność tekstu z input_box."""
+        validate_input_text(self)
 
     def update_template_selector(self):
         selected_type = "PlantUML" if self.radio_plantuml.isChecked() else "XML"
@@ -256,6 +267,24 @@ class AIApp(QMainWindow):
             print(f"Wystąpił błąd podczas pobierania listy modeli: {e}")
             return None
 
+    def start_api_thread(self, prompt, model_name=None):
+        """
+        Uruchamia wątek API z podanym promptem i modelem.
+        """
+        if model_name is None:
+            model_name = self.model_selector.currentText()
+        url = "http://localhost:1234/v1/chat/completions"
+        headers = {"Content-Type": "application/json"}
+        messages = [{"role": "user", "content": prompt}]
+        payload = {
+            "model": model_name,
+            "messages": messages,
+            "temperature": 0.7
+        }
+        self.api_thread = APICallThread(url, headers, payload, model_name)
+        self.api_thread.response_received.connect(self.handle_api_response)
+        self.api_thread.error_occurred.connect(self.handle_api_error)
+        self.api_thread.start()
 
     def send_to_api(self):
         """Wysyła zapytanie do API bez blokowania GUI."""
@@ -273,7 +302,7 @@ class AIApp(QMainWindow):
             )
         else:
             prompt = process_description
-        
+
         self.send_button.setEnabled(False)
         if not process_description:
             self.output_box.setText("Nie wysyłaj pustego zapytania.")
@@ -285,31 +314,9 @@ class AIApp(QMainWindow):
         self.append_to_chat("User", prompt)
         self.input_box.clear()
 
-        # Wyczyszczenie okna zapytania
-        self.input_box.clear()
-
-        # Budowanie listy messages
-        if use_template:
-            # Tylko bieżące zapytanie, bez historii
-            messages = [{"role": "user", "content": prompt}]
-        else:
-            # Z historią rozmowy
-            messages = [{"role": "user", "content": prompt}] if not self.conversation_history[:-1] else self.conversation_history
-
+        # Uruchom wątek API z gotowym promptem i wybranym modelem
         selected_model = self.model_selector.currentText()
-        url = "http://localhost:1234/v1/chat/completions"
-        headers = {"Content-Type": "application/json"}
-        payload = {
-            "model": selected_model,
-            "messages": messages,
-            "temperature": 0.7
-        }
-
-        # Utwórz i uruchom wątek
-        self.api_thread = APICallThread(url, headers, payload, selected_model)
-        self.api_thread.response_received.connect(self.handle_api_response)
-        self.api_thread.error_occurred.connect(self.handle_api_error)
-        self.api_thread.start()
+        self.start_api_thread(prompt, selected_model)
 
     def handle_api_response(self, model_name, response_content):
         """Obsługuje odpowiedź z API."""
@@ -554,18 +561,7 @@ class AIApp(QMainWindow):
 
     def send_to_api_custom_prompt(self, prompt):
         self.send_button.setEnabled(False)
-        model_name = self.model_selector.currentText()
-        # Zbuduj payload jak w send_to_api, ale użyj gotowego promptu
-        payload = {
-            "model": model_name,
-            "messages": [{"role": "user", "content": prompt}]
-        }
-        url = "http://localhost:1234/v1/chat/completions"
-        headers = {"Content-Type": "application/json"}
-        self.api_thread = APICallThread(url, headers, payload, model_name)
-        self.api_thread.response_received.connect(self.handle_api_response)
-        self.api_thread.error_occurred.connect(self.handle_api_error)
-        self.api_thread.start()
+        self.start_api_thread(prompt)
 
     def on_use_template_checkbox_changed(self, state):
         use_template = self.use_template_checkbox.isChecked()
