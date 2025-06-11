@@ -22,7 +22,7 @@ Aplikacja desktopowa (PyQt5) do generowania, wizualizacji i weryfikacji diagram√
 ## Instalacja
 
 ```bash
-git clone https://github.com/twoj-login/twoj-projekt.git
+git clone https://github.com/ThrennPL/GD_python
 cd twoj-projekt
 pip install -r requirements.txt
 ```
