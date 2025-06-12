@@ -196,10 +196,14 @@ class AIApp(QMainWindow):
         self.diagram_tabs.setTabsClosable(True)
         self.diagram_tabs.tabCloseRequested.connect(self.close_plantuml_tab)
 
-        def close_plantuml_tab(self, idx):
-            self.diagram_tabs.removeTab(idx)
-            if idx in self.plantuml_codes:
-                del self.plantuml_codes[idx]
+        # Połącz sygnał zmiany zakładki z tą metodą
+        self.diagram_tabs.currentChanged.connect(self.on_tab_changed)
+
+
+    def close_plantuml_tab(self, idx):
+        self.diagram_tabs.removeTab(idx)
+        if idx in self.plantuml_codes:
+            del self.plantuml_codes[idx]
 
     def validate_input_button_pressed(self):
         """Sprawdza poprawność tekstu z input_box."""
@@ -216,6 +220,21 @@ class AIApp(QMainWindow):
         self.template_selector.addItems(filtered)
         self.template_selector.blockSignals(False)
         self.on_template_changed(self.template_selector.currentIndex())
+
+    
+    def on_tab_changed(self, index):
+        # Pobierz typ diagramu z aktualnej zakładki (np. z atrybutu lub tekstu)
+        current_diagram_type = self.get_current_diagram_type(index)
+        if "klas" in current_diagram_type.lower():
+            self.save_xmi_button.setEnabled(True)
+        else:
+            self.save_xmi_button.setEnabled(False)
+
+    def get_current_diagram_type(self, index):
+        # Pobierz tytuł zakładki
+        tab_text = self.diagram_tabs.tabText(index)
+        # Możesz tu dodać własną logikę, np. analizę tekstu lub atrybutów
+        return tab_text
 
     def on_template_changed(self, index):
         selected_template = self.template_selector.currentText()
@@ -343,7 +362,8 @@ class AIApp(QMainWindow):
             self.save_PlantUML_button.setEnabled(True)
             # Sprawdź typ diagramu
             diagram_type = identify_plantuml_diagram_type(plantuml_blocks[-1])
-            if diagram_type.strip().lower() == "class":
+            print(f"Identified diagram type: {diagram_type}")
+            if "klas" in diagram_type.strip().lower():
                 self.save_xmi_button.setEnabled(True)
             else:
                 self.save_xmi_button.setEnabled(False)
