@@ -1,4 +1,5 @@
 from plantuml_convert_to_xmi import plantuml_to_xmi
+from extract_code_from_response import extract_xml, extract_plantuml, extract_plantuml_blocks, is_valid_xml
 from xml_highlighter import XMLHighlighter
 from input_validator import validate_input_text
 from api_thread import APICallThread
@@ -347,17 +348,18 @@ class AIApp(QMainWindow):
         self.send_button.setEnabled(True)  # Ponownie aktywuj przycisk
         self.conversation_history.append({"role": "assistant", "content": response_content})
         self.append_to_chat(model_name, response_content)
+        self.latest_response = response_content
 
         # Sprawdzenie, czy odpowiedź zawiera poprawny XML
-        xml_content = self.extract_xml(response_content)
-        if xml_content and self.is_valid_xml(xml_content):
+        xml_content = extract_xml(response_content)
+        if xml_content and is_valid_xml(xml_content):
             self.save_xml_button.setEnabled(True)  # Aktywuj przycisk
             self.latest_xml = xml_content  # Zapisz ostatni poprawny XML
         else:
             self.save_xml_button.setEnabled(False)  # Dezaktywuj przycisk
 
         # Sprawdzenie, czy odpowiedź zawiera blok PlantUML
-        plantuml_blocks = re.findall(r"```plantuml\n(.*?)\n```", response_content, re.DOTALL)
+        plantuml_blocks = extract_plantuml_blocks(response_content)
         if plantuml_blocks:
             self.save_PlantUML_button.setEnabled(True)
             # Sprawdź typ diagramu
@@ -397,21 +399,19 @@ class AIApp(QMainWindow):
         self.send_button.setEnabled(True)  # Ponownie aktywuj przycisk
         self.append_to_chat("System", error_msg)
 
-    def extract_xml(self, text):
-        """Wyodrębnia treść XML z odpowiedzi."""
-        match = re.search(self.XML_BLOCK_PATTERN, text, re.DOTALL)
-        return match.group(1) if match else None
-
-    def is_valid_xml(self, text):
-        """Sprawdza, czy podany tekst jest poprawnym i kompletnym plikiem XML."""
-        try:
-            fromstring(text)
-            return True
-        except ParseError:
-            return False
-
     def save_xml(self):
         """Zapisuje ostatni poprawny XML do pliku."""
+        xml_content = extract_xml(self.latest_response)
+        if xml_content and is_valid_xml(xml_content):
+            to_save = xml_content
+        else:
+            plantuml_code = extract_plantuml(self.latest_response)
+            if plantuml_code:
+                to_save = bpmn_to_xml(plantuml_code)
+            else:
+                error_msg = ("Brak poprawnego XML do zapisania.\n")
+                self.append_to_chat("System", error_msg)
+                return
         if hasattr(self, "latest_xml") and self.latest_xml:
             try:
                 with open("output.xml", "w", encoding="utf-8") as file:

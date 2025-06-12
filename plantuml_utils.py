@@ -44,3 +44,4 @@ def fetch_plantuml_svg(plantuml_code: str) -> bytes:
         return response.content
     else:
         raise Exception(f"Nie udało się pobrać SVG: {response.status_code}")
+    
