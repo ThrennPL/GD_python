@@ -1,3 +1,4 @@
+from plantuml_conwert_to_xmi import plantuml_to_xmi
 from xml_highlighter import XMLHighlighter
 from input_validator import validate_input_text
 from api_thread import APICallThread
@@ -143,6 +144,9 @@ class AIApp(QMainWindow):
         self.save_PlantUML_button = QPushButton("Zapisz PlantUML")
         self.save_PlantUML_button.setEnabled(False)  # Domyślnie nieaktywny
 
+        self.save_xmi_button = QPushButton("Zapisz XMI")
+        self.save_xmi_button.setEnabled(False)
+
         # Przycisk "Zapisz diagram" - w formie graficznej
         self.save_diagram_button = QPushButton("Zapisz diagram")
         self.save_diagram_button.setEnabled(False)
@@ -160,10 +164,11 @@ class AIApp(QMainWindow):
         buttons_layout.addWidget(self.send_button)
         buttons_layout.addWidget(self.save_xml_button)
         buttons_layout.addWidget(self.save_PlantUML_button)
+        buttons_layout.addWidget(self.save_xmi_button)
         buttons_layout.addWidget(self.save_diagram_button)
 
         self.validate_input_button.clicked.connect(self.validate_input_button_pressed)
-
+        self.save_xmi_button.clicked.connect(self.save_xmi)
         self.save_diagram_button.clicked.connect(self.save_active_diagram)
 
         # Dodaj poziomy layout do głównego layoutu
@@ -336,6 +341,12 @@ class AIApp(QMainWindow):
         plantuml_blocks = re.findall(r"```plantuml\n(.*?)\n```", response_content, re.DOTALL)
         if plantuml_blocks:
             self.save_PlantUML_button.setEnabled(True)
+            # Sprawdź typ diagramu
+            diagram_type = identify_plantuml_diagram_type(plantuml_blocks[-1])
+            if diagram_type.strip().lower() == "class":
+                self.save_xmi_button.setEnabled(True)
+            else:
+                self.save_xmi_button.setEnabled(False)
             self.latest_plantuml = plantuml_blocks[-1]
             for block in plantuml_blocks:
                 self.show_plantuml_diagram(block)
@@ -411,6 +422,23 @@ class AIApp(QMainWindow):
                 self.append_to_chat("System", error_msg)
         else:
             error_msg = ("Brak kodu PlantUML do zapisania dla tej zakładki.\n")
+            self.append_to_chat("System", error_msg)
+
+    def save_xmi(self):
+        idx = self.diagram_tabs.currentIndex()
+        if idx in self.plantuml_codes:
+            plantuml_code = self.plantuml_codes[idx]
+            try:
+                xmi_code = plantuml_to_xmi(plantuml_code)
+                with open("output.xmi", "w", encoding="utf-8") as file:
+                    file.write(xmi_code)
+                ok_msg = "Plik XMI został zapisany jako 'output.xmi'.\n"
+                self.append_to_chat("System", ok_msg)
+            except Exception as e:
+                error_msg = f"Błąd podczas konwersji lub zapisu XMI: {e}\n"
+                self.append_to_chat("System", error_msg)
+        else:
+            error_msg = "Brak kodu PlantUML do konwersji na XMI.\n"
             self.append_to_chat("System", error_msg)
 
     def save_active_diagram(self):
