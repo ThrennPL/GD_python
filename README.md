@@ -70,6 +70,10 @@ python main.py
 6. W przypadku błędów kod PlantUML zostanie automatycznie zweryfikowany przez AI.
 7. Możesz także sprawdzić poprawność opisu procesu przez AI.
 
+Diagram przypadków użycia:
+![Diagram przypadków użycia](https://github.com/user-attachments/assets/bcac902f-0fe5-48b9-8088-968c597ffb62)
+
+
 ## Przykładowe prompty
 
 Zobacz plik [`Prompty_bankowe.txt`](Prompty_bankowe.txt) – znajdziesz tam przykłady opisów procesów dla różnych typów diagramów UML/BPMN.
