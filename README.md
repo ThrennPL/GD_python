@@ -12,6 +12,24 @@ Aplikacja desktopowa (PyQt5) do generowania, wizualizacji i weryfikacji diagram�
 - Historia rozmowy z modelem
 - Obsługa wielu modeli AI (np. lokalnych lub OpenAI API)
 - Przykładowe prompty testowe dla branży bankowej
+- Eksport XMI dla PlantUML
+
+## Eksport XMI
+
+- Eksport XMI jest obecnie dostępny **tylko dla diagramu klas (Class Diagram)**.
+- Przycisk „Zapisz XMI” jest aktywny wyłącznie, gdy aktywna zakładka zawiera diagram klas.
+- Dla innych typów diagramów (np. sekwencji, aktywności) eksport XMI nie jest jeszcze obsługiwany.
+
+## Obsługa zakładek
+
+- Aplikacja umożliwia pracę z wieloma diagramami w zakładkach.
+- Po przełączeniu zakładki aplikacja automatycznie sprawdza typ diagramu i aktywuje/dezaktywuje przycisk eksportu XMI.
+
+## TODO
+
+- Praca nad szablonami promptów w szczególności przy sprawdzaniu poprawności proceu - do rozważenia krokowość w tym zakresie.
+- Eksport XMI działa tylkopołownicznie - po wczytaniu do Enterprice Architect nie ma diagramu ale są pozostałe elementy.
+- Eksport XMI dla innych typów diagramów będzie dostępny w przyszłych wersjach.
 
 ## Wymagania
 
@@ -39,6 +57,7 @@ python main.py
 - `prompt_templates.py` – szablony promptów do AI
 - `plantuml_utils.py` – funkcje pomocnicze do PlantUML (kodowanie, pobieranie SVG, rozpoznawanie typu diagramu)
 - `input_validator.py` – funkcja do walidacji opisu procesu przez AI
+- `plantuml_convert_to_xmi.py` – funkcje konwersji formatu PlantUML na XMI do EA
 - `Prompty_bankowe.txt` – przykładowe opisy procesów do testów
 
 ## Przykładowe użycie

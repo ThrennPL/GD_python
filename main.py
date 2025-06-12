@@ -1,4 +1,4 @@
-from plantuml_conwert_to_xmi import plantuml_to_xmi
+from plantuml_convert_to_xmi import plantuml_to_xmi
 from xml_highlighter import XMLHighlighter
 from input_validator import validate_input_text
 from api_thread import APICallThread
