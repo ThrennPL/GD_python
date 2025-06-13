@@ -23,11 +23,11 @@ def identify_plantuml_diagram_type(plantuml_code: str) -> str:
     code = plantuml_code.lower()
     if 'state' in code or '-->' in code and 'state' in code:
         return "Diagram stanów"
-    if 'actor' in code and ('->' in code or '->>' in code or '->|' in code) and 'component' not in code:
+    if 'actor' in code and ('->' in code or '->>' in code or '->|' in code) and ('component' not in code or 'deployment' not in code):
         return "Diagram sekwencji"
     if 'class' in code or 'interface' in code or '--|' in code or '<|--' in code:
         return "Diagram klas"
-    if 'usecase' in code:
+    if ('usecase' in code or 'use case' in code) and ('actor' in code or '->' in code or '->>' in code):
         return "Diagram przypadków użycia"
     if 'component' in code or 'node' in code or 'package' in code or 'container' in code:
         return "Diagram komponentów"
@@ -37,6 +37,8 @@ def identify_plantuml_diagram_type(plantuml_code: str) -> str:
         return "Diagram obiektów"   
     if 'deployment' in code or 'artifact' in code:
         return "Diagram wdrożenia"
+    if 'flow' in code or 'data' in code or 'process' in code:
+        return "Diagram przepływu danych"        
     return "Diagram ogólny (typ nieokreślony)"
 
 def fetch_plantuml_svg_www(plantuml_code: str) -> bytes:

@@ -70,6 +70,42 @@ O godzinie 14:00:00 klient inicjuje przelew w aplikacji mobilnej. W ciągu 100ms
 Klient składa wniosek kredytowy przez system online, który przekazuje dane do systemu CRM. Doradca kredytowy z CRM pobiera dokumenty klienta i wprowadza je do systemu oceny zdolności kredytowej. System automatycznie sprawdza historię w BIK oraz weryfikuje dochody z ZUS i urzędem skarbowym. Równocześnie rzeczoznawca majątkowy wycenia nieruchomość i wprowadza wynik do systemu zabezpieczeń. Analityk kredytowy łączy wszystkie informacje w systemie decyzyjnym, który generuje rekomendację. Komitet kredytowy podejmuje ostateczną decyzję w systemie workflow. Po pozytywnej decyzji system generowania dokumentów tworzy umowę, która trafia do działu prawnego na sprawdzenie, a następnie do klienta na podpis elektroniczny.
 ```
 
+## 11. FLOWCHART DIAGRAM 
+'''
+Projektujemy proces realizacji przelewów w bankowości internetowej. Proces obejmuje działania klienta, systemu bankowego oraz zewnętrznego systemu płatności. Realizacja przelewu wymaga kilku kroków, takich jak wprowadzenie danych przez klienta, weryfikacja transakcji, autoryzacja oraz przekazanie środków do odbiorcy.
+
+Kroki procesu:
+
+Klient loguje się do systemu bankowego.
+
+Klient wybiera opcję wykonania przelewu i wprowadza dane odbiorcy oraz kwotę.
+
+System bankowy sprawdza poprawność danych wprowadzonych przez klienta.
+
+System bankowy weryfikuje dostępność środków na koncie klienta.
+
+W przypadku przelewów powyżej ustalonego limitu wymagana jest dodatkowa autoryzacja: klient potwierdza transakcję kodem SMS.
+
+System zewnętrzny obsługujący płatności przetwarza transakcję i przekazuje środki do banku odbiorcy.
+
+Klient otrzymuje potwierdzenie realizacji przelewu.
+
+Role w procesie:
+
+Klient: wprowadza dane i autoryzuje przelew.
+
+System bankowy: weryfikuje dane, środki oraz koordynuje proces przelewu.
+
+System zewnętrzny: realizuje przelewy na konta w innych bankach.
+
+Przepływ dokumentów i danych:
+
+Formularz przelewu wypełniony przez klienta.
+
+Kod SMS do autoryzacji.
+
+Potwierdzenie transakcji przesyłane do klienta.
+'''
 ---
 
 ## Wskazówki do testowania:

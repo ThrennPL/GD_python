@@ -104,7 +104,7 @@ class AIApp(QMainWindow):
         self.diagram_type_selector = QComboBox(self)
         self.diagram_type_selector.setToolTip("Wybierz typ diagramu do wygenerowania.")
         self.diagram_type_selector.addItems([
-            "sequence", "activity", "use case", "class", "state", 
+            "sequence", "activity", "usecase", "class", "state", "flowchart",
             "communication", "component", "deployment", "timing", "collaboration"
         ])
         # main_layout.addWidget(self.diagram_type_selector)
