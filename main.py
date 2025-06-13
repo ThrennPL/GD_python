@@ -18,6 +18,8 @@ from PyQt5.QtWidgets import QMessageBox
 #import plantuml_encoder
 from zlib import compress
 
+plantuml_jar_path = "plantuml.jar"  # Ścieżka do pliku plantuml.jar
+
 class AIApp(QMainWindow):
     API_URL = "http://localhost:1234/v1/models"
     XML_BLOCK_PATTERN = r"```xml\n(.*?)\n```"
@@ -467,7 +469,7 @@ class AIApp(QMainWindow):
             plantuml_code = self.plantuml_codes[idx]
             diagram_type = identify_plantuml_diagram_type(plantuml_code)
             try:
-                svg_data = fetch_plantuml_svg(plantuml_code)
+                svg_data = fetch_plantuml_svg(plantuml_code, plantuml_jar_path)
                 filename = f"{diagram_type.replace(' ', '_')}.svg"
                 with open(filename, "wb") as f:
                     f.write(svg_data)
@@ -565,7 +567,7 @@ class AIApp(QMainWindow):
 
     def show_plantuml_diagram(self, plantuml_code):
         try:
-            svg_data = fetch_plantuml_svg(plantuml_code)
+            svg_data = fetch_plantuml_svg(plantuml_code, plantuml_jar_path)
             # Tworzymy widget do wyświetlania SVG
             svg_widget = QSvgWidget()
             svg_widget.load(svg_data)
