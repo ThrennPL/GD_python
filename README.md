@@ -25,6 +25,11 @@ Aplikacja desktopowa (PyQt5) do generowania, wizualizacji i weryfikacji diagram�
 - Aplikacja umożliwia pracę z wieloma diagramami w zakładkach.
 - Po przełączeniu zakładki aplikacja automatycznie sprawdza typ diagramu i aktywuje/dezaktywuje przycisk eksportu XMI.
 
+## Generowanie diagramów SVG
+- Zależnie od ustawionej wartości parametru:
+- **plantuml_generator_type = local** - Diagramy SVG są generowane lokalnie przy użyciu plantuml.jar i Java. Upewnij się, że oba są dostępne w twoim systemie.
+- **plantuml_generator_type = www** - Diagramy SVG są generowane z wykorzystaniem strony [www.plantuml.com](https://plantuml.com/).
+
 ## TODO
 
 - Praca nad szablonami promptów w szczególności przy sprawdzaniu poprawności proceu - do rozważenia krokowość w tym zakresie.
@@ -35,7 +40,8 @@ Aplikacja desktopowa (PyQt5) do generowania, wizualizacji i weryfikacji diagram�
 
 - Python 3.8+
 - PyQt5
-- requests
+- requests- Java (for local PlantUML rendering)
+- plantuml.jar (download from https://plantuml.com/download)
 
 ## Instalacja
 

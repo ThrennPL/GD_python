@@ -39,17 +39,17 @@ def identify_plantuml_diagram_type(plantuml_code: str) -> str:
         return "Diagram wdrożenia"
     return "Diagram ogólny (typ nieokreślony)"
 
-"""def fetch_plantuml_svg(plantuml_code: str) -> bytes:
-    Pobiera diagram PlantUML jako SVG z serwisu plantuml.com.
+def fetch_plantuml_svg_www(plantuml_code: str) -> bytes:
+    #Pobiera diagram PlantUML jako SVG z serwisu plantuml.com.
     encoded = plantuml_encode(plantuml_code)
     url = f"https://www.plantuml.com/plantuml/svg/{encoded}"
     response = requests.get(url)
     if response.status_code == 200:
         return response.content
     else:
-        raise Exception(f"Nie udało się pobrać SVG: {response.status_code}")"""
+        raise Exception(f"Nie udało się pobrać SVG: {response.status_code}")
     
-def fetch_plantuml_svg(plantuml_code: str, plantuml_jar_path: str = "plantuml.jar") -> str:
+def fetch_plantuml_svg_local(plantuml_code: str, plantuml_jar_path: str = "plantuml.jar") -> str:
     """
     Generates SVG from PlantUML code using local plantuml.jar and returns the path to the SVG file.
     The temporary file is not deleted automatically – remove it when no longer needed.

@@ -3,7 +3,7 @@ from extract_code_from_response import extract_xml, extract_plantuml, extract_pl
 from xml_highlighter import XMLHighlighter
 from input_validator import validate_input_text
 from api_thread import APICallThread
-from plantuml_utils import plantuml_encode, identify_plantuml_diagram_type, fetch_plantuml_svg
+from plantuml_utils import plantuml_encode, identify_plantuml_diagram_type, fetch_plantuml_svg_local, fetch_plantuml_svg_www
 from prompt_templates import prompt_templates
 import sys
 import re
@@ -16,9 +16,11 @@ from PyQt5.QtSvg import QSvgWidget
 from xml.etree.ElementTree import fromstring, ParseError
 from PyQt5.QtWidgets import QMessageBox
 #import plantuml_encoder
+from datetime import datetime
 from zlib import compress
 
 plantuml_jar_path = "plantuml.jar"  # Ścieżka do pliku plantuml.jar
+plantuml_generator_type = "www"  # Możliwe wartości: "local" lub "www"
 
 class AIApp(QMainWindow):
     API_URL = "http://localhost:1234/v1/models"
@@ -416,9 +418,11 @@ class AIApp(QMainWindow):
                 return
         if hasattr(self, "latest_xml") and self.latest_xml:
             try:
-                with open("output.xml", "w", encoding="utf-8") as file:
+                timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                filename = f"output_{timestamp}.xml"
+                with open(filename, "w", encoding="utf-8") as file:
                     file.write(self.latest_xml)
-                ok_msg = ("Plik XML został zapisany jako 'output.xml'.\n")
+                ok_msg = (f"Plik XML został zapisany jako '{filename}'.\n")
                 self.append_to_chat("System", ok_msg)
                 
             except Exception as e:
@@ -435,9 +439,11 @@ class AIApp(QMainWindow):
             try:
                 code = self.plantuml_codes[idx]
                 diagram_type = identify_plantuml_diagram_type(code)
-                with open("output.puml", "w", encoding="utf-8") as file:
+                timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                filename = f"output_{timestamp}.puml"
+                with open(filename, "w", encoding="utf-8") as file:
                     file.write(code)
-                ok_msg = (f"Plik PlantUML ({diagram_type}) został zapisany jako 'output.puml'.\n")
+                ok_msg = (f"Plik PlantUML ({diagram_type}) został zapisany jako '{filename}'.\n")
                 self.append_to_chat("System", ok_msg)
             except Exception as e:
                 error_msg = (f"Błąd zapisu pliku PlantUML: {e}\n")
@@ -452,9 +458,11 @@ class AIApp(QMainWindow):
             plantuml_code = self.plantuml_codes[idx]
             try:
                 xmi_code = plantuml_to_xmi(plantuml_code)
-                with open("output.xmi", "w", encoding="utf-8") as file:
+                timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                filename = f"output_{timestamp}.xmi"
+                with open(filename, "w", encoding="utf-8") as file:
                     file.write(xmi_code)
-                ok_msg = "Plik XMI został zapisany jako 'output.xmi'.\n"
+                ok_msg = (f"Plik XMI został zapisany jako '{filename}'.\n")
                 self.append_to_chat("System", ok_msg)
             except Exception as e:
                 error_msg = f"Błąd podczas konwersji lub zapisu XMI: {e}\n"
@@ -469,10 +477,18 @@ class AIApp(QMainWindow):
             plantuml_code = self.plantuml_codes[idx]
             diagram_type = identify_plantuml_diagram_type(plantuml_code)
             try:
-                svg_data = fetch_plantuml_svg(plantuml_code, plantuml_jar_path)
-                filename = f"{diagram_type.replace(' ', '_')}.svg"
-                with open(filename, "wb") as f:
-                    f.write(svg_data)
+                timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                filename = f"{diagram_type.replace(' ', '_')}_{timestamp}.svg"
+                if plantuml_generator_type == "local":
+                    svg_path = fetch_plantuml_svg_local(plantuml_code, plantuml_jar_path)
+                    with open(svg_path, "r", encoding="utf-8") as f:
+                        svg_data = f.read()
+                    with open(filename, "w", encoding="utf-8") as f:
+                        f.write(svg_data)
+                elif plantuml_generator_type == "www":
+                    svg_data = fetch_plantuml_svg_www(plantuml_code)
+                    with open(filename, "wb") as f:
+                        f.write(svg_data)
                 ok_msg = (f"Diagram zapisany jako '{filename}'.\n")
                 self.append_to_chat("System", ok_msg)
             except Exception as e:
@@ -567,7 +583,10 @@ class AIApp(QMainWindow):
 
     def show_plantuml_diagram(self, plantuml_code):
         try:
-            svg_data = fetch_plantuml_svg(plantuml_code, plantuml_jar_path)
+            if plantuml_generator_type == "local":
+                svg_data = fetch_plantuml_svg_local(plantuml_code, plantuml_jar_path)
+            elif plantuml_generator_type == "www":
+                svg_data = fetch_plantuml_svg_www(plantuml_code)
             # Tworzymy widget do wyświetlania SVG
             svg_widget = QSvgWidget()
             svg_widget.load(svg_data)
