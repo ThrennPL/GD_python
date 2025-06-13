@@ -368,7 +368,7 @@ class AIApp(QMainWindow):
             self.save_PlantUML_button.setEnabled(True)
             # Sprawdź typ diagramu
             diagram_type = identify_plantuml_diagram_type(plantuml_blocks[-1])
-            print(f"Identified diagram type: {diagram_type}")
+            # print(f"Identified diagram type: {diagram_type}")
             if "klas" in diagram_type.strip().lower():
                 self.save_xmi_button.setEnabled(True)
             else:
@@ -597,6 +597,7 @@ class AIApp(QMainWindow):
             tab.setLayout(layout)
             # Nazwa zakładki na podstawie typu diagramu
             diagram_type = identify_plantuml_diagram_type(plantuml_code)
+            print(f"Identified diagram type: {diagram_type}")
             idx = self.diagram_tabs.addTab(tab, diagram_type)
             self.diagram_tabs.setCurrentWidget(tab)
             # Zapisz kod PlantUML dla tej zakładki

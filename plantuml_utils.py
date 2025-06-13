@@ -23,13 +23,13 @@ def identify_plantuml_diagram_type(plantuml_code: str) -> str:
     code = plantuml_code.lower()
     if 'state' in code or '-->' in code and 'state' in code:
         return "Diagram stanów"
-    if 'actor' in code and '->' in code:
+    if 'actor' in code and ('->' in code or '->>' in code or '->|' in code) and 'component' not in code:
         return "Diagram sekwencji"
     if 'class' in code or 'interface' in code or '--|' in code or '<|--' in code:
         return "Diagram klas"
     if 'usecase' in code:
         return "Diagram przypadków użycia"
-    if 'component' in code or 'node' in code:
+    if 'component' in code or 'node' in code or 'package' in code or 'container' in code:
         return "Diagram komponentów"
     if 'activity' in code or 'start' in code or 'end' in code:
         return "Diagram aktywności"
