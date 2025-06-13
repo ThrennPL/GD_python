@@ -87,7 +87,9 @@ Zobacz plik [`Prompty_bankowe.txt`](Prompty_bankowe.txt) – znajdziesz tam przy
 ## Zrzuty ekranu
 
 ![GD 2025-06-11 Sprawdzanie poprownosci opisu procesu](https://github.com/user-attachments/assets/f2ea75e1-32a6-44b6-936e-8d4298231215)
-![GD 2025-06-11 Diagram komponentów](https://github.com/user-attachments/assets/4f11ba4c-cf2e-42fc-9f5e-2af3ef2b0d99)
+![GD 2025-06-13 Diagram Klas](https://github.com/user-attachments/assets/621eaac8-10d0-47c1-a4e3-628eeccb80a9)
+![GD 2025-06-11 Diagram komponentów](https://github.com/user-attachments/assets/9385d847-9cf3-4dc9-8e03-c801306d00ce)
+
 
 ## Autor
 
