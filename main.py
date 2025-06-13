@@ -4,7 +4,7 @@ from xml_highlighter import XMLHighlighter
 from input_validator import validate_input_text
 from api_thread import APICallThread
 from plantuml_utils import plantuml_encode, identify_plantuml_diagram_type, fetch_plantuml_svg_local, fetch_plantuml_svg_www
-from prompt_templates import prompt_templates
+from prompt_templates import prompt_templates, get_diagram_specific_requirements
 import sys
 import re
 import requests
@@ -212,7 +212,7 @@ class AIApp(QMainWindow):
 
     def validate_input_button_pressed(self):
         """Sprawdza poprawność tekstu z input_box."""
-        validate_input_text(self)
+        validate_input_text(self, self.diagram_type_selector.currentText())
 
     def update_template_selector(self):
         selected_type = "PlantUML" if self.radio_plantuml.isChecked() else "XML"
@@ -327,7 +327,8 @@ class AIApp(QMainWindow):
         if use_template:
             prompt = template_data["template"].format(
                 diagram_type=diagram_type,
-                process_description=process_description
+                process_description=process_description,
+                diagram_specific_requirements=get_diagram_specific_requirements(diagram_type)
             )
         else:
             prompt = process_description
@@ -597,7 +598,7 @@ class AIApp(QMainWindow):
             tab.setLayout(layout)
             # Nazwa zakładki na podstawie typu diagramu
             diagram_type = identify_plantuml_diagram_type(plantuml_code)
-            print(f"Identified diagram type: {diagram_type}")
+            # print(f"Identified diagram type: {diagram_type}")
             idx = self.diagram_tabs.addTab(tab, diagram_type)
             self.diagram_tabs.setCurrentWidget(tab)
             # Zapisz kod PlantUML dla tej zakładki

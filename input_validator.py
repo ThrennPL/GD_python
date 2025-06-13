@@ -1,6 +1,6 @@
+from prompt_templates import get_diagram_specific_requirements
 
-
-def validate_input_text(app_instance):
+def validate_input_text(app_instance,diagram_type ):
     """
     Sprawdza poprawność tekstu z input_box za pomocą modelu AI i dedykowanego szablonu.
     """
@@ -18,7 +18,9 @@ def validate_input_text(app_instance):
     if not template_data:
         app_instance.output_box.append("Brak szablonu do weryfikacji opisu procesu.\n\n")
         return
-
-    prompt = template_data["template"].format(process_description=input_text)
+    prompt = template_data["template"].format(
+        process_description=input_text,
+        diagram_type=diagram_type,
+        diagram_specific_requirements=get_diagram_specific_requirements(diagram_type))
     app_instance.last_prompt_type = "InputValidation"
     app_instance.send_to_api_custom_prompt(prompt)

@@ -56,45 +56,78 @@ prompt_templates = {
             },
             "Diagram komponentów - Notacja C4": {
                 "template": (
-                    "Jako doświadczony kodel PlantUML i analityk systemowy wygeneruj diagram komponentów w PlantUML dla:\n {process_description}\n z następującymi wymaganiami:\n\n"
-                    "**WYMAGANIA TECHNICZNE:**\n"
-                    "1. Użyj WYŁĄCZNIE w notacji C4: użyj `!include <C4/C4_Context>` i makr Person(), System(), Container(), ContainerDb()\n"              
-                    "2. **STRUKTURA KODU:**\n"
-                    "   - Rozpocznij od @startuml\n"
-                    "   - Dodaj tytuł: `title [Nazwa Systemu] - Diagram Komponentów`\n"
-                    "   - Dodaj odpowiednie include na początku\n"
-                    "   - Zakończ @enduml\n"
-                    "3. **DEFINICJE KOMPONENTÓW:**\n"
-                    "   - Zdefiniuj WSZYSTKIE komponenty przed użyciem w relacjach\n"
-                    "   - Każdy komponent musi mieć unikalną nazwę i opis\n"
-                    "   - Użyj spójnego nazewnictwa (tylko polski LUB tylko angielski)\n"
-                    "   - Grupuj powiązane komponenty w package/System_Boundary\n"
-                    "4. **RELACJE:**\n"
-                    "   - Użyj jasnych etykiet dla połączeń\n"
-                    "   - Określ kierunek relacji (-->, <--, <-->)\n"
-                    "   - Dodaj opis typu komunikacji (HTTP, SQL, HTTPS, etc.)\n"
-                    "5. **ZABRONIONE PRAKTYKI:**\n"
-                    "   - NIE używaj mieszanej notacji C4 i podstawowej składni PlantUML\n"
-                    "   - NIE używaj niezdefiniowanych komponentów w relacjach\n"
-                    "   - NIE pozostawiaj pustych lub niejasnych nazw komponentów\n"
-                    "   - NIE duplikuj nazw baz danych bez rozróżnienia\n"
-                    "6. **PRZYKŁAD DOBREJ STRUKTURY (C4):**\n"
+                    "Jako doświadczony koder PlantUML i architekt systemowy wygeneruj diagram komponentów C4 w PlantUML dla:\n{process_description}\n"
+                    "z następującymi wymaganiami:\n\n"
+        
+                    "**WYMAGANIA TECHNICZNE C4 COMPONENT:**\n"
+                    "1. **INCLUDES:** Użyj WYŁĄCZNIE:\n"
+                    "   - `!include <C4/C4_Component>`\n"
+                    "   - Opcjonalnie `!include <C4/C4_Container>` jeśli pokazujesz kontekst kontenerów\n\n"
+        
+                    "2. **DOSTĘPNE MAKRA:**\n"
+                    "   - `Component(alias, \"Nazwa\", \"Technologia\", \"Opis funkcjonalności\")`\n"
+                    "   - `ComponentDb(alias, \"Nazwa DB\", \"Typ DB\", \"Opis danych\")`\n"
+                    "   - `ComponentQueue(alias, \"Nazwa Queue\", \"Technologia\", \"Opis kolejki\")`\n"
+                    "   - `Container()` - TYLKO dla kontekstu, nie jako główne elementy\n\n"
+        
+                    "3. **STRUKTURA DIAGRAMU:**\n"
+                    "   - Rozpocznij: `@startuml`\n"
+                    "   - Include: `!include <C4/C4_Component>`\n"
+                    "   - Tytuł: `title [System] - Diagram Komponentów (C4 Level 3)`\n"
+                    "   - Opcjonalnie kontekst kontenera: `Container_Boundary(container, \"Kontener\")`\n"
+                    "   - Definicje wszystkich komponentów\n"
+                    "   - Relacje między komponentami\n"
+                    "   - Zakończ: `@enduml`\n\n"
+        
+                    "4. **POZIOM SZCZEGÓŁOWOŚCI:**\n"
+                    "   - Pokazuj komponenty WEWNĄTRZ jednego kontenera/systemu\n"
+                    "   - Każdy komponent = konkretna odpowiedzialność biznesowa\n"
+                    "   - NIE mieszaj poziomów abstrakcji (System vs Component)\n"
+                    "   - Skupij się na przepływie danych i wywołaniach między komponentami\n\n"
+        
+                    "5. **RELACJE:**\n"
+                    "   - `Rel(źródło, cel, \"Etykieta\", \"Protokół/Technologia\")`\n"
+                    "   - `Rel_Back()`, `Rel_Neighbor()` dla lepszego layoutu\n"
+                    "   - Zawsze opisuj CZYM jest komunikacja (API call, event, data flow)\n\n"
+        
+                    "6. **NAZEWNICTWO:**\n"
+                    "   - Konsekwentny język (polski LUB angielski)\n"
+                    "   - Nazwy komponentów = rzeczowniki opisujące funkcję\n"
+                    "   - Aliasy = krótkie, bez spacji, snake_case lub camelCase\n\n"
+        
+                    "7. **PRZYKŁAD POPRAWNEJ STRUKTURY:**\n"
+                    "```plantuml\n"
                     "@startuml\n"
-                    "!include <C4/C4_Context>\n"
-                    "title System X - Diagram Komponentów\n\n"
-                    "Person(user, \"Użytkownik\", \"Opis użytkownika\")\n\n"
-                    "System_Boundary(system, \"System X\") {{\n"
-                    "    Container(api, \"API Gateway\", \"Tech\", \"Opis\")\n"
-                    "    Container(service, \"Serwis\", \"Tech\", \"Opis\")\n"
-                    "    ContainerDb(db, \"Baza\", \"Tech\", \"Opis\")\n"
+                    "!include <C4/C4_Component>\n"
+                    "title System Zamówień - Komponenty (C4 Level 3)\n\n"
+        
+                    "Container_Boundary(api_container, \"API Container\") {{\n"
+                    "    Component(order_controller, \"Order Controller\", \"Spring MVC\", \"Obsługuje żądania HTTP dla zamówień\")\n"
+                    "    Component(order_service, \"Order Service\", \"Spring Bean\", \"Logika biznesowa zamówień\")\n"
+                    "    Component(payment_service, \"Payment Service\", \"Spring Bean\", \"Obsługa płatności\")\n"
+                    "    Component(notification_service, \"Notification Service\", \"Spring Bean\", \"Wysyłanie powiadomień\")\n"
+                    "    ComponentDb(order_db, \"Orders Database\", \"PostgreSQL\", \"Przechowuje dane zamówień\")\n"
+                    "    ComponentQueue(order_queue, \"Order Events\", \"RabbitMQ\", \"Kolejka zdarzeń zamówień\")\n"
                     "}}\n\n"
-                    "Rel(user, api, \"Używa\", \"HTTPS\")\n"
-                    "Rel(api, service, \"Przekazuje\", \"HTTP\")\n"
-                    "Rel(service, db, \"Zapisuje\", \"SQL\")\n"
+        
+                    "Rel(order_controller, order_service, \"Wywołuje\", \"Method call\")\n"
+                    "Rel(order_service, payment_service, \"Przetwarza płatność\", \"Method call\")\n"
+                    "Rel(order_service, order_db, \"Zapisuje zamówienie\", \"SQL\")\n"
+                    "Rel(order_service, order_queue, \"Publikuje zdarzenie\", \"AMQP\")\n"
+                    "Rel(notification_service, order_queue, \"Nasłuchuje zdarzeń\", \"AMQP\")\n"
                     "@enduml\n"
-                    "\n\n"
+                    "```\n\n"
+        
+                    "8. **ZABRONIONE PRAKTYKI:**\n"
+                    "   - ❌ Mieszanie makr z różnych poziomów C4\n"
+                    "   - ❌ Używanie `System()` w diagramie komponentów\n"
+                    "   - ❌ Pokazywanie komponentów z różnych kontenerów bez kontekstu\n"
+                    "   - ❌ Niejasne nazwy typu \"Service1\", \"Database\"\n"
+                    "   - ❌ Relacje bez opisów technologii komunikacji\n\n"
+        
+                    "**REZULTAT:** Wygeneruj kompletny, działający kod PlantUML przedstawiający komponenty wewnątrz systemu/kontenera zgodnie z poziomem 3 modelu C4."
                 ),
-                "allowed_diagram_types": ["component"],  # Tylko diagramy komponentów
+                "allowed_diagram_types": ["component"],
                 "type": "PlantUML"
             },
             "Diagram komponentów - Podstawowa notacja": {
@@ -193,15 +226,139 @@ prompt_templates = {
                 "type": "Verification"  # szablon do weryfikacji kodu PlantUML
             },
             "Weryfikacja opisu procesu": {
-               "template": (
-                    "**Sprawdź poniższy opis procesu pod kątem kompletności i poprawności biznesowej.**\n\n"
+                "template": (
+                    "**Weryfikacja opisu procesu dla diagramu typu: {diagram_type}**\n\n"
+                    "**Opis procesu do weryfikacji:**\n"
                     "{process_description}\n\n"
-                    "**Wymagania:**\n"
-                    "- Wskaż, czy opis zawiera wszystkie kluczowe kroki procesu\n"
-                    "- Zasugeruj ewentualne poprawki lub uzupełnienia\n"
-                    "- Jeśli opis jest poprawny, napisz: 'Opis jest poprawny i kompletny.'"
-                ),
+                    "**Przeprowadź szczegółową analizę zgodnie z wymaganiami dla diagramu {diagram_type}:**\n\n"
+        
+                    # Wymagania ogólne
+                    "**1. ANALIZA OGÓLNA:**\n"
+                    "- Czy proces ma jasno określony punkt początkowy i końcowy?\n"
+                    "- Czy wszystkie kroki są logicznie powiązane?\n"
+                    "- Czy brakuje jakichś kluczowych elementów procesu?\n"
+                    "- Czy opis jest jednoznaczny i zrozumiały?\n\n"
+        
+                    # Wymagania specyficzne dla typu diagramu
+                    "**2. WYMAGANIA SPECYFICZNE DLA {diagram_type}:**\n"
+                    "{diagram_specific_requirements}\n\n"
+        
+                    "**3. WERYFIKACJA KOMPLETNOŚCI:**\n"
+                    "- Sprawdź czy wszystkie niezbędne role/aktorzy są zidentyfikowani\n"
+                    "- Zweryfikuj czy wszystkie decyzje i punkty rozgałęzienia są opisane\n"
+                    "- Upewnij się czy wszystkie wyjątki i ścieżki alternatywne są uwzględnione\n\n"
+        
+                    "**4. REZULTAT WERYFIKACJI:**\n"
+                    "Podaj wynik w następującym formacie:\n"
+                    "- **STATUS:** [POPRAWNY/WYMAGA_POPRAWEK/NIEPEŁNY]\n"
+                    "- **GŁÓWNE PROBLEMY:** [lista głównych problemów lub 'Brak']\n"
+                    "- **SUGEROWANE POPRAWKI:** [konkretne sugestie lub 'Brak']\n"
+                    "- **BRAKUJĄCE ELEMENTY:** [lista brakujących elementów lub 'Brak']\n"
+                    "- **REKOMENDACJE:** [dodatkowe zalecenia dla poprawy diagramu]\n\n"
+
+                    "**5. PROPOZYCJA:**\n"
+                    "[przygotuj jak powinien wyglądać poprawiony opis tak by można było go wysłać do modelu]\n\n"    
+        
+                    "Jeśli opis jest w pełni poprawny i kompletny, napisz: '✅ OPIS JEST POPRAWNY I KOMPLETNY DLA DIAGRAMU {diagram_type}'"
+    ),
                 "allowed_diagram_types": "all",
                 "type": "Validation"
     }
 }
+
+c4_component_requirements = (
+    "- Czy używa prawidłowych includes dla poziomu komponentów?\n"
+    "- Czy wszystkie komponenty należą do tego samego kontenera/systemu?\n"
+    "- Czy każdy komponent ma jasno określoną odpowiedzialność?\n"
+    "- Czy relacje opisują konkretne typy komunikacji?\n"
+    "- Czy diagram nie miesza poziomów abstrakcji C4?\n"
+    "- Czy nazwy komponentów są funkcjonalne (nie techniczne)?\n"
+)
+
+usecase_requirements = (
+    "- Czy wszystkie aktorzy (główni i pomocniczy) są zidentyfikowani?\n"
+    "- Czy przypadki użycia są atomowe i skupione na jednym celu?\n"
+    "- Czy relacje extend i include są poprawnie opisane?\n"
+    "- Czy warunki wstępne i końcowe są określone?\n"
+    "- Czy scenariusze alternatywne są uwzględnione?\n"
+)
+
+sequence_requirements = (
+    "- Czy wszystkie obiekty/aktorzy uczestniczący w procesie są zidentyfikowani?\n"
+    "- Czy kolejność interakcji jest logiczna i kompletna?\n"
+    "- Czy wszystkie komunikaty między obiektami są opisane?\n"
+    "- Czy okresy życia obiektów są jasno określone?\n"
+    "- Czy uwzględniono wszystkie warunki i pętle?\n"
+)
+
+bpmn_requirements = (
+    "- Czy określone są wszystkie pule (pools) i ścieżki (lanes)?\n"
+    "- Czy zdarzenia początkowe i końcowe są jasno zdefiniowane?\n"
+    "- Czy wszystkie bramki (gateways) mają określone warunki?\n"
+    "- Czy procesy międzyorganizacyjne są poprawnie opisane?\n"
+    "- Czy wszystkie zadania mają przypisanych wykonawców?\n"
+)
+
+flowchart_requirements = (
+    "- Czy wszystkie punkty decyzyjne mają jasno określone warunki (tak/nie)?\n"
+    "- Czy wszystkie ścieżki prowadzą do logicznego zakończenia?\n"
+    "- Czy procesy równoległe są jasno oznaczone?\n"
+    "- Czy wszystkie pętle i iteracje są opisane z warunkami zakończenia?\n"
+)
+
+class_requirements = (
+    "- Czy wszystkie klasy mają jasno określone atrybuty i metody?\n"
+    "- Czy relacje między klasami (dziedziczenie, asocjacje) są poprawnie zdefiniowane?\n"
+    "- Czy diagram zawiera wszystkie istotne klasy i interfejsy?\n"
+    "- Czy nazwy klas są spójne i jednoznaczne?\n"
+)
+
+component_requirements = (
+    "- Czy wszystkie komponenty są jasno zdefiniowane i mają unikalne nazwy?\n"
+    "- Czy relacje między komponentami są poprawnie opisane?\n"
+    "- Czy diagram zawiera wszystkie istotne komponenty systemu?\n"
+    "- Czy użyto spójnej notacji dla komponentów i interfejsów?\n"
+)
+
+activity_requirements = (
+    "- Czy wszystkie działania (activities) są jasno zdefiniowane?\n"
+    "- Czy diagram zawiera wszystkie istotne działania i decyzje?\n"
+    "- Czy ścieżki alternatywne i warunki zakończenia są poprawnie opisane?\n"
+    "- Czy diagram jest czytelny i logicznie uporządkowany?\n"
+)
+
+deployment_requirements = (
+    "- Czy wszystkie elementy wdrożenia (np. serwery, bazy danych) są jasno zdefiniowane?\n"
+    "- Czy relacje między elementami wdrożenia są poprawnie opisane?\n"
+    "- Czy diagram zawiera wszystkie istotne elementy infrastruktury?\n"
+    "- Czy użyto spójnej notacji dla elementów wdrożenia i artefaktów?\n"
+)
+
+object_requirements = (
+    "- Czy wszystkie obiekty są jasno zdefiniowane i mają unikalne nazwy?\n"
+    "- Czy relacje między obiektami są poprawnie opisane?\n"
+    "- Czy diagram zawiera wszystkie istotne obiekty i ich atrybuty?\n"
+    "- Czy użyto spójnej notacji dla obiektów i ich relacji?\n"
+)
+
+state_requirements = (
+    "- Czy wszystkie stany są jasno zdefiniowane?\n"
+    "- Czy przejścia między stanami są poprawnie opisane?\n"
+    "- Czy diagram zawiera wszystkie istotne stany i ich relacje?\n"
+    "- Czy użyto spójnej notacji dla stanów i przejść?\n"
+)
+
+def get_diagram_specific_requirements(diagram_type):
+    requirements_map = {
+        "flowchart": flowchart_requirements,
+        "bpmn": bpmn_requirements,
+        "sequence": sequence_requirements,
+        "usecase": usecase_requirements,
+        "class": class_requirements,
+        "component": component_requirements,
+        "activity": activity_requirements,
+        "deployment": deployment_requirements,
+        "object": object_requirements,  
+        "state": state_requirements,
+        # dodaj więcej typów według potrzeb
+    }
