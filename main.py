@@ -315,16 +315,62 @@ class AIApp(QMainWindow):
         self.api_thread.error_occurred.connect(self.handle_api_error)
         self.api_thread.start()
 
+    def generate_bpmn_prompt(self, process_description, complexity, validation, output_format, domain):
+            selected_template = self.template_selector.currentText()
+            template_data = self.prompt_templates[selected_template]
+            if selected_template == "BPMN - domena bankowa":
+                process_description=process_description
+                return 
+            
+            elif selected_template == "BPMN - zaawansowany":
+                process_description=process_description
+                template = template_data["BPMN - zaawansowany"]
+            else:
+                template = template_data["BPMN - podstawowy"]
+
+            return template.format(
+                process_description=process_description,
+                complexity=complexity,
+                validation=validation,
+                output_format=output_format
+            )
+
     def send_to_api(self):
         """Wysyła zapytanie do API bez blokowania GUI."""
         diagram_type = self.diagram_type_selector.currentText()
         process_description = self.input_box.toPlainText().strip()
         use_template = self.use_template_checkbox.isChecked()
 
-        # Budowanie promptu na podstawie typu diagramu i opisu procesu
         selected_template = self.template_selector.currentText()
         template_data = self.prompt_templates[selected_template]
-        if use_template:
+        if diagram_type.lower() in ["bpmn", "bpmn_flow", "bpmn_component"]:
+            # Pobierz dodatkowe parametry z GUI lub ustaw domyślne
+            complexity = self.get_complexity_level()      # np. "medium"
+            validation = self.get_validation_rule()       # np. "syntax"
+            output_format = self.get_output_format()      # np. "clean"
+            domain = self.get_domain()                    # np. None lub "bankowość"
+            if selected_template == "BPMN - podstawowy":
+                prompt = template_data["template"].format(
+                diagram_type=diagram_type,
+                process_description=process_description,
+                diagram_specific_requirements=get_diagram_specific_requirements(diagram_type)
+            )
+            elif selected_template == "BPMN - zaawansowany":
+                prompt = template_data["template"].format(
+                diagram_type=diagram_type,
+                process_description=process_description,
+                diagram_specific_requirements=get_diagram_specific_requirements(diagram_type)
+            )
+            elif selected_template == "BPMN - domena bankowa":
+                prompt = template_data["template"].format(
+                process_description=process_description + "\n Zaawansowane elementy: " + complexity + "\n Walidacja: " + validation + "\n Format wyjściowy: " + output_format,
+                domain=domain,
+                )
+            else:
+                prompt = process_description
+
+
+        elif use_template:
             prompt = template_data["template"].format(
                 diagram_type=diagram_type,
                 process_description=process_description,
@@ -348,6 +394,61 @@ class AIApp(QMainWindow):
         selected_model = self.model_selector.currentText()
         self.start_api_thread(prompt, selected_model)
 
+    def get_complexity_level(self):
+        """Zwraca poziom złożoności wybrany przez użytkownika."""
+        complexity = {
+            "simple": "Podstawowe elementy, linearny przepływ",
+            "medium": "Bramki decyzyjne, podstawowa obsługa błędów",
+            "complex": "Sub-procesy, pełna obsługa wyjątków",
+            "enterprise": "Pełny governance, monitoring, integracje"
+        }
+        selected_level = "medium"  # Domyślnie "medium"
+
+        # Możesz dodać ComboBox lub RadioButton do GUI, aby użytkownik mógł wybrać poziom złożoności
+        return complexity[selected_level]
+    
+    def get_validation_rule(self):
+        """Zwraca regułę walidacji wybraną przez użytkownika."""
+
+        validation = {
+            "syntax": "Walidacja XML Schema",
+            "semantic": "Logika biznesowa",
+            "camunda": "Kompatybilność z Camunda",
+            "best_practices": "Najlepsze praktyki BPMN"
+        }
+        selected_rule = "syntax"  # Domyślnie "syntax"
+
+        # Możesz dodać ComboBox lub RadioButton do GUI, aby użytkownik mógł wybrać poziom złożoności
+        return validation[selected_rule]
+    
+    def get_output_format(self):
+        """Zwraca format wyjściowy wybrany przez użytkownika. """
+
+        output_format = {
+            "clean": "Tylko XML bez komentarzy",
+            "documented": "XML z komentarzami wyjaśniającymi",
+            "structured": "XML z dodatkowymi metadanymi"
+        }
+        selected_forma = "clean"  # Domyślnie "clean"
+
+        # Możesz dodać ComboBox lub RadioButton do GUI, aby użytkownik mógł wybrać poziom złożoności
+        return output_format[selected_forma]
+
+    def get_domain(self):
+        """Zwraca domenę wybraną przez użytkownika. """
+        domain = { 
+            "NONE": "Brak domeny",
+            "bankowość": "Domena bankowa",
+            "ubezpieczenia": "Domena ubezpieczeń",
+            "logistyka": "Domena logistyki",
+            "zdrowie": "Domena ochrony zdrowia",
+            "e-commerce": "Domena e-commerce" 
+        }
+        # Możesz dodać ComboBox lub RadioButton do GUI, aby użytkownik mógł wybrać domenę
+        selected_domain = "bankowość"
+        # Domyślnie "bankowość"
+        return domain[selected_domain]
+    
     def handle_api_response(self, model_name, response_content):
         """Obsługuje odpowiedź z API."""
         self.send_button.setEnabled(True)  # Ponownie aktywuj przycisk

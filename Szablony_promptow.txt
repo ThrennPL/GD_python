@@ -1,175 +1,142 @@
-# Szablony promptów z instrukcjami PlantUML
+## Jak działają szablony promptów?
+	Szablony promptów to pliki tekstowe (np. w katalogu prompt_templates/), które definiują, w jaki sposób aplikacja komunikuje się z modelem AI podczas generowania diagramów UML. Każdy szablon odpowiada innemu typowi diagramu lub zadaniu (np. walidacja opisu procesu, generowanie diagramu klas, sekwencji itd.).
 
-## Strategia 1: Bezpośrednie polecenie na końcu
+1.Mechanizm działania:
+	Wybór szablonu:
+	Użytkownik wybiera typ diagramu lub zadanie (np. „diagram klas”, „diagram sekwencji”, „walidacja opisu”).
 
-### Przykład:
-```
-Klient w aplikacji mobilnej wybiera opcję "BLIK" i generuje 6-cyfrowy kod. Następnie w sklepie podaje kod sprzedawcy, który wprowadza go do terminala płatniczego. Terminal wysyła żądanie autoryzacji do systemu BLIK...
+2.Ładowanie szablonu:
+	Aplikacja ładuje odpowiedni plik szablonu z katalogu prompt_templates/.
 
-**Przygotuj diagram sekwencyjny w notacji PlantUML przedstawiający powyższy proces.**
-```
+3.Podstawianie zmiennych:
+	Szablon zawiera tzw. placeholdery (np. {process_description}, {diagram_type}, {diagram_specific_requirements}), które są automatycznie zastępowane danymi wprowadzonymi przez użytkownika lub wygenerowanymi przez aplikację.
 
-## Strategia 2: Instrukcja na początku
+4.Wysyłka promptu:
+	Gotowy prompt (czyli tekst z podstawionymi danymi) jest wysyłany do modelu AI, który generuje odpowiedź (np. kod PlantUML).
 
-### Przykład:
-```
-**Zadanie: Na podstawie poniższego opisu procesu biznesowego przygotuj diagram aktywności w notacji PlantUML.**
 
-Nowy klient rozpoczyna proces weryfikacji tożsamości online. System prosi o przesłanie zdjęcia dokumentu tożsamości oraz selfie...
-```
+## Lista dostępnych szablonów promptów
+- Diagram klas 
+- Diagram sekwencji 
+- Diagram aktywności 
+- Diagram przypadków użycia 
+- Diagram przepływów
+- Diagram komponentów - Notacja C4
+- Diagram komponentów - Podstawowa notacja
+- Diagram wdrożeniowy
+- Walidacja opisu procesu 
 
-## Strategia 3: Strukturyzowany prompt z określeniem typu diagramu
+## Szczegółowy opis każdego szablonu
+1. Diagram klas (class_diagram.txt)
+Opis:
+	- Szablon przeznaczony do generowania diagramu klas UML na podstawie opisu procesu.
 
-### Przykład:
-```
-**Opis procesu:** Klient składa wniosek kredytowy przez system online, który przekazuje dane do systemu CRM...
+Część analityczna:
+	- Instrukcja dla modelu AI, aby przeanalizował opis procesu i zidentyfikował klasy, ich atrybuty, metody oraz relacje między klasami zgodnie z zasadami UML.
+Część związana z formatem:
+	- Polecenie, by wynik został zwrócony w formacie PlantUML, umożliwiając dalszą wizualizację i eksport.
+Parametry:
+	{diagram_type} – "class"
+	{process_description} – opis procesu
 
-**Wymagany output:** Diagram współpracy (Collaboration Diagram) w notacji PlantUML
-**Format:** Kod PlantUML gotowy do wygenerowania diagramu
-```
+2. Diagram sekwencji (sequence_diagram.txt)
+Opis:
+	- Szablon służący do generowania diagramu sekwencji UML, który pokazuje przepływ komunikatów pomiędzy obiektami w trakcie realizacji procesu.
 
-## Strategia 4: Prompt z przykładem struktury
+Część analityczna:
+	- Instrukcja, by model AI zidentyfikował uczestników procesu oraz kolejność wymiany komunikatów.
+Część związana z formatem:
+	- Polecenie, by odpowiedź była w formacie PlantUML dla diagramu sekwencji.
+Parametry:
+	{diagram_type} – "sequence"
+	{process_description} – opis procesu
+	
+3. Diagram aktywności (activity_diagram.txt)
+Opis:
+	- Szablon do generowania diagramu aktywności UML, który ilustruje przepływ czynności, decyzji i równoległości w procesie.
 
-### Przykład:
-```
-Przeanalizuj poniższy proces biznesowy i przedstaw go jako diagram klas w PlantUML:
+Część analityczna:
+	- Instrukcja, by model AI przeanalizował opis procesu pod kątem czynności, decyzji, pętli oraz alternatywnych ścieżek.
+Część związana z formatem:
+	- Polecenie, by wynik był w formacie PlantUML dla diagramu aktywności.
+Parametry:
+	{diagram_type} – "activity"
+	{process_description} – opis procesu
 
-[OPIS PROCESU...]
+4. Diagram przypadków użycia (usecase_diagram.txt)
+Opis:
+	- Szablon do generowania diagramu przypadków użycia UML, który prezentuje aktorów i przypadki użycia systemu.
 
-Oczekiwany format odpowiedzi:
-```plantuml
-@startuml
-[kod diagramu]
-@enduml
-```
+Część analityczna:
+	- Instrukcja, by model AI zidentyfikował aktorów, przypadki użycia oraz relacje pomiędzy nimi.
+Część związana z formatem:
+	- Polecenie, by odpowiedź była w formacie PlantUML dla diagramu przypadków użycia.
+Parametry:
+	{diagram_type} – "usecase"
+	{process_description} – opis procesu
 
-## Strategia 5: Jasne polecenie z kontekstem
+5. Diagram przepływu (flowchart_diagram.txt)
+Opis:
+	- Generuje diagram przepływu (flowchart) w notacji UML.
+Część analityczna: 
+	- Analiza kolejności działań, warunków, rozgałęzień.
+Część formatowa: 
+	- Wynik w PlantUML.
+Parametry:
+	{diagram_type} – "flowchart"
+	{process_description} – opis procesu
 
-### Przykład:
-```
-**INSTRUKCJA:** Jesteś analitykiem biznesowym, który przekłada opisy procesów na diagramy PlantUML.
+6. Diagram komponentów - Podstawowa notacja (component_diagram.txt)
+Opis:
+	- Generuje diagram komponentów UML.
+Część analityczna: 
+	- Identyfikacja komponentów, interfejsów, zależności.
+Część formatowa: 
+	- Wynik w PlantUML.
+Parametry:
+	{diagram_type} – "component"
+	{process_description} – opis procesu
 
-**PROCES DO ANALIZY:**
-Bank cyfrowy działa na infrastrukturze chmurowej z centrum danych głównym i zapasowym...
+7. Diagram komponentów - Notacja C4
+Opis:
+	- Generuje diagram komponentów w notacji C4.
+Część analityczna: 
+	- Identyfikacja uczestników, ról, komunikacji między komponentami.
+Część formatowa: 
+	- Wynik w formacie PlantUML C4.
+Parametry:
+	{diagram_type} – "component"
+	{process_description} – opis procesu
 
-**ZADANIE:** Stwórz diagram wdrożeniowy (deployment diagram) w notacji PlantUML pokazujący tę architekturę.
-```
+8. Diagram BPMN (XML)
+Opis:
+	- Generuje diagram procesu biznesowego w notacji BPMN.
+Część analityczna: 
+	- brak.
+Część formatowa: 
+	- Wynik w formacie XML.
+Parametry:
+	{diagram_type} – "BPMN"
+	{process_description} – opis procesu
 
-## Strategia 6: Prompt z określeniem elementów do uwzględnienia
+9. Walidacja opisu procesu (validate_process.txt)
+Opis:
+	- Szablon służący do walidacji opisu procesu przed generowaniem diagramu w szczególności uwzględniające typ diagramu jaki wybrał użytkownik.
+Część analityczna:
+	- Instrukcja, by model AI sprawdził poprawność, kompletność i jednoznaczność opisu procesu, wskazując ewentualne błędy lub braki.
+Część związana z formatem:
+	- Polecenie, by odpowiedź była w formie tekstowej analizy, a nie kodu diagramu.
+Przykład szablonu:
+	- Sprawdź, czy poniższy opis procesu jest poprawny i kompletny.
+	- Wskaż ewentualne błędy, niejasności lub braki.
+Parametry:	
+	{process_description} - Opis procesu
+	{diagram_type} - Typ diagramu (wszystkie typy)
+	{diagram_specific_requirements} - Wymagania specyficzne dla danego typu diagramu 
 
-### Przykład:
-```
-**Opis procesu:** [PROCES...]
+## Podsumowanie
+Każdy szablon promptu:
 
-**Przygotuj diagram sekwencyjny PlantUML uwzględniając:**
-- Wszystkich aktorów (uczestników) procesu
-- Sekwencję komunikacji między nimi
-- Warunki i pętle w procesie
-- Komunikaty zwrotne/potwierdzenia
-
-**Format:** Kompletny kod PlantUML z @startuml i @enduml
-```
-
-## Strategia 7: Szablon z rolami i oczekiwaniami
-
-### Przykład:
-```
-**Rola:** Jesteś ekspertem od modelowania procesów w PlantUML
-**Zadanie:** Przeanalizuj proces i stwórz odpowiedni diagram
-
-**Proces biznesowy:**
-[OPIS...]
-
-**Wymagania:**
-- Użyj notacji PlantUML
-- Typ diagramu: [SEQUENCE/ACTIVITY/CLASS/etc.]
-- Uwzględnij wszystkie etapy procesu
-- Zadbaj o czytelność i logiczną strukturę
-
-**Dostarcz:** Gotowy kod PlantUML
-```
-
-## Strategia 8: Prompt z określeniem stylu i szczegółowości
-
-### Przykład:
-```
-Przekształć poniższy opis w diagram PlantUML:
-
-[OPIS PROCESU...]
-
-**Wymagania techniczne:**
-- Typ: Diagram aktywności (@startuml → @enduml)
-- Styl: Użyj swimlanes dla różnych ról
-- Szczegółowość: Uwzględnij wszystkie decyzje i alternatywne ścieżki
-- Oznaczenia: Dodaj komentarze dla kluczowych kroków
-```
-
-## Strategia 9: Dwuetapowy prompt (analiza + implementacja)
-
-### Przykład:
-```
-**ETAP 1 - ANALIZA:**
-Przeanalizuj poniższy proces i zidentyfikuj:
-- Głównych aktorów
-- Sekwencję działań
-- Punkty decyzyjne
-- Przepływy danych
-
-**ETAP 2 - IMPLEMENTACJA:**
-Na podstawie analizy stwórz diagram sekwencyjny w PlantUML.
-
-**PROCES:**
-[OPIS...]
-```
-
-## Strategia 10: Template z walidacją
-
-### Przykład:
-```
-**ZADANIE:** Stwórz diagram PlantUML dla procesu:
-
-[OPIS PROCESU...]
-
-**CHECKLIST do sprawdzenia:**
-- [ ] Kod zaczyna się od @startuml
-- [ ] Kod kończy się na @enduml  
-- [ ] Wszyscy aktorzy są zdefiniowani
-- [ ] Sekwencja jest logiczna
-- [ ] Typ diagramu: [OKREŚL TYP]
-
-**DOSTARCZ:** Kompletny, działający kod PlantUML
-```
-
----
-
-## Rekomendowane podejście dla Twojej aplikacji:
-
-### Szablon uniwersalny:
-```
-**Przygotuj diagram [TYP_DIAGRAMU] w notacji PlantUML dla poniższego procesu:**
-
-[OPIS_PROCESU]
-
-**Wymagania:**
-- Format: Kompletny kod PlantUML (@startuml ... @enduml)
-- Uwzględnij wszystkich uczestników i ich interakcje
-- Zadbaj o logiczną sekwencję kroków
-- Dodaj warunki i alternatywne ścieżki gdzie występują
-
-**Oczekiwany output:** Gotowy do użycia kod PlantUML
-```
-
-### Dla automatyzacji możesz używać:
-```
-SYSTEM_PROMPT: "Jesteś ekspertem od przekształcania opisów procesów biznesowych w diagramy PlantUML. Zawsze odpowiadasz kodem PlantUML gotowym do wygenerowania diagramu."
-
-USER_PROMPT: "[OPIS_PROCESU] → Stwórz diagram [TYP] w PlantUML"
-```
-
-## Dodatkowe wskazówki:
-
-1. **Konsystencja** - Używaj zawsze tego samego formatu instrukcji
-2. **Jednoznaczność** - Jasno określ typ diagramu (sequence, activity, class, etc.)
-3. **Kontekst** - Dodaj informację o roli AI (analityk, ekspert PlantUML)
-4. **Walidacja** - Poproś o sprawdzenie kompletności kodu
-5. **Przykłady** - Możesz dodać przykład struktury PlantUML w pierwszych promptach treningowych
+- Zawiera część analityczną dedykowaną danemu typowi diagramu, która instruuje model AI, jak analizować i interpretować przekazany opis procesu.
+- Zawiera część związaną z formatem diagramu, która wymusza zwrotkę w odpowiednim formacie (najczęściej PlantUML), umożliwiając dalszą wizualizację i eksport w aplikacji.
+- Pozwala użytkownikowi na precyzyjne sterowanie generowanym diagramem oraz łatwe rozszerzanie aplikacji o nowe typy diagramów poprzez dodanie kolejnych szablonów.

@@ -65,6 +65,7 @@ python main.py
 - `input_validator.py` – funkcja do walidacji opisu procesu przez AI
 - `plantuml_convert_to_xmi.py` – funkcje konwersji formatu PlantUML na XMI do EA
 - `Prompty_bankowe.txt` – przykładowe opisy procesów do testów
+- `Szablony_promptow.txt` - lista zdefiniowanych szablonów promptów oraz opis ich działania
 
 ## Przykładowe użycie
 
@@ -83,6 +84,7 @@ Diagram przypadków użycia:
 ## Przykładowe prompty
 
 Zobacz plik [`Prompty_bankowe.txt`](Prompty_bankowe.txt) – znajdziesz tam przykłady opisów procesów dla różnych typów diagramów UML/BPMN.
+Zpbacz plik [`Szablony_promptow.txt`] (Szablony_promptów.txt) - zapoznaj się z opisem działania poszczególnych szablonów promptów dedykowanych dla typów diagramów
 
 ## Zrzuty ekranu
 

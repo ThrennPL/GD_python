@@ -1,0 +1,182 @@
+# Procesy bankowe - przykłady do diagramów BPMN
+
+## Specyfika procesów bankowych
+- **Wysokie wymagania bezpieczeństwa** - wieloetapowa autoryzacja
+- **Zgodność regulacyjna** - KYC, AML, PSD2, RODO
+- **Automatyzacja** - systemy core banking, zewnętrzne API
+- **Monitoring** - ślady audytowe, raportowanie regulacyjne
+
+---
+
+## 1. Proces płatności BLIK (PROSTY - IDEALNY NA START)
+
+**Opis procesu:**
+Klient w sklepie wybiera płatność BLIK i otrzymuje 6-cyfrowy kod od sprzedawcy. Wprowadza kod w aplikacji mobilnej banku i autoryzuje płatność kodem PIN lub biometrią. Aplikacja wysyła żądanie autoryzacji do systemu BLIK banku. System sprawdza dostępność środków na koncie - jeśli są wystarczające, blokuje środki i wysyła potwierdzenie do clearingu BLIK. Clearing przekazuje potwierdzenie do terminala sprzedawcy. 
+
+W przypadku braku środków, system odrzuca transakcję i informuje klienta. Jeśli klient nie autoryzuje płatności w ciągu 2 minut, transakcja automatycznie wygasa. Po pomyślnej autoryzacji wszystkich stron, środki są przekazywane ze rachunku klienta na rachunek sprzedawcy.
+
+**Uczestnicy:**
+- Klient
+- Sprzedawca/Terminal
+- Aplikacja mobilna banku
+- System BLIK banku
+- Clearing BLIK
+- System core banking
+
+**Regulacje:** PSD2, wymogi NBP dla płatności błyskawicznych
+
+---
+
+## 2. Proces zakładania konta osobistego (ŚREDNI)
+
+**Opis procesu:**  
+Klient składa wniosek o założenie konta przez internet, aplikację lub w oddziale. System przeprowadza wstępną weryfikację danych osobowych i sprawdza czy klient nie figuruje w bazach negatywnych (BIK, KRD). Jeśli weryfikacja jest pozytywna, doradca kontaktuje się z klientem w celu umówienia spotkania lub przeprowadzenia video-weryfikacji.
+
+Podczas spotkania doradca weryfikuje tożsamość klienta (dowód osobisty), przeprowadza wywiad KYC (Know Your Customer) sprawdzając źródła dochodów i cel konta. Klient podpisuje umowę i regulaminy. System tworzy rachunek bankowy i generuje dane dostępowe do bankowości elektronicznej.
+
+W przypadku klientów wysokiego ryzyka (PEP - Politically Exposed Persons), wymagana jest dodatkowa akceptacja działu compliance. Karta debetowa jest wysyłana pocztą w ciągu 3-5 dni roboczych.
+
+**Uczestnicy:**
+- Klient
+- Doradca bankowy
+- System CRM
+- System core banking
+- Dział Compliance
+- Bazy zewnętrzne (BIK, KRD)
+- Poczta/Kurier
+
+**Regulacje:** KYC, AML, RODO, dyrektywa o rachunku płatniczym
+
+---
+
+## 3. Proces udzielania kredytu gotówkowego (ZŁOŻONY)
+
+**Opis procesu:**
+Klient składa wniosek kredytowy wraz z dokumentami potwierdzającymi dochody. System automatycznie przeprowadza pre-scoring sprawdzając historię kredytową w BIK i wewnętrznych bazach banku. Jeśli scoring jest pozytywny, wniosek trafia do doradcy, który weryfikuje dokumenty i aktualizuje dane klienta.
+
+Doradca przeprowadza wywiad kredytowy sprawdzając szczegóły finansowe i cel kredytu. Kompletny wniosek trafia do analityka kredytowego, który ocenia zdolność kredytową klienta kalkulując wskaźniki DTI (Debt-to-Income). 
+
+W przypadku kwot powyżej 100 000 zł, wymagana jest dodatkowa akceptacja kierownika działu kredytów. Pozytywnie zweryfikowany wniosek trafia do komitetu kredytowego, który podejmuje ostateczną decyzję.
+
+Po akceptacji klient otrzymuje ofertę kredytową z warunkami. Może ją zaakceptować, odrzucić lub negocjować warunki. Po podpisaniu umowy, środki są wypłacane na wskazany rachunek. Odrzucone wnioski są archiwizowane z uzasadnieniem decyzji.
+
+**Uczestnicy:**
+- Klient
+- Doradca kredytowy
+- Analityk kredytowy  
+- Kierownik działu kredytów
+- Komitet kredytowy
+- System scoringowy
+- BIK
+- System core banking
+
+**Regulacje:** Rekomendacja T, ustawa o kredycie konsumenckim, AML
+
+---
+
+## 4. Proces obsługi reklamacji karty płatniczej (ŚREDNI-ZŁOŻONY)
+
+**Opis procesu:**
+Klient zgłasza reklamację transakcji kartą przez telefon, aplikację lub w oddziale. Konsultant weryfikuje tożsamość klienta i rejestruje reklamację w systemie. System automatycznie blokuje kartę jeśli klient zgłasza jej kradzież lub zagubienie.
+
+Analityk reklamacji sprawdza szczegóły transakcji w systemie autoryzacji kart i określa typ reklamacji (transakcja nieuprawniona, błąd kwoty, nieuznana przez klienta). W przypadku transakcji nieuprawnionych, sprawa jest przekazywana do departamentu bezpieczeństwa, który przeprowadza dochodzenie.
+
+Bank ma 15 dni roboczych na rozpatrzenie reklamacji. Jeśli reklamacja jest zasadna, środki są zwracane na konto klienta, a sprawa jest przekazywana do organizacji kartowej (Visa/Mastercard) w celu odzyskania środków od banku akceptanta. W przypadku odrzucenia reklamacji, klient otrzymuje szczegółowe uzasadnienie z możliwością odwołania się do Rzecznika Finansowego.
+
+**Uczestnicy:**
+- Klient
+- Konsultant call center
+- Analityk reklamacji
+- Departament bezpieczeństwa
+- System autoryzacji kart
+- Organizacja kartowa (Visa/Mastercard)
+- Bank akceptant
+
+**Regulacje:** PSD2, regulacje Visa/Mastercard, ustawa o usługach płatniczych
+
+---
+
+## 5. Proces transferu międzynarodowego SWIFT (ZŁOŻONY)
+
+**Opis procesu:**
+Klient zleca przelew międzynarodowy podając dane odbiorcy (IBAN/kod SWIFT banku). System weryfikuje poprawność danych i sprawdza klienta oraz odbiorcę w bazach sankcyjnych (screening AML). Jeśli screening jest pozytywny, przelew jest blokowany i przekazywany do działu compliance.
+
+Po pozytywnej weryfikacji, system sprawdza dostępność środków i pobiera opłaty za przelew. Tworzy komunikat SWIFT MT103 i wysyła do banku korespondenta lub bezpośrednio do banku odbiorcy. Bank pośredniczący może potrącić dodatkowe opłaty (koszty OUR/BEN/SHA).
+
+Bank odbiorcy otrzymuje komunikat SWIFT, weryfikuje dane odbiorcy i uznaje jego rachunek. Wysyła potwierdzenie realizacji komunikatem MT910. Cały proces może trwać od kilku godzin do 3-5 dni roboczych w zależności od strefy czasowej i banków pośredniczących.
+
+W przypadku błędnych danych odbiorcy, bank zwraca środki komunikatem MT292 z kodem błędu.
+
+**Uczestnicy:**
+- Klient zlecający
+- System bankowości elektronicznej
+- Dział AML/Compliance
+- System SWIFT banku
+- Bank korespondent
+- Bank odbiorcy
+- Odbiorca płatności
+- Sieć SWIFT
+
+**Regulacje:** Regulacje SWIFT, AML, sankcje międzynarodowe, FATCA
+
+---
+
+## 6. Proces najprostszy - Sprawdzenie salda konta (TESTOWY)
+
+**Opis procesu:**
+Klient loguje się do aplikacji mobilnej używając login i hasło lub biometrii. System weryfikuje dane logowania i sprawdza status konta. Jeśli konto jest aktywne, wyświetla aktualne saldo i ostatnie operacje. W przypadku błędnych danych logowania po 3 próbach, konto zostaje tymczasowo zablokowane. Klient otrzymuje SMS z kodem odblokowującym lub musi skontaktować się z call center.
+
+**Uczestnicy:**
+- Klient
+- Aplikacja mobilna
+- System uwierzytelniania  
+- System core banking
+
+---
+
+## Szablon specjalistyczny dla bankowości
+
+```python
+"XML_BANKING": {
+    "template": (
+        "**Jako architekt procesów bankowych z 15-letnim doświadczeniem w systemach core banking i znajomością regulacji finansowych, przygotuj diagram BPMN dla procesu bankowego:**\n\n"
+        "{process_description}\n\n"
+        "**SPECYFIKA BANKOWA:**\n"
+        "- **Bezpieczeństwo**: Wieloetapowa autoryzacja, weryfikacja tożsamości\n"
+        "- **Regulacje**: Uwzględnij punkty kontroli KYC, AML, PSD2, RODO\n"
+        "- **Automatyzacja**: Systemy core banking, API, komunikaty SWIFT\n"
+        "- **Monitoring**: Ślady audytowe, raportowanie do NBP/KNF\n\n"
+        "**STANDARDOWI UCZESTNICY BANKOWI:**\n"
+        "- Klient (Pool: \"Klient\")\n"
+        "- Bank - Front Office (Pool: \"Bank - Obsługa Klienta\")\n"
+        "- Bank - Back Office (Pool: \"Bank - Operacje\")\n"
+        "- Systemy bankowe (Pool: \"Systemy Core Banking\")\n"
+        "- Instytucje zewnętrzne (Pool: \"Instytucje Zewnętrzne\")\n"
+        "- Regulatorzy (Pool: \"NBP/KNF\" - jeśli wymagane)\n\n"
+        "**BANKOWE WZORCE PROCESOWE:**\n"
+        "- **Screening AML**: Automatyczne punkty kontroli\n"
+        "- **Dual Control**: Zasada dwóch podpisów dla operacji wysokiego ryzyka\n"
+        "- **STP (Straight Through Processing)**: Automatyzacja bez interwencji człowieka\n"
+        "- **Exception Handling**: Eskalacja do compliance/zarządu ryzyka\n\n"
+        "**OBSŁUGA BŁĘDÓW BANKOWYCH:**\n"
+        "- Timeout dla operacji online (session timeout)\n"
+        "- Błędy komunikacji z systemami zewnętrznymi\n"
+        "- Limity transakcyjne i dzienne\n"
+        "- Blokady regulacyjne i sankcyjne\n\n"
+        "**WYNIK:** XML BPMN 2.0 zgodny z najlepszymi praktykami bankowymi"
+    ),
+    "allowed_diagram_types": ["BPMN"],
+    "type": "XML"
+}
+```
+
+---
+
+## Rekomendacje testowania dla bankowości:
+
+1. **Start:** Proces sprawdzenia salda (#6) - podstawowa funkcjonalność
+2. **Podstawowy:** Płatność BLIK (#1) - typowy proces płatniczy z autoryzacją  
+3. **Średni:** Reklamacja karty (#4) - obsługa klienta z regulacjami
+4. **Zaawansowany:** Transfer SWIFT (#5) - złożone przepływy międzybankowe
+
+Każdy proces zawiera specyficzne elementy bankowe jak screening AML, autoryzacja wieloetapowa, komunikacja z systemami zewnętrznymi i wymogi regulacyjne.

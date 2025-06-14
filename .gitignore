@@ -1,7 +1,11 @@
 <<<<<<< HEAD
 output*.*
 *.svg
+*.xml
+*.xmi
 =======
 output*.*
 *.svg
+*.xml
+*.xmi
 >>>>>>> 46631394621d974d34f5f8bfea7e8b1784a2f083

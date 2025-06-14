@@ -4,15 +4,28 @@ Desktop application (PyQt5) for generating, visualizing, and verifying UML (Plan
 
 ## Features
 
-- Generate PlantUML code or BPMN XML based on process descriptions
-- Choose prompt templates and diagram types (sequence, activity, class, component, state, use case, etc.)
-- Visualize PlantUML diagrams (SVG) in tabs
-- Automatic PlantUML code verification in case of SVG generation errors
-- AI-powered process description validation
-- Conversation history with the model
-- Support for multiple AI models (e.g., local or OpenAI API)
-- Sample test prompts for the banking industry
-- XMI export for PlantUML
+- Process Description Validation:
+Users can validate their process descriptions before generating diagrams, ensuring input quality.
+
+- Diagram Generation:
+The application generates PlantUML code for various UML diagram types based on user input and selected prompt templates.
+
+- Multiple Tabs:
+Users can work with multiple diagrams simultaneously, each in its own tab.
+
+- Automatic Diagram Type Recognition:
+The system recognizes the type of diagram (e.g., class, sequence) and enables relevant export options.
+
+- Export Options:
+PlantUML: Save the generated PlantUML code.
+SVG: Generate and save SVG images locally using plantuml.jar and Java.
+XMI: Export class diagrams to XMI format for use in Enterprise Architect.
+
+- Prompt Templates:
+Easily extendable prompt templates for different diagram types.
+
+- File Naming with Timestamp:
+Exported files include the current date and time in their names for easy versioning.
 
 ## XMI Export
 
@@ -35,7 +48,11 @@ Desktop application (PyQt5) for generating, visualizing, and verifying UML (Plan
 
 - Python 3.8+
 - PyQt5
-- requests
+- Java (for local PlantUML rendering)
+- plantuml.jar (download from https://plantuml.com/download)
+
+Install dependencies:
+pip install -r requirements.txt
 
 ## Installation
 
@@ -62,13 +79,22 @@ python main.py
 
 ## Example Usage
 
-1. Enter process description in the text field.
-2. Select template type (PlantUML/XML) and prompt template.
-3. Choose diagram type.
-4. Click "Send" – AI model will generate diagram code.
-5. Diagram will be displayed as SVG (or XML).
-6. In case of errors, PlantUML code will be automatically verified by AI.
-7. You can also check process description correctness through AI.
+1. Enter a process description.
+2. Select a diagram type and prompt template.
+3. Click "Validate" to check the description.
+4. Click "Generate Diagram" to create and display the diagram.
+5. Use the export buttons to save the diagram in the desired format.
+
+
+## Notes
+- SVG Generation:
+The application does not use plantuml.com for SVG rendering. Instead, it uses a local plantuml.jar and Java, ensuring privacy and offline capability.
+
+- Error Handling:
+The application provides clear error messages for missing dependencies, invalid input, or export issues.
+
+- Extensibility:
+You can add new prompt templates by placing files in the prompt_templates/ directory and registering them in the code.
 
 Use Case Diagram:
 ![Use Case Diagram](https://github.com/user-attachments/assets/bcac902f-0fe5-48b9-8088-968c597ffb62)
@@ -86,7 +112,3 @@ See the [`Prompty_bankowe.txt`](Prompty_bankowe.txt) file – you'll find exampl
 
 Grzegorz Majewski / ThrennPL
 [https://www.linkedin.com/in/grzegorz-majewski-421306151/]
-
-## License
-
-MIT
