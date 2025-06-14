@@ -78,7 +78,8 @@ python main.py
 7. Możesz także sprawdzić poprawność opisu procesu przez AI.
 
 Diagram przypadków użycia:
-![GD 2025-06-13 Diagram komponentów Przypadków użycia](https://github.com/user-attachments/assets/48dd41f2-c482-4e3d-bd7e-96849315c606)
+![GD 2025-06-14 Przypadków użycia](https://github.com/user-attachments/assets/d8df84b4-f519-441e-856f-9ad1f7470d05)
+
 
 
 
@@ -88,17 +89,16 @@ Zobacz plik [`Prompty_bankowe.txt`](Prompty_bankowe.txt) – znajdziesz tam przy
 Zpbacz plik [`Szablony_promptow.txt`] (Szablony_promptów.txt) - zapoznaj się z opisem działania poszczególnych szablonów promptów dedykowanych dla typów diagramów
 
 ## Zrzuty ekranu
-![GD 2025-06-13 Sprawdzanie poprownosci opisu procesu](https://github.com/user-attachments/assets/dc679531-9900-4c22-a81e-9ff2a4858b81)
-![GD 2025-06-13 Diagram Klas](https://github.com/user-attachments/assets/621eaac8-10d0-47c1-a4e3-628eeccb80a9)
-![GD 2025-06-13 Diagram komponentów](https://github.com/user-attachments/assets/30794976-68b5-49bd-9e8c-413e41fa5d14)
-![GD 2025-06-13 Diagram komponentów C4](https://github.com/user-attachments/assets/5c65f1a2-a8b8-44ab-8ced-4a9a917b82f4)
-
-
+![GD 2025-06-14 Sprawdzanie poprownosci opisu procesu](https://github.com/user-attachments/assets/6bafbbb4-c6e7-4f62-b145-51623c20026e)
+![GD 2025-06-14 Diagram Klas](https://github.com/user-attachments/assets/a3082146-64d2-466b-b1d7-de33567c51eb)
+![GD 2025-06-14 Diagram komponentów](https://github.com/user-attachments/assets/eb99c9a0-834b-4a84-9037-c2a32af755da)
+![GD 2025-06-14 Diagram komponentów C4](https://github.com/user-attachments/assets/168735ab-e2d8-4fcb-97d0-1cf7ec078327)
 
 ## Autor
 
 Grzegorz Majewski / ThrennPL
 [https://www.linkedin.com/in/grzegorz-majewski-421306151/]
+gmajka1@wp.pl
 
 ## Licencja
 
