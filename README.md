@@ -78,7 +78,8 @@ python main.py
 7. Możesz także sprawdzić poprawność opisu procesu przez AI.
 
 Diagram przypadków użycia:
-![Diagram przypadków użycia](https://github.com/user-attachments/assets/bcac902f-0fe5-48b9-8088-968c597ffb62)
+![GD 2025-06-13 Diagram komponentów Przypadków użycia](https://github.com/user-attachments/assets/48dd41f2-c482-4e3d-bd7e-96849315c606)
+
 
 
 ## Przykładowe prompty
@@ -87,8 +88,7 @@ Zobacz plik [`Prompty_bankowe.txt`](Prompty_bankowe.txt) – znajdziesz tam przy
 Zpbacz plik [`Szablony_promptow.txt`] (Szablony_promptów.txt) - zapoznaj się z opisem działania poszczególnych szablonów promptów dedykowanych dla typów diagramów
 
 ## Zrzuty ekranu
-
-![GD 2025-06-11 Sprawdzanie poprownosci opisu procesu](https://github.com/user-attachments/assets/f2ea75e1-32a6-44b6-936e-8d4298231215)
+![GD 2025-06-13 Sprawdzanie poprownosci opisu procesu](https://github.com/user-attachments/assets/dc679531-9900-4c22-a81e-9ff2a4858b81)
 ![GD 2025-06-13 Diagram Klas](https://github.com/user-attachments/assets/621eaac8-10d0-47c1-a4e3-628eeccb80a9)
 ![GD 2025-06-13 Diagram komponentów](https://github.com/user-attachments/assets/30794976-68b5-49bd-9e8c-413e41fa5d14)
 ![GD 2025-06-13 Diagram komponentów C4](https://github.com/user-attachments/assets/5c65f1a2-a8b8-44ab-8ced-4a9a917b82f4)
