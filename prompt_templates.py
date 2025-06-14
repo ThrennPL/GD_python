@@ -598,8 +598,8 @@ prompt_templates = {
                     "main_user --|> approver : \"może być również\"\n\n"
 
                     "' Notatki wyjaśniające\n"
-                    "note right of main_uc1 : \"Główny przepływ\\nprocesu biznesowego\"\n"
-                    "note left of validate_uc : \"Wspólna walidacja\\ndla wszystkich funkcji\"\n\n"
+                    "note right of main_uc1 : \"Główny przepływ procesu biznesowego\"\n"
+                    "note left of validate_uc : \"Wspólna walidacja dla wszystkich funkcji\"\n\n"
 
                     "@enduml\n"
                     "```\n\n"

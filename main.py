@@ -171,7 +171,7 @@ class AIApp(QMainWindow):
 
         left_widget = QWidget()
         left_widget.setLayout(left_layout)
-        left_widget.setMaximumWidth(800)
+        left_widget.setMaximumWidth(950)
 
         main_layout = QHBoxLayout()
         main_layout.addWidget(left_widget)
