@@ -88,18 +88,6 @@ class AIApp(QMainWindow):
         template_layout.addWidget(self.template_selector)
         template_group.setStyleSheet("background-color: #f0ffff;")
 
-        # Splitter do zarządzania proporcjami
-        splitter = QSplitter(Qt.Vertical)
-        # main_layout.addWidget(self.template_selector)
-        splitter.addWidget(QLabel("Okno konwersacji:"))
-        splitter.addWidget(self.output_box)
-        splitter.addWidget(QLabel("Wprowadź opis procesu:"))
-        splitter.addWidget(self.input_box)
-        self.input_box.setFixedHeight(100)
-
-        # Dodanie kolorowania składni
-        #self.highlighter = XMLHighlighter(self.output_box.document())
-
         # Dodanie ComboBox do wyboru typu diagramu
         self.diagram_type_selector = QComboBox(self)
         self.diagram_type_selector.setToolTip("Wybierz typ diagramu do wygenerowania.")
@@ -107,7 +95,7 @@ class AIApp(QMainWindow):
             "sequence", "activity", "usecase", "class", "state", "flowchart",
             "communication", "component", "deployment", "timing", "collaboration"
         ])
-        # main_layout.addWidget(self.diagram_type_selector)
+        
         template_layout.addWidget(QLabel("Wybierz typ diagramu:"))
         template_layout.addWidget(self.diagram_type_selector)
 
@@ -122,21 +110,19 @@ class AIApp(QMainWindow):
         # Ustaw stan początkowy
         self.on_use_template_checkbox_changed(self.use_template_checkbox.checkState())
 
-
-        # main_layout.addWidget(self.use_template_checkbox)
         template_layout.addWidget(self.use_template_checkbox)
         
         template_group.setLayout(template_layout)
 
         # Layout główny
-        main_layout = QVBoxLayout()
+        left_layout = QVBoxLayout()
 
         # 1. Etykieta i wybór modelu (dodaj na górze)
-        main_layout.addWidget(QLabel("Wybierz model AI:"))
-        main_layout.addWidget(self.model_selector)
+        left_layout.addWidget(QLabel("Wybierz model AI:"))
+        left_layout.addWidget(self.model_selector)
 
         # 2. Grupa dla szablonu (jak dotychczas)
-        main_layout.addWidget(template_group)
+        left_layout.addWidget(template_group)
 
         # Przycisk "Wyślij zapytanie"
         self.send_button = QPushButton("Wyślij zapytanie")
@@ -158,12 +144,16 @@ class AIApp(QMainWindow):
 
         self.validate_input_button = QPushButton("Sprawdź poprawność opisu procesu", self)
 
-        # Dodanie widżetów do layoutu
-        # main_layout.addWidget(self.model_selector)  # Dodanie ComboBox na górze
-        main_layout.addWidget(splitter)
+        # 3. Output box (okno konwersacji)
+        left_layout.addWidget(QLabel("Okno konwersacji:"))
+        left_layout.addWidget(self.output_box)
 
-        
-        # --- Nowy poziomy layout na przyciski ---
+        # 4. Input box (opis procesu)
+        left_layout.addWidget(QLabel("Wprowadź opis procesu:"))
+        left_layout.addWidget(self.input_box)
+        self.input_box.setFixedHeight(100)
+
+        # 5. Przyciski pod input_box
         buttons_layout = QHBoxLayout()
         buttons_layout.addWidget(self.validate_input_button)
         buttons_layout.addWidget(self.send_button)
@@ -171,35 +161,38 @@ class AIApp(QMainWindow):
         buttons_layout.addWidget(self.save_PlantUML_button)
         buttons_layout.addWidget(self.save_xmi_button)
         buttons_layout.addWidget(self.save_diagram_button)
+        left_layout.addLayout(buttons_layout)
+
+        # --- PRAWA KOLUMNA: zakładki z diagramami ---
+        self.diagram_tabs = QTabWidget(self)
+        self.diagram_tabs.setTabsClosable(True)
+        self.diagram_tabs.tabCloseRequested.connect(self.close_plantuml_tab)
+        self.diagram_tabs.currentChanged.connect(self.on_tab_changed)
+
+        left_widget = QWidget()
+        left_widget.setLayout(left_layout)
+        left_widget.setMaximumWidth(800)
+
+        main_layout = QHBoxLayout()
+        main_layout.addWidget(left_widget)
+        main_layout.addWidget(self.diagram_tabs, stretch=2)
+
+        # Central Widget
+        central_widget = QWidget()
+        central_widget.setLayout(main_layout)
+        self.setCentralWidget(central_widget)
 
         self.validate_input_button.clicked.connect(self.validate_input_button_pressed)
         self.save_xmi_button.clicked.connect(self.save_xmi)
         self.save_diagram_button.clicked.connect(self.save_active_diagram)
-
-        # Dodaj poziomy layout do głównego layoutu
-        main_layout.addLayout(buttons_layout)
 
         # Eventy dla przycisków
         self.send_button.clicked.connect(self.send_to_api)
         self.save_xml_button.clicked.connect(self.save_xml)
         self.save_PlantUML_button.clicked.connect(self.save_plantuml)
 
-        # self.fetch_models_button = QPushButton("Fetch Models")
-        # self.fetch_models_button.clicked.connect(self.display_models)
-
-        # Central Widget
-        central_widget = QWidget()
-        central_widget.setLayout(main_layout)
-        self.setCentralWidget(central_widget)
-        
         # Historia rozmowy
         self.conversation_history = []
-
-        # Dodaj QTabWidget na diagramy PlantUML
-        self.diagram_tabs = QTabWidget(self)
-        main_layout.addWidget(self.diagram_tabs)
-        self.diagram_tabs.setTabsClosable(True)
-        self.diagram_tabs.tabCloseRequested.connect(self.close_plantuml_tab)
 
         # Połącz sygnał zmiany zakładki z tą metodą
         self.diagram_tabs.currentChanged.connect(self.on_tab_changed)

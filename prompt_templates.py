@@ -1588,7 +1588,7 @@ prompt_templates = {
                     "  </bpmndi:BPMNDiagram>\n"
                     "</definitions>\n"
                     "```\n\n"
-                    "**REZULTAT:** Dostarcz TYLKO kompletny, działający kod XML BPMN 2.0 bez dodatkowych komentarzy."
+                    "**REZULTAT:** Dostarcz TYLKO kompletny, działający kod XML BPMN 2.0 bez dodatkowych komentarzy oraz pełną strukturę XML zgodną z wymaganiami Camunda Modeler 5.x.\n"
                 ),
                 "allowed_diagram_types": ["BPMN"],
                 "type": "XML"
