@@ -1,222 +1,9 @@
 import re
-from dataclasses import dataclass
-from typing import List, Dict, Optional
-import uuid
 import xml.etree.ElementTree as ET
 import xml.dom.minidom
-
-@dataclass
-class UMLClass:
-    name: str
-    attributes: List[str]
-    methods: List[str]
-    stereotype: Optional[str] = None
-    
-@dataclass
-class UMLRelation:
-    source: str
-    target: str
-    relation_type: str
-    label: Optional[str] = None
-    source_multiplicity: Optional[str] = None
-    target_multiplicity: Optional[str] = None
-
-@dataclass
-class UMLEnum:
-    name: str
-    values: list
-
-@dataclass
-class UMLNote:
-    target: str  # nazwa klasy/interfejsu/enumu
-    text: str
-
-class PlantUMLParser:
-    """Parser dla kodu PlantUML"""
-    
-    def __init__(self):
-        self.classes = {}
-        self.relations = []
-        self.enums = {}  
-        self.notes = []
-    
-    def parse(self, plantuml_code: str):
-        """Główna metoda parsowania"""
-        lines = plantuml_code.strip().split('\n')
-        current_class = None
-        current_enum = None
-        note_mode = False
-        note_target = None
-        note_lines = []
-
-        for line in lines:
-            line = line.strip()
-
-            # Obsługa notatek jednolinijkowych
-            m = re.match(r'note\s+\w+\s+of\s+([A-Za-z0-9_ąćęłńóśźżĄĆĘŁŃÓŚŹŻ]+)\s*:\s*(.+)', line)
-            if m:
-                note_target = m.group(1)
-                note_text = m.group(2)
-                self.notes.append(UMLNote(note_target, note_text))
-                continue
-
-            # Obsługa notatek wielolinijkowych
-            if line.startswith('note '):
-                # np. note left of Konto
-                m = re.match(r'note\s+\w+\s+of\s+([A-Za-z0-9_ąćęłńóśźżĄĆĘŁŃÓŚŹŻ]+)', line)
-                if m:
-                    note_target = m.group(1)
-                    note_mode = True
-                    note_lines = []
-                continue
-            if note_mode:
-                if line == 'end note':
-                    self.notes.append(UMLNote(note_target, '\n'.join(note_lines)))
-                    note_mode = False
-                    note_target = None
-                    note_lines = []
-                else:
-                    note_lines.append(line)
-                continue
-            
-            if not line or line.startswith("'") or line.startswith("@"):
-                continue
-
-            # Parsowanie klas
-            if line.startswith('class '):
-                current_class = self._parse_class_definition(line)
-
-            elif line.startswith('interface '):
-                current_class = self._parse_interface_definition(line)
-
-            elif line.startswith('enum '):
-                current_enum = self._parse_enum_definition(line)
-                if current_enum:
-                    self.enums[current_enum.name] = current_enum
-                continue
-
-            elif current_enum and line == '{':
-                continue
-            elif current_enum and line == '}':
-                current_enum = None
-                continue
-            elif current_enum:
-                # Dodaj wartość do enum
-                if line:
-                    current_enum.values.append(line)
-                continue
-
-            # Parsowanie zawartości klasy
-            elif current_class and line in ['{', '}']:
-                if line == '}':
-                    current_class = None
-                continue
-
-            elif current_class:
-                self._parse_class_member(line, current_class)
-
-            # Parsowanie relacji
-            elif any(rel in line for rel in ['-->', '<--', '--', '||--', '|>', '<|']):
-                self._parse_relation(line)
-
-    def _parse_enum_definition(self, line: str) -> UMLEnum:
-        match = re.match(r'enum\s+(\w+)', line)
-        if match:
-            name = match.group(1)
-            return UMLEnum(name, [])
-        return None
-    
-    def _parse_class_definition(self, line: str) -> UMLClass:
-        """Parsuje definicję klasy"""
-        match = re.match(r'class\s+(\w+)(?:\s*<<(\w+)>>)?', line)
-        if match:
-            name = match.group(1)
-            stereotype = match.group(2)
-            uml_class = UMLClass(name, [], [], stereotype)
-            self.classes[name] = uml_class
-            return uml_class
-        return None
-    
-    def _parse_interface_definition(self, line: str) -> UMLClass:
-        """Parsuje definicję interfejsu"""
-        match = re.match(r'interface\s+(\w+)', line)
-        if match:
-            name = match.group(1)
-            uml_class = UMLClass(name, [], [], "interface")
-            self.classes[name] = uml_class
-            return uml_class
-        return None
-    
-    def _parse_class_member(self, line: str, current_class: UMLClass):
-        """Parsuje atrybuty i metody klasy"""
-        line = line.strip()
-        
-        # Metody (zawierają nawiasy)
-        if '(' in line and ')' in line:
-            current_class.methods.append(line)
-        # Atrybuty
-        elif line and not line in ['{', '}']:
-            current_class.attributes.append(line)
-    
-    def _parse_relation(self, line: str):
-        """Parsuje relacje między klasami"""
-        # Proste mapowanie symboli PlantUML na typy relacji
-        relation_patterns = {
-            r'([A-Za-z0-9_ąćęłńóśźżĄĆĘŁŃÓŚŹŻ]+)\s*("[^"]*")?\s*<\|\-\-\s*("[^"]*")?\s*([A-Za-z0-9_ąćęłńóśźżĄĆĘŁŃÓŚŹŻ]+)': ('inheritance', True),
-            r'([A-Za-z0-9_ąćęłńóśźżĄĆĘŁŃÓŚŹŻ]+)\s*("[^"]*")?\s*\-\-\>\|\s*("[^"]*")?\s*([A-Za-z0-9_ąćęłńóśźżĄĆĘŁŃÓŚŹŻ]+)': ('inheritance', False),
-            r'([A-Za-z0-9_ąćęłńóśźżĄĆĘŁŃÓŚŹŻ]+)\s*("[^"]*")?\s*\-\-\s*("[^"]*")?\s*([A-Za-z0-9_ąćęłńóśźżĄĆĘŁŃÓŚŹŻ]+)': ('association', False),
-            r'(\w+)\s*<\|\-\-\s*(\w+)': ('inheritance', True),  # inheritance (odwrócone)
-            r'(\w+)\s*\-\-\>\|\s*(\w+)': ('inheritance', False),  # inheritance
-            r'(\w+)\s*\*\-\-\s*(\w+)': ('composition', False),
-            r'(\w+)\s*\-\-\*\s*(\w+)': ('composition', True),
-            r'(\w+)\s*o\-\-\s*(\w+)': ('aggregation', False),
-            r'(\w+)\s*\-\-o\s*(\w+)': ('aggregation', True),
-            r'(\w+)\s*\-\->\s*(\w+)': ('association', False),
-            r'(\w+)\s*<\-\-\s*(\w+)': ('association', True),
-            r'(\w+)\s*\-\-\s*(\w+)': ('association', False),
-        }
-        
-        for pattern, (rel_type, reversed_) in relation_patterns.items():
-            match = re.search(pattern, line)
-            if match:
-                # Sprawdź ile jest grup
-                groups = match.groups()
-                if len(groups) >= 4:
-                    if reversed_:
-                        source = match.group(4)
-                        target = match.group(1)
-                        source_mult = match.group(3)
-                        target_mult = match.group(2)
-                    else:
-                        source = match.group(1)
-                        target = match.group(4)
-                        source_mult = match.group(2)
-                        target_mult = match.group(3)
-                elif len(groups) == 2:
-                    if reversed_:
-                        source = match.group(2)
-                        target = match.group(1)
-                    else:
-                        source = match.group(1)
-                        target = match.group(2)
-                    source_mult = None
-                    target_mult = None
-                else:
-                    continue  # pomiń jeśli nie pasuje
-
-                # Wyciągnij etykietę (np. : posiada)
-                label_match = re.search(r':\s*([^\n]+)', line)
-                label = label_match.group(1).strip() if label_match else None
-
-                # Usuń cudzysłowy z liczności
-                source_mult = source_mult.strip('"') if source_mult else None
-                target_mult = target_mult.strip('"') if target_mult else None
-
-                relation = UMLRelation(source, target, rel_type, label)
-                relation.source_multiplicity = source_mult
-                relation.target_multiplicity = target_mult
-                self.relations.append(relation)
-                break
+import uuid
+from typing import Dict, List, Optional
+from plantuml_model import UMLClass, UMLRelation, UMLEnum, UMLNote
 
 class EAXMIGenerator:
     """Generator plików XMI dla Enterprise Architect"""
@@ -264,39 +51,65 @@ class EAXMIGenerator:
         for class_name, uml_class in classes.items():
             class_id = f'EAID_{uuid.uuid4()}'
             class_ids[class_name] = class_id
-        
+
             class_elem = ET.SubElement(package, 'packagedElement')
-        
+
             # Obsługa interfejsów vs klas
             if uml_class.stereotype == 'interface':
                 class_elem.set('xmi:type', 'uml:Interface')
             else:
                 class_elem.set('xmi:type', 'uml:Class')
-            
+
             class_elem.set('xmi:id', class_id)
             class_elem.set('name', class_name)
             class_elem.set('visibility', 'public')
-        
+
             # Dodaj atrybuty z pełnymi typami
             for attr in uml_class.attributes:
-                attr_name, attr_type = self._split_attribute(attr)
+                attr_decl = attr["declaration"]
+                modifiers = attr.get("modifiers", [])
+                attr_name, attr_type = self._split_attribute(attr_decl)
                 attr_elem = ET.SubElement(class_elem, 'ownedAttribute')
                 attr_elem.set('xmi:id', f'EAID_{uuid.uuid4()}')
                 attr_elem.set('name', attr_name)
-                attr_elem.set('visibility', self._get_visibility(attr))
-            
+                attr_elem.set('visibility', self._get_visibility(attr_decl))
+
+                # Obsługa static/readonly
+                if "static" in modifiers:
+                    attr_elem.set('isStatic', 'true')
+                if "readonly" in modifiers:
+                    attr_elem.set('isReadOnly', 'true')
+                # (opcjonalnie) inne modyfikatory jako taggedValue
+                if modifiers:
+                    tagged = ET.SubElement(attr_elem, 'taggedValue')
+                    tagged.set('name', 'modifiers')
+                    tagged.set('value', ','.join(modifiers))
+
                 # Typ atrybutu - EA wymaga referencji
                 if attr_type:
                     type_elem = ET.SubElement(attr_elem, 'type')
                     type_elem.set('xmi:type', 'uml:PrimitiveType')
                     type_elem.set('href', f'pathmap://UML_LIBRARIES/EcorePrimitiveTypes.library.uml#{attr_type}')
-        
+
             # Dodaj metody
             for method in uml_class.methods:
                 method_elem = ET.SubElement(class_elem, 'ownedOperation')
                 method_elem.set('xmi:id', f'EAID_{uuid.uuid4()}')
-                method_elem.set('name', self._clean_method_name(method))
-                method_elem.set('visibility', self._get_visibility(method))
+                method_sig = method["signature"]
+                modifiers = method.get("modifiers", [])
+                method_elem.set('name', self._clean_method_name(method_sig))
+                method_elem.set('visibility', self._get_visibility(method_sig))
+
+                # Obsługa static/abstract
+                if "static" in modifiers:
+                    method_elem.set('isStatic', 'true')
+                if "abstract" in modifiers:
+                    method_elem.set('isAbstract', 'true')
+                # (opcjonalnie) inne modyfikatory jako taggedValue
+                if modifiers:
+                    tagged = ET.SubElement(method_elem, 'taggedValue')
+                    tagged.set('name', 'modifiers')
+                    tagged.set('value', ','.join(modifiers))
     
         # Generuj enumy
         enum_ids = {}
@@ -637,75 +450,3 @@ class EAXMIGenerator:
         name = parts[0].strip()
         attr_type = parts[1].strip() if len(parts) > 1 else None
         return name, attr_type
-
-# Główna klasa konwertera
-class PlantUMLToEAConverter:
-    """Główny konwerter PlantUML do Enterprise Architect"""
-    
-    def __init__(self):
-        self.parser = PlantUMLParser()
-        self.xmi_generator = EAXMIGenerator()
-    
-    def convert(self, plantuml_code: str) -> str:
-        """Konwertuje kod PlantUML na XMI dla EA"""
-        # Parsuj PlantUML
-        self.parser.parse(plantuml_code)
-        
-        # Generuj XMI
-        xmi_content = self.xmi_generator.generate_xmi(
-            self.parser.classes, 
-            self.parser.relations,
-            self.parser.enums,
-            self.parser.notes 
-        )
-        
-        return xmi_content
-    
-    def convert_file(self, input_file: str, output_file: str):
-        """Konwertuje plik PlantUML na plik XMI"""
-        with open(input_file, 'r', encoding='utf-8') as f:
-            plantuml_code = f.read()
-        
-        xmi_content = self.convert(plantuml_code)
-        
-        with open(output_file, 'w', encoding='utf-8') as f:
-            f.write(xmi_content)
-        
-        print(f"Konwersja zakończona: {input_file} -> {output_file}")
-
-# Przykład użycia
-if __name__ == "__main__":
-    # Przykładowy kod PlantUML
-    sample_plantuml = """
-    @startuml
-    class Person {
-        -name: String
-        -age: int
-        +getName(): String
-        +setName(name: String): void
-    }
-    
-    class Employee {
-        -employeeId: String
-        -salary: double
-        +getEmployeeId(): String
-    }
-    
-    Person <|-- Employee
-    @enduml
-    """
-    
-    # Konwertuj
-    
-    converter = PlantUMLToEAConverter()
-    xmi_result = converter.convert(sample_plantuml)
-    
-    print("Wygenerowany XMI:")
-    print(xmi_result[:500] + "...")  # Pokaż pierwsze 500 znaków
-
-def plantuml_to_xmi(plantuml_code: str) -> str:
-    """
-    Funkcja pomocnicza do użycia w GUI – konwertuje kod PlantUML na XMI.
-    """
-    converter = PlantUMLToEAConverter()
-    return converter.convert(plantuml_code)

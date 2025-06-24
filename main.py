@@ -1,4 +1,4 @@
-from plantuml_convert_to_xmi import plantuml_to_xmi
+from plantuml_to_ea import plantuml_to_xmi
 from extract_code_from_response import extract_xml, extract_plantuml, extract_plantuml_blocks, is_valid_xml
 from xml_highlighter import XMLHighlighter
 from input_validator import validate_input_text
@@ -18,6 +18,7 @@ from PyQt5.QtWidgets import QMessageBox
 #import plantuml_encoder
 from datetime import datetime
 from zlib import compress
+import traceback
 
 plantuml_jar_path = "plantuml.jar"  # Ścieżka do pliku plantuml.jar
 plantuml_generator_type = "www"  # Możliwe wartości: "local" lub "www"
@@ -560,7 +561,8 @@ class AIApp(QMainWindow):
                 ok_msg = (f"Plik XMI został zapisany jako '{filename}'.\n")
                 self.append_to_chat("System", ok_msg)
             except Exception as e:
-                error_msg = f"Błąd podczas konwersji lub zapisu XMI: {e}\n"
+                tb = traceback.format_exc()
+                error_msg = f"Błąd podczas konwersji lub zapisu XMI: {e}\n{tb}"
                 self.append_to_chat("System", error_msg)
         else:
             error_msg = "Brak kodu PlantUML do konwersji na XMI.\n"
