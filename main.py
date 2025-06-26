@@ -288,12 +288,12 @@ class AIApp(QMainWindow):
                 return models_data
             else:
                 error_msg = f"Błąd podczas pobierania modeli: {response.status_code}, {response.text}"
-                print(error_msg)
+                #print(error_msg)
                 log_error(error_msg)
                 return None
         except Exception as e:
             error_msg = f"Wystąpił błąd podczas pobierania listy modeli: {e}"
-            print(error_msg)
+            #print(error_msg)
             log_exception(error_msg)
             return None
 
