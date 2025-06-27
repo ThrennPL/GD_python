@@ -55,6 +55,8 @@ pip install -r requirements.txt
 
 ```bash
 python main.py
+lub
+streamlit run streamlit_app.py
 ```
 
 ## Struktura projektu
