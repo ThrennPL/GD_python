@@ -453,24 +453,26 @@ if st.session_state.plantuml_diagrams:
                             # Weryfikacja kodu w przypadku błędów
                             diagram_type = identify_plantuml_diagram_type(plantuml_code)
                             safe_log_info(f"Kod Plant UML z promptu: {plantuml_code}")
-                            
                             verification_template = prompt_templates["Weryfikacja kodu PlantUML"]["template"]
                             prompt = verification_template.format(plantuml_code=plantuml_code, diagram_type=diagram_type)
                             safe_log_info(f"Prompt for verification: {prompt}") 
-                            st.info("Wysyłam kod do weryfikacji: " + prompt)
+                            st.info("Wysyłam kod do weryfikacji: ")
                             response = call_api(prompt, selected_model)
                             safe_log_info(f"Response from API (Weryfikacje): {response[:5000]}...")  # Loguj pierwsze 5000 znaków odpowiedzi
                             # wyciągniecie kodu PlantUML z odpowiedzi modelu
                             plantuml_code = extract_plantuml(response)
+                            plantuml_code = plantuml_code.replace("!theme ocean", "")
+                            plantuml_code = plantuml_code.replace("!theme grameful", "")
+                            safe_log_info(f"Kod Plant UML po wycięciu !theme ocean: {plantuml_code}")
                             if not display_plantuml_diagram(plantuml_code):
                                 st.error("Nie udało się pobrać diagramu PlantUML.")
                                 st.stop()
                             else:   
-                                st.session_state.plantuml_diagrams[i] = plantuml_code
-                        else:
-                            display_plantuml_diagram(plantuml_code)
-                    else:
-                        st.error("Nie ma kodu do wyświetlenia")
+                                #st.session_state.plantuml_diagrams[i] = plantuml_code
+                                if plantuml_code is not None:
+                                    display_plantuml_diagram(plantuml_code)
+                                else:
+                                    st.error("Nie ma kodu do wyświetlenia")
                 # Download buttons
                 col1, col2, col3, col4 = st.columns(4)
                 with col1:
@@ -536,11 +538,14 @@ if st.session_state.plantuml_diagrams:
             safe_log_info(f"Response from API (Weryfikacje pojedyńcze): {response[:5000]}...")  # Loguj pierwsze 5000 znaków odpowiedzi
             # wyciągniecie kodu PlantUML z odpowiedzi modelu
             plantuml_code = extract_plantuml(response)
+            plantuml_code = plantuml_code.replace("!theme ocean", "")
+            plantuml_code = plantuml_code.replace("!theme grameful", "")
+            safe_log_info(f"Kod Plant UML po wycięciu !theme ocean: {plantuml_code}")
             if not display_plantuml_diagram(plantuml_code):
                 st.error("Nie udało się pobrać diagramu PlantUML.")
                 st.stop()
             else:   
-                st.session_state.plantuml_diagrams[i] = plantuml_code
+                # st.session_state.plantuml_diagrams[i] = plantuml_code
                 if plantuml_code is not None:
                     display_plantuml_diagram(plantuml_code)
                 else:
