@@ -175,13 +175,35 @@ def display_plantuml_diagram(plantuml_code):
             svg_data = fetch_plantuml_svg_www(plantuml_code)
             if isinstance(svg_data, bytes):
                 svg_str = svg_data.decode('utf-8')
-                st.components.v1.html(svg_str) #, height=600)
+                #resize SVG to fit the container
+                #svg_str = svg_str.replace('width="100%"', 'width="50%" height="600"')
+                #st.components.v1.html(svg_str, height=1000)
+                st.components.v1.html(
+                    f"""
+                    <div style="width: 100%; overflow: auto; border: 1px solid #ddd; border-radius: 5px;">
+                        {svg_str}
+                    </div>
+                    """,
+                    height=800,
+                    scrolling=True
+                )
                 return True
         elif plantuml_generator_type == "local":
             svg_path = fetch_plantuml_svg_local(plantuml_code, plantuml_jar_path)
             with open(svg_path, "r", encoding="utf-8") as f:
-                svg_str = f.read()
-            st.components.v1.html(svg_str, height=600)
+                svg_str = f.read()  
+                #resize SVG to fit the container
+                #svg_str = svg_str.replace('width="100%"', 'width="500%" height="600"')
+            #st.components.v1.html(svg_str, height=1000)
+                st.components.v1.html(
+                    f"""
+                    <div style="width: 100%; overflow: auto; border: 1px solid #ddd; border-radius: 5px;">
+                        {svg_str}
+                    </div>
+                    """,
+                    height=800,
+                    scrolling=True
+                )
             return True
     except Exception as e:
         st.error(f"Nie udało się wyświetlić diagramu: {e}")
@@ -278,30 +300,40 @@ with col1:
         info_msg = f"Sprawdzanie poprawności opisu procesu: {process_description[:100]}..."
         safe_log_info(info_msg) 
         if process_description:
-            with st.spinner("Sprawdzanie poprawności opisu procesu..."):
-                # Simulate validation (you can implement actual validation logic)
-                info_msg = ("**Przekazano opis procesu do weryfikacji**\n")
-                st.spinner({"role": "System", "content": info_msg})
-                safe_log_info("Przekazano opis procesu do weryfikacji") 
-                # Pobierz tekst z input_box
-                if not process_description:
-                    st.session_state.conversation_history.append({"role": "System", "content":"Brak tekstu do walidacji.\n\n"})
+            
+            # Simulate validation (you can implement actual validation logic)
+            info_msg = ("**Przekazano opis procesu do weryfikacji**\n")
+            st.spinner({"role": "System", "content": info_msg})
+            safe_log_info("Przekazano opis procesu do weryfikacji") 
+            # Pobierz tekst z input_box
+            if not process_description:
+                st.session_state.conversation_history.append({"role": "System", "content":"Brak tekstu do walidacji.\n\n"})
                     
-                # Pobierz szablon walidacji (np. "Weryfikacja opisu procesu")
-                template_data = prompt_templates.get("Weryfikacja opisu procesu")
-                if not template_data:
-                    st.session_state.conversation_history.append({"role": "System", "content": "Brak szablonu do weryfikacji opisu procesu.\n\n"})
-                prompt = template_data["template"].format(
-                    process_description=process_description,
-                    diagram_type=diagram_type,
-                    diagram_specific_requirements=get_diagram_specific_requirements(diagram_type))
-                last_prompt_type = "InputValidation"
-                #send_to_api_custom_prompt(prompt)
+            # Pobierz szablon walidacji (np. "Weryfikacja opisu procesu")
+            template_data = prompt_templates.get("Weryfikacja opisu procesu")
+            if not template_data:
+                st.session_state.conversation_history.append({"role": "System", "content": "Brak szablonu do weryfikacji opisu procesu.\n\n"})
+            prompt = template_data["template"].format(
+                process_description=process_description,
+                diagram_type=diagram_type,
+                diagram_specific_requirements=get_diagram_specific_requirements(diagram_type))
+            last_prompt_type = "InputValidation"
+            #send_to_api_custom_prompt(prompt)
+
+            st.session_state.conversation_history.append({"role": "user", "content": prompt})
+            safe_log_info(f"Prompt sent for validation: {prompt[:5000]}...")
+            
+            # Increment verification attempts
+            if 'verification_attempts' not in st.session_state:
+                st.session_state.verification_attempts = 0
+            st.session_state.verification_attempts += 1
+
+            with st.spinner("Sprawdzanie poprawności opisu procesu..."):
                 response = call_api(prompt, selected_model)
-                safe_log_info(f"Response from API: {response[:2500]}...")
+                safe_log_info(f"Response from API: {response[:5000]}...")
                 # Store response
                 st.session_state.latest_response = response
-                st.session_state.conversation_history.append({"role": "user", "content": prompt})
+                #st.session_state.conversation_history.append({"role": "user", "content": prompt})
                 st.session_state.conversation_history.append({"role": "assistant", "content": response})
                     
                 # Check for XML content
@@ -365,6 +397,7 @@ with col1:
                         )
                 else:
                     prompt = process_description
+                    
                 
                 # Call API
                 response = call_api(prompt, selected_model)
@@ -409,10 +442,12 @@ if st.session_state.plantuml_diagrams:
         tabs = st.tabs([f"Diagram {i+1}" for i in range(len(st.session_state.plantuml_diagrams))])
         for i, (tab, plantuml_code) in enumerate(zip(tabs, st.session_state.plantuml_diagrams)):
             with tab:
+                
+                st.subheader(f"Diagram {i+1}")
                 diagram_type_identified = identify_plantuml_diagram_type(plantuml_code)
                 st.subheader(f"Typ diagramu: {diagram_type_identified}")
                 display_plantuml_diagram(plantuml_code)
-                
+
                 # Download buttons
                 col1, col2, col3, col4 = st.columns(4)
                 with col1:
@@ -428,11 +463,12 @@ if st.session_state.plantuml_diagrams:
                     try:
                         if plantuml_generator_type == "www":
                             svg_data = fetch_plantuml_svg_www(plantuml_code)
+                            
                         else:
                             svg_path = fetch_plantuml_svg_local(plantuml_code, plantuml_jar_path)
                             with open(svg_path, "rb") as f:
                                 svg_data = f.read()
-                        
+
                         if st.download_button(
                             label="Pobierz SVG",
                             data=svg_data,
