@@ -275,9 +275,48 @@ with col1:
     
     # Validation button
     if st.button("Sprawdź poprawność opisu"):
+        info_msg = f"Sprawdzanie poprawności opisu procesu: {process_description[:100]}..."
+        safe_log_info(info_msg) 
         if process_description:
-            # Simulate validation (you can implement actual validation logic)
-            st.success("Opis procesu wygląda poprawnie!")
+            with st.spinner("Sprawdzanie poprawności opisu procesu..."):
+                # Simulate validation (you can implement actual validation logic)
+                info_msg = ("**Przekazano opis procesu do weryfikacji**\n")
+                st.spinner({"role": "System", "content": info_msg})
+                safe_log_info("Przekazano opis procesu do weryfikacji") 
+                # Pobierz tekst z input_box
+                if not process_description:
+                    st.session_state.conversation_history.append({"role": "System", "content":"Brak tekstu do walidacji.\n\n"})
+                    
+                # Pobierz szablon walidacji (np. "Weryfikacja opisu procesu")
+                template_data = prompt_templates.get("Weryfikacja opisu procesu")
+                if not template_data:
+                    st.session_state.conversation_history.append({"role": "System", "content": "Brak szablonu do weryfikacji opisu procesu.\n\n"})
+                prompt = template_data["template"].format(
+                    process_description=process_description,
+                    diagram_type=diagram_type,
+                    diagram_specific_requirements=get_diagram_specific_requirements(diagram_type))
+                last_prompt_type = "InputValidation"
+                #send_to_api_custom_prompt(prompt)
+                response = call_api(prompt, selected_model)
+                safe_log_info(f"Response from API: {response[:2500]}...")
+                # Store response
+                st.session_state.latest_response = response
+                st.session_state.conversation_history.append({"role": "user", "content": prompt})
+                st.session_state.conversation_history.append({"role": "assistant", "content": response})
+                    
+                # Check for XML content
+                xml_content = extract_xml(response)
+                if xml_content and is_valid_xml(xml_content):
+                    st.session_state.latest_xml = xml_content
+                    
+                # Check for PlantUML content
+                plantuml_blocks = extract_plantuml_blocks(response)
+                if plantuml_blocks:
+                    st.session_state.latest_plantuml = plantuml_blocks[-1]
+                    st.session_state.plantuml_diagrams = plantuml_blocks
+                    
+                st.rerun()
+                st.success("Opis procesu wygląda poprawnie!")
         else:
             st.warning("Wprowadź opis procesu do walidacji")
     
