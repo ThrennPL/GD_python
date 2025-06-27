@@ -1,6 +1,6 @@
 # Generator i Weryfikator Diagramów UML/BPMN z AI
 
-Aplikacja desktopowa (PyQt5) do generowania, wizualizacji i weryfikacji diagramów UML (PlantUML) oraz BPMN (XML) na podstawie opisu procesu, z wykorzystaniem modeli AI (np. LLM). Pozwala na wybór szablonu promptu, typu diagramu, walidację opisu procesu oraz automatyczną weryfikację kodu PlantUML.
+Aplikacja desktopowa (PyQt5) oraz online (Streamlit) do generowania, wizualizacji i weryfikacji diagramów UML (PlantUML) oraz BPMN (XML) na podstawie opisu procesu, z wykorzystaniem modeli AI (np. LLM). Pozwala na wybór szablonu promptu, typu diagramu, walidację opisu procesu oraz automatyczną weryfikację kodu PlantUML.
 
 ## Funkcje
 
@@ -61,11 +61,12 @@ streamlit run streamlit_app.py
 
 ## Struktura projektu
 
-- `main.py` – główny plik aplikacji (GUI, logika)
+- `main.py` – główny plik aplikacji (GUI, logika) - PyQt5
+- `streamlit_app.py` – główny plik aplikacji (GUI, logika) - Streamlit
 - `prompt_templates.py` – szablony promptów do AI
 - `plantuml_utils.py` – funkcje pomocnicze do PlantUML (kodowanie, pobieranie SVG, rozpoznawanie typu diagramu)
 - `input_validator.py` – funkcja do walidacji opisu procesu przez AI
-- `plantuml_convert_to_xmi.py` – funkcje konwersji formatu PlantUML na XMI do EA
+- `plantuml_model.py`, `plantuml_parser.py`, `plantuml_to_ea.py`, `xmi_generator.py` – funkcje konwersji formatu PlantUML na XMI do EA
 - `Prompty_bankowe.txt` – przykładowe opisy procesów do testów
 - `Szablony_promptow.txt` - lista zdefiniowanych szablonów promptów oraz opis ich działania
 
@@ -79,29 +80,30 @@ streamlit run streamlit_app.py
 6. W przypadku błędów kod PlantUML zostanie automatycznie zweryfikowany przez AI.
 7. Możesz także sprawdzić poprawność opisu procesu przez AI.
 
-Diagram przypadków użycia:
+Diagram przypadków użycia (PyQt5):
 ![GD 2025-06-14 Przypadków użycia](https://github.com/user-attachments/assets/d8df84b4-f519-441e-856f-9ad1f7470d05)
-
-
-
 
 ## Przykładowe prompty
 
 Zobacz plik [`Prompty_bankowe.txt`](Prompty_bankowe.txt) – znajdziesz tam przykłady opisów procesów dla różnych typów diagramów UML/BPMN.
-Zpbacz plik [`Szablony_promptow.txt`] (Szablony_promptów.txt) - zapoznaj się z opisem działania poszczególnych szablonów promptów dedykowanych dla typów diagramów
+Zpbacz plik [`Szablony_promptow.txt`](Szablony_promptów.txt) - zapoznaj się z opisem działania poszczególnych szablonów promptów dedykowanych dla typów diagramów
 
 ## Zrzuty ekranu
 ![GD 2025-06-14 Sprawdzanie poprownosci opisu procesu](https://github.com/user-attachments/assets/6bafbbb4-c6e7-4f62-b145-51623c20026e)
 ![GD 2025-06-14 Diagram Klas](https://github.com/user-attachments/assets/a3082146-64d2-466b-b1d7-de33567c51eb)
 ![GD 2025-06-14 Diagram komponentów](https://github.com/user-attachments/assets/eb99c9a0-834b-4a84-9037-c2a32af755da)
 ![GD 2025-06-14 Diagram komponentów C4](https://github.com/user-attachments/assets/168735ab-e2d8-4fcb-97d0-1cf7ec078327)
+![Diagram komponentów C4 wersja Streamlit 2025-06-28 014118](https://github.com/user-attachments/assets/edede5c5-39a4-4e07-b9bd-b21639141dde)
+![Diagram sekwencji wersja Streamlit 2025-06-28 014118](https://github.com/user-attachments/assets/d0a1d0af-3c92-4dbe-9807-16da583293c2)
+![Weryfikacja opisu diagramu wersja Streamlit 2025-06-28 014118](https://github.com/user-attachments/assets/df116ea5-c29b-49b1-a2b9-7bb20f16c950)
+
 
 ## Autor
 
-Grzegorz Majewski / ThrennPL
+- Grzegorz Majewski / ThrennPL
 [https://www.linkedin.com/in/grzegorz-majewski-421306151/]
 gmajka1@wp.pl
 
-## Licencja
+- Jacek Dymek / jacdym
 
-MIT
+
