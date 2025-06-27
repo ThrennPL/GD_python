@@ -127,7 +127,9 @@ class EAXMIGenerator:
                 literal_elem = ET.SubElement(enum_elem, 'ownedLiteral')
                 literal_elem.set('xmi:id', f'EAID_{uuid.uuid4()}')
                 literal_elem.set('name', value)
-    
+
+        connector_ids = []
+
         # Generuj relacje - TO JEST KLUCZOWE
         for relation in relations:
             if relation.source in class_ids and relation.target in class_ids:
@@ -138,8 +140,10 @@ class EAXMIGenerator:
                         package.find(f".//packagedElement[@xmi:id='{class_ids[relation.source]}']"),
                         'generalization'
                     )
-                    generalization.set('xmi:id', f'EAID_{uuid.uuid4()}')
+                    gen_id = f'EAID_{uuid.uuid4()}'
+                    generalization.set('xmi:id', gen_id)
                     generalization.set('general', class_ids[relation.target])
+                    connector_ids.append(gen_id)
                 
                 else:
                     # Inne relacje jako asocjacje
@@ -148,6 +152,7 @@ class EAXMIGenerator:
                     assoc_id = f'EAID_{uuid.uuid4()}'
                     assoc_elem.set('xmi:id', assoc_id)
                 
+                    connector_ids.append(assoc_id)
                     if relation.label:
                         assoc_elem.set('name', relation.label)
                 
@@ -165,14 +170,15 @@ class EAXMIGenerator:
                         end2.set('multiplicity', relation.target_multiplicity)
     
         # KLUCZOWE: EA Extension z wszystkimi metadanymi
-        self.generate_ea_extension_improved(xmi_root, class_ids, relations, enum_ids, package_id)
+        self.generate_ea_extension_improved(xmi_root, class_ids, relations, enum_ids, package_id, connector_ids)
     
         # Generuj diagram
         self.generate_diagram_with_layout(
             xmi_root.find('xmi:Extension'), 
             class_ids, 
             relations, 
-            package_id
+            package_id,
+            connector_ids
         )
     
         # Konwertuj do ładnego XML
@@ -205,7 +211,7 @@ class EAXMIGenerator:
     
         return ea_profile
 
-    def generate_ea_extension_improved(self, xmi_root, classes, relations, enums, package_id):
+    def generate_ea_extension_improved(self, xmi_root, classes, relations, enums, package_id, connector_ids):
         """Ulepszona generacja EA Extension"""
         extension = ET.SubElement(xmi_root, 'xmi:Extension')
         extension.set('extender', 'Enterprise Architect')
@@ -279,11 +285,11 @@ class EAXMIGenerator:
         # CONNECTORS z poprawnymi właściwościami EA
         connectors = ET.SubElement(extension, 'connectors')
     
-        connector_id_counter = 1
-        for relation in relations:
+        #connector_id_counter = 1
+        for relation, conn_id in zip(relations, connector_ids):
             if relation.source in classes and relation.target in classes:
                 connector = ET.SubElement(connectors, 'connector')
-                connector.set('xmi:id', f'EAID_{uuid.uuid4()}')
+                connector.set('xmi:id', conn_id)
             
                 # EA wymaga tego formatu
                 source_elem = ET.SubElement(connector, 'source')
@@ -338,7 +344,7 @@ class EAXMIGenerator:
                 target_details.set('isOrdered', 'false')
                 target_details.set('isChangeable', 'true')
             
-                connector_id_counter += 1
+                #connector_id_counter += 1
     
         return extension
 
@@ -355,7 +361,7 @@ class EAXMIGenerator:
         return mapping.get(relation_type, 'Association')
 
     # BARDZO WAŻNE: Dodaj generację diagramu z elementami
-    def generate_diagram_with_layout(self, extension, classes, relations, package_id):
+    def generate_diagram_with_layout(self, extension, classes, relations, package_id, connector_ids):
         """Generuje diagram z podstawowym layoutem"""
         diagrams = ET.SubElement(extension, 'diagrams')
     
@@ -400,6 +406,11 @@ class EAXMIGenerator:
         # Elements na diagramie z pozycjonowaniem
         elements = ET.SubElement(diagram, 'elements')
     
+        connectors = ET.SubElement(diagram, 'connectors')
+        for conn_id in connector_ids:
+            connector = ET.SubElement(connectors, 'connector')
+            connector.set('connector_id', conn_id)
+
         x, y = 100, 100
         for i, (class_name, class_id) in enumerate(classes.items()):
             element = ET.SubElement(elements, 'element')
