@@ -49,7 +49,8 @@ def fetch_plantuml_svg_www(plantuml_code: str) -> bytes:
     if response.status_code == 200:
         return response.content
     else:
-        raise Exception(f"Nie udało się pobrać SVG: {response.status_code}")
+        error_msg = f"Nie udało się pobrać SVG: {response.status_code}"
+        raise Exception(error_msg)
     
 def fetch_plantuml_svg_local(plantuml_code: str, plantuml_jar_path: str = "plantuml.jar") -> str:
     """
