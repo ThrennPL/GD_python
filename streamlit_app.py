@@ -134,6 +134,7 @@ def call_api(prompt, model_name):
         else:
             return f"Błąd API: {response.status_code} - {response.text}"
     except Exception as e:
+        safe_log_exception(f"Connection error: {e}")    
         return f"Błąd połączenia: {str(e)}"
 
 def get_complexity_level(level):
@@ -191,18 +192,37 @@ def display_plantuml_diagram(plantuml_code):
     """Wyświetla diagram PlantUML."""
     try:
         if plantuml_generator_type == "www":
-            svg_data = fetch_plantuml_svg_www(plantuml_code)
+            if plantuml_code is not None:
+                safe_log_info(f"Kod Plant UML z promptu (display): {plantuml_code}")
+                svg_data = fetch_plantuml_svg_www(plantuml_code)
+                
+            else:
+                st.error("Nie ma kodu do wyświetlenia")
+                safe_log_error("Nie ma kodu do wyświetlenia: {plantuml_code}")
+            
             if isinstance(svg_data, bytes):
                 svg_str = svg_data.decode('utf-8')
-                #st.components.v1.html(svg_str) #, height=600)
-                st.image(svg_str)
+                #resize SVG to fit the container
+                #svg_str = svg_str.replace('width="100%"', 'width="50%" height="600"')
+                #st.components.v1.html(svg_str, height=1000)
+                st.image(
+                    svg_str,
+                    width=None,
+                    use_container_width=True
+                )
                 return True
         elif plantuml_generator_type == "local":
             svg_path = fetch_plantuml_svg_local(plantuml_code, plantuml_jar_path)
             with open(svg_path, "r", encoding="utf-8") as f:
-                svg_str = f.read()
-                #st.components.v1.html(svg_str, height=600)
-                st.image(svg_str)
+                svg_str = f.read()  
+                #resize SVG to fit the container
+                #svg_str = svg_str.replace('width="100%"', 'width="500%" height="600"')
+            #st.components.v1.html(svg_str, height=1000)
+                st.image(
+                    svg_str,
+                    width=None,
+                    use_container_width=True
+                )
             return True
     except Exception as e:
         st.error(f"Nie udało się wyświetlić diagramu: {e}")
@@ -317,18 +337,58 @@ with col1:
     
     # Validation button
     if st.button("Sprawdź poprawność opisu"):
+        info_msg = f"Sprawdzanie poprawności opisu procesu: {process_description[:100]}..."
+        safe_log_info(info_msg) 
         if process_description:
-            with st.spinner("Generowanie odpowiedzi..."):
-                template_data = prompt_templates["Weryfikacja opisu procesu"]
-                prompt = template_data["template"].format(
-                diagram_type=diagram_type,
+            
+            # Simulate validation (you can implement actual validation logic)
+            info_msg = ("**Przekazano opis procesu do weryfikacji**\n")
+            st.spinner({"role": "System", "content": info_msg})
+            safe_log_info("Przekazano opis procesu do weryfikacji") 
+            # Pobierz tekst z input_box
+            if not process_description:
+                st.session_state.conversation_history.append({"role": "System", "content":"Brak tekstu do walidacji.\n\n"})
+                    
+            # Pobierz szablon walidacji (np. "Weryfikacja opisu procesu")
+            template_data = prompt_templates.get("Weryfikacja opisu procesu")
+            if not template_data:
+                st.session_state.conversation_history.append({"role": "System", "content": "Brak szablonu do weryfikacji opisu procesu.\n\n"})
+            prompt = template_data["template"].format(
                 process_description=process_description,
+                diagram_type=diagram_type,
                 diagram_specific_requirements=get_diagram_specific_requirements(diagram_type))
+            last_prompt_type = "InputValidation"
+            #send_to_api_custom_prompt(prompt)
+
+            st.session_state.conversation_history.append({"role": "user", "content": prompt})
+            safe_log_info(f"Prompt sent for validation: {prompt[:5000]}...")
+            
+            # Increment verification attempts
+            if 'verification_attempts' not in st.session_state:
+                st.session_state.verification_attempts = 0
+            st.session_state.verification_attempts += 1
+
+            with st.spinner("Sprawdzanie poprawności opisu procesu..."):
                 response = call_api(prompt, selected_model)
-                st.session_state.conversation_history.append({"role": "user", "content": prompt})
+                safe_log_info(f"Response from API: {response[:5000]}...")
+                # Store response
+                st.session_state.latest_response = response
+                #st.session_state.conversation_history.append({"role": "user", "content": prompt})
                 st.session_state.conversation_history.append({"role": "assistant", "content": response})
-    #            st.success("Opis procesu wygląda poprawnie!")
-    #            st.success(response)
+                    
+                # Check for XML content
+                xml_content = extract_xml(response)
+                if xml_content and is_valid_xml(xml_content):
+                    st.session_state.latest_xml = xml_content
+                    
+                # Check for PlantUML content
+                plantuml_blocks = extract_plantuml_blocks(response)
+                if plantuml_blocks:
+                    st.session_state.latest_plantuml = plantuml_blocks[-1]
+                    st.session_state.plantuml_diagrams = plantuml_blocks
+                    
+                st.rerun()
+                st.success("Opis procesu wygląda poprawnie!")
         else:
             st.warning("Wprowadź opis procesu do walidacji")
     
@@ -377,6 +437,7 @@ with col1:
                         )
                 else:
                     prompt = process_description
+                    
                 
                 # Call API
                 response = call_api(prompt, selected_model)
@@ -422,10 +483,37 @@ if st.session_state.plantuml_diagrams:
         tabs = st.tabs([f"{identify_plantuml_diagram_type(p)}" for p in st.session_state.plantuml_diagrams])        
         for i, (tab, plantuml_code) in enumerate(zip(tabs, st.session_state.plantuml_diagrams)):
             with tab:
+
+                st.subheader(f"Diagram {i+1}")
                 diagram_type_identified = identify_plantuml_diagram_type(plantuml_code)
                 st.subheader(f"Typ diagramu: {diagram_type_identified}")
-                display_plantuml_diagram(plantuml_code)
-                
+                diagrams = st.session_state.plantuml_diagrams
+                with st.expander(f"Diagram {i+1}"):
+                    if plantuml_code is not None:
+                        if not display_plantuml_diagram(plantuml_code):
+                            # Weryfikacja kodu w przypadku błędów
+                            diagram_type = identify_plantuml_diagram_type(plantuml_code)
+                            safe_log_info(f"Kod Plant UML z promptu: {plantuml_code}")
+                            verification_template = prompt_templates["Weryfikacja kodu PlantUML"]["template"]
+                            prompt = verification_template.format(plantuml_code=plantuml_code, diagram_type=diagram_type)
+                            safe_log_info(f"Prompt for verification: {prompt}") 
+                            st.info("Wysyłam kod do weryfikacji: ")
+                            response = call_api(prompt, selected_model)
+                            safe_log_info(f"Response from API (Weryfikacje): {response[:5000]}...")  # Loguj pierwsze 5000 znaków odpowiedzi
+                            # wyciągniecie kodu PlantUML z odpowiedzi modelu
+                            plantuml_code = extract_plantuml(response)
+                            plantuml_code = plantuml_code.replace("!theme ocean", "")
+                            plantuml_code = plantuml_code.replace("!theme grameful", "")
+                            safe_log_info(f"Kod Plant UML po wycięciu !theme ocean: {plantuml_code}")
+                            if not display_plantuml_diagram(plantuml_code):
+                                st.error("Nie udało się pobrać diagramu PlantUML.")
+                                st.stop()
+                            else:   
+                                #st.session_state.plantuml_diagrams[i] = plantuml_code
+                                if plantuml_code is not None:
+                                    display_plantuml_diagram(plantuml_code)
+                                else:
+                                    st.error("Nie ma kodu do wyświetlenia")
                 # Download buttons
                 col1, col2, col3, col4, col5, col6 = st.columns(6)
                 with col1:
@@ -446,11 +534,12 @@ if st.session_state.plantuml_diagrams:
                     try:
                         if plantuml_generator_type == "www":
                             svg_data = fetch_plantuml_svg_www(plantuml_code)
+                             
                         else:
                             svg_path = fetch_plantuml_svg_local(plantuml_code, plantuml_jar_path)
                             with open(svg_path, "rb") as f:
                                 svg_data = f.read()
-                        
+
                         if st.download_button(
                             label="Pobierz SVG",
                             data=svg_data,
@@ -459,6 +548,7 @@ if st.session_state.plantuml_diagrams:
                         ):
                             st.success("Plik SVG został przygotowany do pobrania!")
                     except Exception as e:
+                        log_error(f"Błąd podczas przygotowania SVG: {e}")
                         st.error(f"Błąd podczas przygotowania SVG: {e}")
                 
                 with col4:
@@ -473,16 +563,41 @@ if st.session_state.plantuml_diagrams:
                             ):
                                 st.success("Plik XMI został przygotowany do pobrania!")
                         except Exception as e:
-                            st.error(f"Błąd podczas generowania XMI: {e}")
-                    else:
-                        st.button("Pobierz XMI", disabled=True, help="XMI dostępne tylko dla diagramów klas", key=f"bt_xmi_{i+1}")
+                            st.error(f"Błąd podczas generowania XMI: {e}"),
+                            safe_log_error(f"Błąd podczas generowania XMI: {e}")
+                    #else:
+                        #st.button(f"Pobierz XMI {i+1}", disabled=True, help="XMI dostępne tylko dla diagramów klas", key=f"xmi_button_{i}")
     else:
         # Single diagram
         plantuml_code = st.session_state.plantuml_diagrams[0]
         diagram_type_identified = identify_plantuml_diagram_type(plantuml_code)
         st.subheader(f"Typ diagramu: {diagram_type_identified}")
-        display_plantuml_diagram(plantuml_code)
-        
+        if not display_plantuml_diagram(plantuml_code):
+            # Weryfikacja kodu w przypadku błędów
+            safe_log_info(f"Kod Plant UML z promptu (Weryfikacje pojedyńcze): {plantuml_code}")
+            diagram_type = identify_plantuml_diagram_type(plantuml_code)
+            verification_template = prompt_templates["Weryfikacja kodu PlantUML"]["template"]
+            prompt = verification_template.format(plantuml_code=plantuml_code, diagram_type=diagram_type)
+            safe_log_info(f"Prompt for verification (Weryfikacje pojedyńcze): {prompt}") 
+            st.info("Wysyłam kod do weryfikacji")
+            response = call_api(prompt, selected_model)
+            safe_log_info(f"Response from API (Weryfikacje pojedyńcze): {response[:5000]}...")  # Loguj pierwsze 5000 znaków odpowiedzi
+            # wyciągniecie kodu PlantUML z odpowiedzi modelu
+            plantuml_code = extract_plantuml(response)
+            plantuml_code = plantuml_code.replace("!theme ocean", "")
+            plantuml_code = plantuml_code.replace("!theme grameful", "")
+            safe_log_info(f"Kod Plant UML po wycięciu !theme ocean: {plantuml_code}")
+            if not display_plantuml_diagram(plantuml_code):
+                st.error("Nie udało się pobrać diagramu PlantUML.")
+                st.stop()
+            else:   
+                # st.session_state.plantuml_diagrams[i] = plantuml_code
+                if plantuml_code is not None:
+                    display_plantuml_diagram(plantuml_code)
+                else:
+                    st.error("Nie ma kodu do wyświetlenia")  
+                
+        #display_plantuml_diagram(plantuml_code)
         # Download buttons
         col1, col2, col3, col4, col5, col6 = st.columns(6)
         with col1:

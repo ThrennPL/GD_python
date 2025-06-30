@@ -3,14 +3,14 @@ output*.*
 *.svg
 *.xml
 *.xmi
-*.log
+*.log*
 *.puml
 =======
 output*.*
 *.svg
 *.xml
 *.xmi
-*.log
+*.log*
 *.puml
 .env
 app.log.*
