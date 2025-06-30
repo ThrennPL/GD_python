@@ -51,6 +51,14 @@ cd twoj-projekt
 pip install -r requirements.txt
 ```
 
+## Konfiguracja .env
+PLANTUML_JAR_PATH=plantuml.jar
+PLANTUML_GENERATOR_TYPE=local
+API_URL=https://api.openai.com/v1/models
+API_DEFAULT_MODEL=gpt-4o
+CHAT_URL=https://api.openai.com/v1/chat/completions
+API_KEY=<...>
+
 ## Uruchomienie
 
 ```bash
@@ -105,5 +113,8 @@ Zpbacz plik [`Szablony_promptow.txt`](Szablony_promptów.txt) - zapoznaj się z 
 gmajka1@wp.pl
 
 - Jacek Dymek / jacdym
+[https://www.linkedin.com/in/jacek-dymek-6b08ba5/]
+jjdymek@interia.pl
+
 
 
