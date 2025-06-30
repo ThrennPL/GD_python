@@ -2,3 +2,5 @@ PyQt5
 requests
 streamlit
 Pillow
+python-dotenv
+os

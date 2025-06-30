@@ -5,6 +5,11 @@ from datetime import datetime
 import traceback
 import base64
 from io import BytesIO
+import os
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
 
 # Try to import custom modules with error handling
 try:
@@ -20,16 +25,19 @@ except ImportError as e:
     st.error(f"Błąd importu modułów: {e}")
     st.stop()
 
-# Configuration
+# Configuration - Load from environment variables
 try:
     setup_logger()
 except Exception as e:
     st.warning(f"Logger setup failed: {e}")
 
-plantuml_jar_path = "plantuml.jar"
-plantuml_generator_type = "www"  # Use "www" for online PlantUML service
-API_URL = "http://localhost:1234/v1/models"
-CHAT_URL = "http://localhost:1234/v1/chat/completions"
+# Load configuration from .env file
+plantuml_jar_path = os.getenv("PLANTUML_JAR_PATH", "plantuml.jar")
+plantuml_generator_type = os.getenv("PLANTUML_GENERATOR_TYPE", "local")
+API_URL = os.getenv("API_URL", "http://localhost:1234/v1/models")
+CHAT_URL = os.getenv("CHAT_URL", "http://localhost:1234/v1/chat/completions")
+API_KEY = os.getenv("API_KEY", "")
+API_DEFAULT_MODEL = os.getenv("API_DEFAULT_MODEL", "")
 
 # Page configuration
 st.set_page_config(
@@ -55,6 +63,10 @@ if 'last_prompt_type' not in st.session_state:
     st.session_state.last_prompt_type = None
 if 'models' not in st.session_state:
     st.session_state.models = []
+if 'show_plantuml_code' not in st.session_state:
+    st.session_state.show_plantuml_code = False
+if 'selected_diagram_index' not in st.session_state:
+    st.session_state.selected_diagram_index = 0
 
 # Helper functions for safe logging
 def safe_log_info(message):
@@ -79,8 +91,12 @@ def safe_log_exception(message):
 @st.cache_data
 def get_loaded_models():
     """Pobiera listę załadowanych modeli z API."""
+    headers = {
+        "Content-Type": "application/json", 
+        "Authorization": f"Bearer {API_KEY}"
+    }
     try:
-        response = requests.get(API_URL)
+        response = requests.get(API_URL, headers=headers)
         safe_log_info(f"Request to {API_URL} returned status code {response.status_code}")
         
         if response.status_code == 200:
@@ -98,7 +114,10 @@ def get_loaded_models():
 
 def call_api(prompt, model_name):
     """Wywołuje API z podanym promptem i modelem."""
-    headers = {"Content-Type": "application/json"}
+    headers = {
+        "Content-Type": "application/json", 
+        "Authorization": f"Bearer {API_KEY}"
+    }
     messages = [{"role": "user", "content": prompt}]
     payload = {
         "model": model_name,
@@ -175,18 +194,40 @@ def display_plantuml_diagram(plantuml_code):
             svg_data = fetch_plantuml_svg_www(plantuml_code)
             if isinstance(svg_data, bytes):
                 svg_str = svg_data.decode('utf-8')
-                st.components.v1.html(svg_str) #, height=600)
+                #st.components.v1.html(svg_str) #, height=600)
+                st.image(svg_str)
                 return True
         elif plantuml_generator_type == "local":
             svg_path = fetch_plantuml_svg_local(plantuml_code, plantuml_jar_path)
             with open(svg_path, "r", encoding="utf-8") as f:
                 svg_str = f.read()
-            st.components.v1.html(svg_str, height=600)
+                #st.components.v1.html(svg_str, height=600)
+                st.image(svg_str)
             return True
     except Exception as e:
         st.error(f"Nie udało się wyświetlić diagramu: {e}")
         safe_log_exception(f"Nie udało się wyświetlić diagramu: {e}")
         return False
+
+@st.dialog(f"Kod PlantUML", width="large")
+def show_plantuml_modal():
+    st.markdown("**Kod PlantUML:**")
+    st.code(plantuml_code, language="plantuml")
+            
+    col1, col2 = st.columns(2)
+    with col1:
+        if st.download_button(
+            label="Pobierz plik",
+            data=plantuml_code,
+            file_name=f"{diagram_type}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.puml",
+            mime="text/plain"
+        ):
+            st.success("Plik został pobrany!")
+    
+    with col2:
+        if st.button("Zamknij", type="primary"):
+            #st.session_state.show_plantuml_code = False
+            st.rerun()
 
 # Load models
 if not st.session_state.models:
@@ -206,7 +247,8 @@ with st.sidebar:
     # Model selection
     if st.session_state.models:
         model_names = [model.get("id", "unknown") for model in st.session_state.models]
-        selected_model = st.selectbox("Wybierz model AI:", model_names)
+        selected_model = st.selectbox("Wybierz model AI:", model_names, 
+                                      index = 0 if API_DEFAULT_MODEL not in model_names else model_names.index(API_DEFAULT_MODEL))
     else:
         st.error("Nie udało się załadować modeli")
         selected_model = None
@@ -276,8 +318,17 @@ with col1:
     # Validation button
     if st.button("Sprawdź poprawność opisu"):
         if process_description:
-            # Simulate validation (you can implement actual validation logic)
-            st.success("Opis procesu wygląda poprawnie!")
+            with st.spinner("Generowanie odpowiedzi..."):
+                template_data = prompt_templates["Weryfikacja opisu procesu"]
+                prompt = template_data["template"].format(
+                diagram_type=diagram_type,
+                process_description=process_description,
+                diagram_specific_requirements=get_diagram_specific_requirements(diagram_type))
+                response = call_api(prompt, selected_model)
+                st.session_state.conversation_history.append({"role": "user", "content": prompt})
+                st.session_state.conversation_history.append({"role": "assistant", "content": response})
+    #            st.success("Opis procesu wygląda poprawnie!")
+    #            st.success(response)
         else:
             st.warning("Wprowadź opis procesu do walidacji")
     
@@ -367,7 +418,8 @@ if st.session_state.plantuml_diagrams:
     
     # Create tabs for each diagram
     if len(st.session_state.plantuml_diagrams) > 1:
-        tabs = st.tabs([f"Diagram {i+1}" for i in range(len(st.session_state.plantuml_diagrams))])
+#        tabs = st.tabs([f"{identify_plantuml_diagram_type(st.session_state.plantuml_diagrams[i+1])}" for i in range(len(st.session_state.plantuml_diagrams))])
+        tabs = st.tabs([f"{identify_plantuml_diagram_type(p)}" for p in st.session_state.plantuml_diagrams])        
         for i, (tab, plantuml_code) in enumerate(zip(tabs, st.session_state.plantuml_diagrams)):
             with tab:
                 diagram_type_identified = identify_plantuml_diagram_type(plantuml_code)
@@ -375,8 +427,13 @@ if st.session_state.plantuml_diagrams:
                 display_plantuml_diagram(plantuml_code)
                 
                 # Download buttons
-                col1, col2, col3, col4 = st.columns(4)
+                col1, col2, col3, col4, col5, col6 = st.columns(6)
                 with col1:
+                    if st.button("Kod PlantUML", key=f"show_code_{i}"):
+                        st.session_state.show_plantuml_code = True
+                        st.session_state.selected_diagram_index = i
+                    
+                with col2:
                     if st.download_button(
                         label="Pobierz PlantUML",
                         data=plantuml_code,
@@ -385,7 +442,7 @@ if st.session_state.plantuml_diagrams:
                     ):
                         st.success("Plik PlantUML został przygotowany do pobrania!")
                 
-                with col2:
+                with col3:
                     try:
                         if plantuml_generator_type == "www":
                             svg_data = fetch_plantuml_svg_www(plantuml_code)
@@ -404,7 +461,7 @@ if st.session_state.plantuml_diagrams:
                     except Exception as e:
                         st.error(f"Błąd podczas przygotowania SVG: {e}")
                 
-                with col3:
+                with col4:
                     if "klas" in diagram_type_identified.lower():
                         try:
                             xmi_content = plantuml_to_xmi(plantuml_code)
@@ -418,7 +475,7 @@ if st.session_state.plantuml_diagrams:
                         except Exception as e:
                             st.error(f"Błąd podczas generowania XMI: {e}")
                     else:
-                        st.button("Pobierz XMI", disabled=True, help="XMI dostępne tylko dla diagramów klas")
+                        st.button("Pobierz XMI", disabled=True, help="XMI dostępne tylko dla diagramów klas", key=f"bt_xmi_{i+1}")
     else:
         # Single diagram
         plantuml_code = st.session_state.plantuml_diagrams[0]
@@ -427,8 +484,13 @@ if st.session_state.plantuml_diagrams:
         display_plantuml_diagram(plantuml_code)
         
         # Download buttons
-        col1, col2, col3, col4 = st.columns(4)
+        col1, col2, col3, col4, col5, col6 = st.columns(6)
         with col1:
+            if st.button("Kod PlantUML"):
+                st.session_state.show_plantuml_code = True
+                st.session_state.selected_diagram_index = 0  # Single diagram, index 0
+            
+        with col2:
             if st.download_button(
                 label="Pobierz PlantUML",
                 data=plantuml_code,
@@ -437,7 +499,7 @@ if st.session_state.plantuml_diagrams:
             ):
                 st.success("Plik PlantUML został przygotowany do pobrania!")
         
-        with col2:
+        with col3:
             try:
                 if plantuml_generator_type == "www":
                     svg_data = fetch_plantuml_svg_www(plantuml_code)
@@ -456,7 +518,7 @@ if st.session_state.plantuml_diagrams:
             except Exception as e:
                 st.error(f"Błąd podczas przygotowania SVG: {e}")
         
-        with col3:
+        with col4:
             if "klas" in diagram_type_identified.lower():
                 try:
                     xmi_content = plantuml_to_xmi(plantuml_code)
@@ -485,4 +547,31 @@ if st.session_state.latest_xml:
         mime="application/xml"
     ):
         st.success("Plik XML został przygotowany do pobrania!")
+
+# Modal window for PlantUML code
+if st.session_state.show_plantuml_code and st.session_state.plantuml_diagrams:
+    # Get the selected diagram index (default to 0 if not set)
+    selected_index = st.session_state.get('selected_diagram_index', 0)
+    if selected_index < len(st.session_state.plantuml_diagrams):
+        plantuml_code = st.session_state.plantuml_diagrams[selected_index]
+        diagram_type = identify_plantuml_diagram_type(plantuml_code)
+    else:
+        plantuml_code = st.session_state.plantuml_diagrams[0]
+        diagram_type = identify_plantuml_diagram_type(plantuml_code)
+    
+    @st.dialog(f"Kod PlantUML - {diagram_type}", width="large")
+    def show_plantuml_modal():
+        st.code(plantuml_code, language="plantuml",height=500)
+                
+        if st.button("Zamknij", type="primary"):
+            st.session_state.show_plantuml_code = False
+            st.rerun()
+    
+   # Show modal and handle closing
+    result = show_plantuml_modal()
+    
+    # If dialog was closed by X button, reset the state
+    if result is None:
+        st.session_state.show_plantuml_code = False
+
 

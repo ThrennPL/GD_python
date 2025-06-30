@@ -64,7 +64,7 @@ def fetch_plantuml_svg_local(plantuml_code: str, plantuml_jar_path: str = "plant
         f.write(plantuml_code)
     # Generate SVG using plantuml.jar
     subprocess.run([
-        "java", "-jar", plantuml_jar_path, "-tsvg", puml_path
+        "java", "-jar", plantuml_jar_path, "-tsvg", puml_path,"-charset","UTF-8"
     ], check=True)
     # Return the path to the generated SVG file
     return svg_path

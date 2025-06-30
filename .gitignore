@@ -12,4 +12,7 @@ output*.*
 *.xmi
 *.log
 *.puml
+.env
+app.log.*
+
 >>>>>>> 46631394621d974d34f5f8bfea7e8b1784a2f083

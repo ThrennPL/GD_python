@@ -18,13 +18,21 @@ from xml.etree.ElementTree import fromstring, ParseError
 from datetime import datetime
 from zlib import compress
 import traceback
+import os
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
 
 setup_logger()
-plantuml_jar_path = "plantuml.jar"  # Ścieżka do pliku plantuml.jar
-plantuml_generator_type = "www"  # Możliwe wartości: "local" lub "www"
+plantuml_jar_path = os.getenv("PLANTUML_JAR_PATH", "plantuml.jar")
+plantuml_generator_type = os.getenv("PLANTUML_GENERATOR_TYPE", "local")
+CHAT_URL = os.getenv("CHAT_URL", "http://localhost:1234/v1/chat/completions")
+API_KEY = os.getenv("API_KEY", "")
+API_DEFAULT_MODEL = os.getenv("API_DEFAULT_MODEL", "")
 
 class AIApp(QMainWindow):
-    API_URL = "http://localhost:1234/v1/models"
+    API_URL = os.getenv("API_URL", "http://localhost:1234/v1/models")
     XML_BLOCK_PATTERN = r"```xml\n(.*?)\n```"
     
     def __init__(self):
@@ -278,7 +286,7 @@ class AIApp(QMainWindow):
     def get_loaded_models(self):
         """Pobiera listę załadowanych modeli z API."""
         try:
-            response = requests.get(self.API_URL)
+            response = requests.get(self.API_URL, headers={"Authorization": f"Bearer {API_KEY}"} if API_KEY else {"Content-Type": "application/json"})
             log_info(f"Request to {self.API_URL} returned status code {response.status_code}")
 
             if response.status_code == 200:
@@ -303,8 +311,8 @@ class AIApp(QMainWindow):
         """
         if model_name is None:
             model_name = self.model_selector.currentText()
-        url = "http://localhost:1234/v1/chat/completions"
-        headers = {"Content-Type": "application/json"}
+        url = CHAT_URL
+        headers = {"Content-Type": "application/json","Authorization": f"Bearer {API_KEY}"} if API_KEY else {"Content-Type": "application/json"}
         messages = [{"role": "user", "content": prompt}]
         payload = {
             "model": model_name,
