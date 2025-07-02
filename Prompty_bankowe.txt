@@ -10,9 +10,11 @@ Klient w aplikacji mobilnej wybiera opcję "BLIK" i generuje 6-cyfrowy kod. Nast
 ## 2. ACTIVITY DIAGRAM - Proces z decyzjami i rozgałęzieniami
 
 ### Weryfikacja tożsamości nowego klienta (KYC)
-```
+`PL``
 Nowy klient rozpoczyna proces weryfikacji tożsamości online. System prosi o przesłanie zdjęcia dokumentu tożsamości oraz selfie. Automatyczne narzędzie OCR odczytuje dane z dokumentu. Jeśli OCR nie może odczytać danych, klient jest proszony o ponowne zdjęcie. System biometryczny porównuje selfie z dokumentem. Jeśli weryfikacja automatyczna się nie powiedzie, sprawa trafia do analityka, który dokonuje weryfikacji manualnej. Po pozytywnej weryfikacji (automatycznej lub manualnej), konto zostaje aktywowane i klient otrzymuje powiadomienie. W przypadku negatywnej weryfikacji, konto pozostaje zablokowane.
-```
+`EN``
+A new client begins the online identity verification process. The system requests an upload of an ID document photo and a selfie. An automatic OCR tool reads the data from the document. If the OCR cannot read the data, the client is asked to retake the photo. The biometric system compares the selfie with the document. If automatic verification fails, the case is sent to an analyst for manual verification. After successful verification (either automatic or manual), the account is activated and the client receives a notification. In case of negative verification, the account remains blocked.
+'''
 
 ## 3. USE CASE DIAGRAM - Relacje między aktorami a funkcjami
 

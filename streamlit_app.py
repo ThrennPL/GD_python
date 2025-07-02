@@ -17,7 +17,7 @@ try:
     from extract_code_from_response import extract_xml, extract_plantuml, extract_plantuml_blocks, is_valid_xml
     from input_validator import validate_input_text
     from plantuml_utils import plantuml_encode, identify_plantuml_diagram_type, fetch_plantuml_svg_local, fetch_plantuml_svg_www
-    from prompt_templates import prompt_templates, get_diagram_specific_requirements
+    from prompt_templates_pl import prompt_templates, get_diagram_specific_requirements
     from logger_utils import setup_logger, log_info, log_error, log_exception
     from plantuml_to_ea import plantuml_to_xmi
     MODULES_LOADED = True
@@ -539,6 +539,7 @@ if st.session_state.plantuml_diagrams:
                             plantuml_code = extract_plantuml(response)
                             plantuml_code = plantuml_code.replace("!theme ocean", "")
                             plantuml_code = plantuml_code.replace("!theme grameful", "")
+                            plantuml_code = plantuml_code.replace("!theme plain", "")
                             safe_log_info(f"Kod Plant UML po wycięciu !theme ocean: {plantuml_code}")
                             if not display_plantuml_diagram(plantuml_code):
                                 st.error("Nie udało się pobrać diagramu PlantUML.")

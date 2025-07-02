@@ -1,10 +1,12 @@
-from prompt_templates import get_diagram_specific_requirements
 
-def validate_input_text(app_instance,diagram_type ):
+def validate_input_text(app_instance,diagram_type, LANG="pl"):
     """
     Sprawdza poprawność tekstu z input_box za pomocą modelu AI i dedykowanego szablonu.
     """
-    
+    if LANG == "en":
+        from prompt_templates_en import get_diagram_specific_requirements
+    else:
+        from prompt_templates_pl import get_diagram_specific_requirements
     info_msg = ("**Przekazano opis procesu do weryfikacji**\n")
     app_instance.append_to_chat("System", info_msg)
     # Pobierz tekst z input_box

@@ -4,7 +4,7 @@ from xml_highlighter import XMLHighlighter
 from input_validator import validate_input_text
 from api_thread import APICallThread
 from plantuml_utils import plantuml_encode, identify_plantuml_diagram_type, fetch_plantuml_svg_local, fetch_plantuml_svg_www
-from prompt_templates import prompt_templates, get_diagram_specific_requirements
+#from prompt_templates import prompt_templates, get_diagram_specific_requirements
 from logger_utils import setup_logger, log_info, log_error, log_exception
 import sys
 import re
@@ -20,17 +20,31 @@ from zlib import compress
 import traceback
 import os
 from dotenv import load_dotenv
+from translations_pl import TRANSLATIONS as PL
+from translations_en import TRANSLATIONS as EN
 
 # Load environment variables
 load_dotenv()
+
+
 
 setup_logger("main_app.log")
 plantuml_jar_path = os.getenv("PLANTUML_JAR_PATH", "plantuml.jar")
 plantuml_generator_type = os.getenv("PLANTUML_GENERATOR_TYPE", "local")
 CHAT_URL = os.getenv("CHAT_URL", "http://localhost:1234//v1/chat/completions")
 API_KEY = os.getenv("API_KEY", "")
-API_DEFAULT_MODEL = os.getenv("API_DEFAULT_MODEL", "")
+API_DEFAULT_MODEL = os.getenv("API_DEFAULT_MODEL", "models/gemini-2.0-flash")
 MODEL_PROVIDER = os.getenv("MODEL_PROVIDER", "gemini")  # lub "gemini"
+
+LANG = "en"  # Domyślny język, można zmienić na "pl" dla polskiego
+
+def tr(key):
+    return EN[key] if LANG == "en" else PL[key]
+
+if LANG == "en":
+    from prompt_templates_en import prompt_templates, get_diagram_specific_requirements
+else:
+    from prompt_templates_pl import prompt_templates, get_diagram_specific_requirements
 
 class AIApp(QMainWindow):
     API_URL = os.getenv("API_URL", "http://localhost:1234//v1/models")
@@ -38,19 +52,19 @@ class AIApp(QMainWindow):
     
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("Generator diagramów AI")
+        self.setWindowTitle(tr("setWindowTitle"))
         self.setGeometry(100, 100, 1200, 1000)
         self.verification_attempts = 0
         self.last_prompt_type = None 
         self.prompt_templates = prompt_templates  # Załaduj szablony z pliku
 
         # Grupa dla szablonu
-        template_group = QGroupBox("Konfiguracja szablonu")
+        template_group = QGroupBox(tr("template_group"))
         template_layout = QHBoxLayout()
 
         # ComboBox do wyboru modelu
         self.model_selector = QComboBox(self)
-        self.model_selector.setToolTip("Wybierz model AI do użycia.")
+        self.model_selector.setToolTip(tr("model_selector.setToolTip"))
         self.model_selector.addItem("Loading models...")  # Placeholder na czas ładowania
         self.load_models()  # Załaduj modele przy starcie
 
@@ -65,9 +79,9 @@ class AIApp(QMainWindow):
 
         # Widżety
         self.input_box = QTextEdit(self)
-        self.input_box.setToolTip("Wprowadź opis procesu lub zapytanie do modelu.")
+        self.input_box.setToolTip(tr("input_box.setToolTip"))
         self.output_box = QTextEdit(self)
-        self.output_box.setToolTip("Odpowiedź modelu AI. Możesz tu zobaczyć wygenerowany kod PlantUML.")
+        self.output_box.setToolTip(tr("output_box.setToolTip"))
         self.output_box.setReadOnly(True)
         self.output_box.setAcceptRichText(True)  # Umożliwia kolorowanie tekstu
         self.output_box.setStyleSheet("background-color: #f0f0f0;")  # Ustawienie koloru tła
@@ -91,16 +105,16 @@ class AIApp(QMainWindow):
         self.radio_xml.toggled.connect(self.update_template_selector)
 
         self.template_selector = QComboBox(self)
-        self.template_selector.setToolTip("Wybierz szablon zapytania do modelu AI.")
+        self.template_selector.setToolTip(tr("template_selector.setToolTip"))
         self.template_selector.addItems(list(self.prompt_templates.keys()))
 
-        template_layout.addWidget(QLabel("Wybierz szablon zapytania:"))
+        template_layout.addWidget(QLabel(tr("template_selector")))
         template_layout.addWidget(self.template_selector)
         template_group.setStyleSheet("background-color: #f0ffff;")
 
         # Dodanie ComboBox do wyboru typu diagramu
         self.diagram_type_selector = QComboBox(self)
-        self.diagram_type_selector.setToolTip("Wybierz typ diagramu do wygenerowania.")
+        self.diagram_type_selector.setToolTip(tr("diagram_type_selector.setToolTip"))
         self.diagram_type_selector.addItems([
             "sequence", "activity", "usecase", "class", "state", "flowchart",
             "communication", "component", "deployment", "timing", "collaboration"
@@ -114,7 +128,7 @@ class AIApp(QMainWindow):
 
         self.update_template_selector()
 
-        self.use_template_checkbox = QCheckBox("Użyj szablonu do wiadomości", self)
+        self.use_template_checkbox = QCheckBox(tr("use_template_checkboxuse_template_checkbox"), self)
         self.use_template_checkbox.setChecked(True)  # domyślnie zaznaczony
         self.use_template_checkbox.stateChanged.connect(self.on_use_template_checkbox_changed)
         # Ustaw stan początkowy
@@ -128,38 +142,38 @@ class AIApp(QMainWindow):
         left_layout = QVBoxLayout()
 
         # 1. Etykieta i wybór modelu (dodaj na górze)
-        left_layout.addWidget(QLabel("Wybierz model AI:"))
+        left_layout.addWidget(QLabel(tr("model_selector")))
         left_layout.addWidget(self.model_selector)
 
         # 2. Grupa dla szablonu (jak dotychczas)
         left_layout.addWidget(template_group)
 
         # Przycisk "Wyślij zapytanie"
-        self.send_button = QPushButton("Wyślij zapytanie")
+        self.send_button = QPushButton(tr("send_button"))
 
         # Przycisk "Zapisz XML"
-        self.save_xml_button = QPushButton("Zapisz XML")
+        self.save_xml_button = QPushButton(tr("save_xml_button"))
         self.save_xml_button.setEnabled(False)  # Domyślnie nieaktywny
 
         # Przycisk "Zapisz PlantUML"
-        self.save_PlantUML_button = QPushButton("Zapisz PlantUML")
+        self.save_PlantUML_button = QPushButton(tr("save_plantuml_button"))
         self.save_PlantUML_button.setEnabled(False)  # Domyślnie nieaktywny
 
-        self.save_xmi_button = QPushButton("Zapisz XMI")
+        self.save_xmi_button = QPushButton(tr("save_xmi_button"))
         self.save_xmi_button.setEnabled(False)
 
         # Przycisk "Zapisz diagram" - w formie graficznej
-        self.save_diagram_button = QPushButton("Zapisz diagram")
+        self.save_diagram_button = QPushButton(tr("save_diagram_button"))
         self.save_diagram_button.setEnabled(False)
 
-        self.validate_input_button = QPushButton("Sprawdź poprawność opisu procesu", self)
+        self.validate_input_button = QPushButton(tr("validate_input_button"), self)
 
         # 3. Output box (okno konwersacji)
-        left_layout.addWidget(QLabel("Okno konwersacji:"))
+        left_layout.addWidget(QLabel(tr("output_box")))
         left_layout.addWidget(self.output_box)
 
         # 4. Input box (opis procesu)
-        left_layout.addWidget(QLabel("Wprowadź opis procesu:"))
+        left_layout.addWidget(QLabel(tr("input_box")))
         left_layout.addWidget(self.input_box)
         self.input_box.setFixedHeight(100)
 
@@ -215,7 +229,7 @@ class AIApp(QMainWindow):
 
     def validate_input_button_pressed(self):
         """Sprawdza poprawność tekstu z input_box."""
-        validate_input_text(self, self.diagram_type_selector.currentText())
+        validate_input_text(self, self.diagram_type_selector.currentText(), LANG)
 
     def update_template_selector(self):
         selected_type = "PlantUML" if self.radio_plantuml.isChecked() else "XML"
@@ -268,7 +282,7 @@ class AIApp(QMainWindow):
     def show_raw_response(self, text):
         """Wyświetla czystą odpowiedź w oknie dialogowym."""
         msg = QMessageBox(self)
-        msg.setWindowTitle("Czysta odpowiedź modelu")
+        msg.setWindowTitle(tr("msg_setWindowTitle"))
         msg.setTextInteractionFlags(Qt.TextSelectableByMouse)
         msg.setText(text)
         msg.exec_()
@@ -325,19 +339,41 @@ class AIApp(QMainWindow):
         """
         if model_name is None:
             model_name = self.model_selector.currentText()
-        url = CHAT_URL
-        headers = {"Content-Type": "application/json","Authorization": f"Bearer {API_KEY}"} if API_KEY else {"Content-Type": "application/json"}
-        messages = [{"role": "user", "content": prompt}]
-        payload = {
-            "model": model_name,
-            "messages": messages,
-            "temperature": 0.7
-        }
-        self.api_thread = APICallThread(url, headers, payload, model_name)
-        self.api_thread.response_received.connect(self.handle_api_response)
-        self.api_thread.error_occurred.connect(self.handle_api_error)
-        self.api_thread.start()
-
+        try:
+            if MODEL_PROVIDER == "gemini":
+                import google.generativeai as genai
+                
+                genai.configure(api_key=API_KEY)
+                model_name = self.model_selector.currentText()
+                model = genai.GenerativeModel(model_name)
+                log_info(f"Wysyłam do modelu {model_name} z treścią: {prompt[:5000]}...")  # Logujemy tylko pierwsze 5000 znaków
+                response = model.generate_content(prompt)
+                response_content = response.text if hasattr(response, "text") else str(response)
+                log_info(f"Response from {model_name}: {response_content[:5000]}...")
+                self.handle_api_response(model_name, response_content)
+                return response_content
+                            
+            else:
+                url = CHAT_URL
+                headers = {"Content-Type": "application/json","Authorization": f"Bearer {API_KEY}"} if API_KEY else {"Content-Type": "application/json"}
+                messages = [{"role": "user", "content": prompt}]
+                payload = {
+                    "model": model_name,
+                    "messages": messages,
+                    "temperature": 0.7
+                    }
+                self.api_thread = APICallThread(url, headers, payload, model_name)
+                self.api_thread.response_received.connect(self.handle_api_response)
+                self.api_thread.error_occurred.connect(self.handle_api_error)
+                self.api_thread.start()
+                log_info(f"Starting API thread for model {model_name} with prompt: {prompt[:5000]}...")  # Logujemy tylko pierwsze 5000 znaków
+        except Exception as e:
+            error_msg = f"Wystąpił błąd podczas wysyłania zapytania do modelu {model_name}: {e}"
+            log_exception(error_msg)
+            self.output_box.setText(error_msg)
+            self.send_button.setEnabled(True)
+            return
+            
     def generate_bpmn_prompt(self, process_description, complexity, validation, output_format, domain):
             selected_template = self.template_selector.currentText()
             template_data = self.prompt_templates[selected_template]
@@ -738,6 +774,9 @@ class AIApp(QMainWindow):
 
     def show_plantuml_diagram(self, plantuml_code):
         try:
+            plantuml_code = plantuml_code.replace("!theme ocean", "")
+            plantuml_code = plantuml_code.replace("!theme grameful", "")
+            plantuml_code = plantuml_code.replace("!theme plain", "")
             if plantuml_generator_type == "local":
                 svg_data = fetch_plantuml_svg_local(plantuml_code, plantuml_jar_path)
             elif plantuml_generator_type == "www":
@@ -778,7 +817,7 @@ class AIApp(QMainWindow):
                 )
                 return
             self.verification_attempts += 1
-            verification_template = self.prompt_templates["Weryfikacja kodu PlantUML"]["template"]
+            verification_template = self.prompt_templates[tr("verification_template")]["template"]
             prompt = verification_template.format(plantuml_code=plantuml_code, diagram_type=diagram_type)
             self.last_prompt_type = "Verification"
             error_msg = (f"Wysyłam kod do weryfikacji\n")
