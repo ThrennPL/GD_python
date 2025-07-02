@@ -4,24 +4,22 @@ import os
 
 LOG_FILENAME = "app.log"
 
-def setup_logger():
+def setup_logger(log_filename="app.log"):
     logger = logging.getLogger()
     logger.setLevel(logging.INFO)
 
-    # Usuń istniejące handlery, jeśli są (by nie dublować wpisów)
     if logger.hasHandlers():
         logger.handlers.clear()
 
-    # Handler rotujący plik logu codziennie o północy, z datą w nazwie archiwum
     handler = TimedRotatingFileHandler(
-        LOG_FILENAME,
+        log_filename,
         when="midnight",
         interval=1,
-        backupCount=30,  # ile archiwalnych plików trzymać
+        backupCount=30,
         encoding="utf-8",
         utc=False
     )
-    handler.suffix = "%Y-%m-%d"  # archiwalne pliki: app.log.2025-06-25
+    handler.suffix = "%Y-%m-%d"
     formatter = logging.Formatter(
         "%(asctime)s [%(levelname)s] %(message)s",
         datefmt="%Y-%m-%d %H:%M:%S"

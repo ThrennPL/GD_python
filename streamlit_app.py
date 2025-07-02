@@ -28,7 +28,7 @@ except ImportError as e:
 
 # Configuration - Load from environment variables
 try:
-    setup_logger()
+    setup_logger("streamlit_app.log")
 except Exception as e:
     st.warning(f"Logger setup failed: {e}")
 

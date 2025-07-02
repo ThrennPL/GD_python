@@ -24,7 +24,7 @@ from dotenv import load_dotenv
 # Load environment variables
 load_dotenv()
 
-setup_logger()
+setup_logger("main_app.log")
 plantuml_jar_path = os.getenv("PLANTUML_JAR_PATH", "plantuml.jar")
 plantuml_generator_type = os.getenv("PLANTUML_GENERATOR_TYPE", "local")
 CHAT_URL = os.getenv("CHAT_URL", "http://localhost:1234//v1/chat/completions")
@@ -421,8 +421,10 @@ class AIApp(QMainWindow):
             genai.configure(api_key=API_KEY)
             model_name = self.model_selector.currentText()
             model = genai.GenerativeModel(model_name)
+            log_info(f"Wysyłam do modelu {model_name} z treścią: {prompt[:5000]}...")  # Logujemy tylko pierwsze 5000 znaków
             response = model.generate_content(prompt)
             response_content = response.text if hasattr(response, "text") else str(response)
+            log_info(f"Odpowiedź z {model_name}: {response_content[:5000]}...")   
             self.handle_api_response(model_name, response_content)
         else:
             self.start_api_thread(prompt, selected_model)
