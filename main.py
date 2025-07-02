@@ -27,12 +27,13 @@ load_dotenv()
 setup_logger()
 plantuml_jar_path = os.getenv("PLANTUML_JAR_PATH", "plantuml.jar")
 plantuml_generator_type = os.getenv("PLANTUML_GENERATOR_TYPE", "local")
-CHAT_URL = os.getenv("CHAT_URL", "http://localhost:1234/v1/chat/completions")
+CHAT_URL = os.getenv("CHAT_URL", "http://localhost:1234//v1/chat/completions")
 API_KEY = os.getenv("API_KEY", "")
 API_DEFAULT_MODEL = os.getenv("API_DEFAULT_MODEL", "")
+MODEL_PROVIDER = os.getenv("MODEL_PROVIDER", "gemini")  # lub "gemini"
 
 class AIApp(QMainWindow):
-    API_URL = os.getenv("API_URL", "http://localhost:1234/v1/models")
+    API_URL = os.getenv("API_URL", "http://localhost:1234//v1/models")
     XML_BLOCK_PATTERN = r"```xml\n(.*?)\n```"
     
     def __init__(self):
@@ -284,24 +285,37 @@ class AIApp(QMainWindow):
             self.model_selector.addItem("No models available")
     
     def get_loaded_models(self):
-        """Pobiera listę załadowanych modeli z API."""
+        """Pobiera listę modeli z API, obsługuje OpenAI i Gemini."""
+        #MODEL_PROVIDER = os.getenv("MODEL_PROVIDER", "gemini")
+        log_info(f"Pobieranie listy modeli: {MODEL_PROVIDER}")
         try:
-            response = requests.get(self.API_URL, headers={"Authorization": f"Bearer {API_KEY}"} if API_KEY else {"Content-Type": "application/json"})
-            log_info(f"Request to {self.API_URL} returned status code {response.status_code}")
-
-            if response.status_code == 200:
-                log_info(f"Response from {self.API_URL}: {response.text[:500]}...")  # Loguj pierwsze 500 znaków odpowiedzi   
-                models_data = response.json().get("data", [])
+            if MODEL_PROVIDER == "gemini":
+                import google.generativeai as genai
+                genai.configure(api_key=API_KEY)
+                models = genai.list_models()
+                # Filtrowanie tylko modeli obsługujących generateContent
+                models_data = [
+                    {"id": m.name, "description": getattr(m, "description", ""), "supported": m.supported_generation_methods}
+                    for m in models if "generateContent" in getattr(m, "supported_generation_methods", [])
+                ]
                 self.models = models_data
+                log_info(f"Loaded Gemini models: {len(models_data)} models found.")
                 return models_data
             else:
-                error_msg = f"Błąd podczas pobierania modeli: {response.status_code}, {response.text}"
-                #print(error_msg)
-                log_error(error_msg)
-                return None
+                response = requests.get(self.API_URL, headers={"Authorization": f"Bearer {API_KEY}"} if API_KEY else {"Content-Type": "application/json"})
+                log_info(f"Request to {self.API_URL} returned status code {response.status_code}")
+                if response.status_code == 200:
+                    log_info(f"Response from {self.API_URL}: {response.text[:5000]}...")
+                    models_data = response.json().get("data", [])
+                    self.models = models_data
+                    log_info(f"Loaded models: {len(models_data)} models found.")
+                    return models_data
+                else:
+                    error_msg = f"Błąd podczas pobierania modeli: {response.status_code}, {response.text}"
+                    log_error(error_msg)
+                    return None
         except Exception as e:
             error_msg = f"Wystąpił błąd podczas pobierania listy modeli: {e}"
-            #print(error_msg)
             log_exception(error_msg)
             return None
 
@@ -401,7 +415,17 @@ class AIApp(QMainWindow):
 
         # Uruchom wątek API z gotowym promptem i wybranym modelem
         selected_model = self.model_selector.currentText()
-        self.start_api_thread(prompt, selected_model)
+
+        if MODEL_PROVIDER == "gemini":
+            import google.generativeai as genai
+            genai.configure(api_key=API_KEY)
+            model_name = self.model_selector.currentText()
+            model = genai.GenerativeModel(model_name)
+            response = model.generate_content(prompt)
+            response_content = response.text if hasattr(response, "text") else str(response)
+            self.handle_api_response(model_name, response_content)
+        else:
+            self.start_api_thread(prompt, selected_model)
 
     def get_complexity_level(self):
         """Zwraca poziom złożoności wybrany przez użytkownika."""

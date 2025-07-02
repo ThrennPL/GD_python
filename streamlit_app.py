@@ -8,6 +8,7 @@ from io import BytesIO
 import os
 from dotenv import load_dotenv
 
+
 # Load environment variables
 load_dotenv()
 
@@ -38,6 +39,7 @@ API_URL = os.getenv("API_URL", "http://localhost:1234/v1/models")
 CHAT_URL = os.getenv("CHAT_URL", "http://localhost:1234/v1/chat/completions")
 API_KEY = os.getenv("API_KEY", "")
 API_DEFAULT_MODEL = os.getenv("API_DEFAULT_MODEL", "")
+MODEL_PROVIDER = os.getenv("MODEL_PROVIDER", "local")  # lub "gemini"
 
 # Page configuration
 st.set_page_config(
@@ -90,52 +92,84 @@ def safe_log_exception(message):
 # Helper functions
 @st.cache_data
 def get_loaded_models():
-    """Pobiera listę załadowanych modeli z API."""
-    headers = {
-        "Content-Type": "application/json", 
-        "Authorization": f"Bearer {API_KEY}"
-    }
-    try:
-        response = requests.get(API_URL, headers=headers)
-        safe_log_info(f"Request to {API_URL} returned status code {response.status_code}")
-        
-        if response.status_code == 200:
-            safe_log_info(f"Response from {API_URL}: {response.text[:500]}...")
-            models_data = response.json().get("data", [])
+    """Pobiera listę załadowanych modeli z API lub Gemini."""
+    if MODEL_PROVIDER == "gemini":
+        try:
+            import google.generativeai as genai
+            genai.configure(api_key=API_KEY)
+            models = genai.list_models()
+            # Filtrowanie tylko modeli obsługujących generateContent
+            models_data = [
+                {"id": m.name, "description": getattr(m, "description", ""), "supported": m.supported_generation_methods}
+                for m in models if "generateContent" in getattr(m, "supported_generation_methods", [])
+            ]
+            safe_log_info(f"Loaded Gemini models: {len(models_data)} models found.")
             return models_data
-        else:
-            error_msg = f"Błąd podczas pobierania modeli: {response.status_code}, {response.text}"
-            safe_log_error(error_msg)
+        except Exception as e:
+            safe_log_exception(f"Gemini error: {e}")
             return None
-    except Exception as e:
-        error_msg = f"Wystąpił błąd podczas pobierania listy modeli: {e}"
-        safe_log_exception(error_msg)
-        return None
+    else:
+        headers = {
+            "Content-Type": "application/json", 
+            "Authorization": f"Bearer {API_KEY}"
+        }
+        try:
+            response = requests.get(API_URL, headers=headers)
+            safe_log_info(f"Request to {API_URL} returned status code {response.status_code}")
+            if response.status_code == 200:
+                safe_log_info(f"Response from {API_URL}: {response.text[:500]}...")
+                models_data = response.json().get("data", [])
+                return models_data
+            else:
+                error_msg = f"Błąd podczas pobierania modeli: {response.status_code}, {response.text}"
+                safe_log_error(error_msg)
+                return None
+        except Exception as e:
+            error_msg = f"Wystąpił błąd podczas pobierania listy modeli: {e}"
+            safe_log_exception(error_msg)
+            return None
 
 def call_api(prompt, model_name):
     """Wywołuje API z podanym promptem i modelem."""
-    headers = {
-        "Content-Type": "application/json", 
-        "Authorization": f"Bearer {API_KEY}"
-    }
-    messages = [{"role": "user", "content": prompt}]
-    payload = {
-        "model": model_name,
-        "messages": messages,
-        "temperature": 0.7
-    }
-    
-    try:
-        response = requests.post(CHAT_URL, json=payload, headers=headers)
-        if response.status_code == 200:
-            result = response.json()
-            content = result['choices'][0]['message']['content']
+    if MODEL_PROVIDER == "gemini":
+        try:
+            import google.generativeai as genai
+            genai.configure(api_key=API_KEY)
+            model = genai.GenerativeModel(model_name)
+            response = model.generate_content(prompt)
+            # Odpowiedź Gemini może mieć różną strukturę, np. response.text lub response.candidates[0].content.parts[0].text
+            if hasattr(response, "text"):
+                content = response.text
+            elif hasattr(response, "candidates"):
+                content = response.candidates[0].content.parts[0].text
+            else:
+                content = str(response)
             return content
-        else:
-            return f"Błąd API: {response.status_code} - {response.text}"
-    except Exception as e:
-        safe_log_exception(f"Connection error: {e}")    
-        return f"Błąd połączenia: {str(e)}"
+        except Exception as e:
+            safe_log_exception(f"Gemini API error: {e}")
+            return f"Błąd Gemini API: {e}"
+    else:
+        headers = {
+            "Content-Type": "application/json", 
+            "Authorization": f"Bearer {API_KEY}"
+        }
+        messages = [{"role": "user", "content": prompt}]
+        payload = {
+            "model": model_name,
+            "messages": messages,
+            "temperature": 0.7
+        }
+        try:
+            response = requests.post(CHAT_URL, json=payload, headers=headers)
+            if response.status_code == 200:
+                result = response.json()
+                content = result['choices'][0]['message']['content']
+                return content
+            else:
+                return f"Błąd API: {response.status_code} - {response.text}"
+        except Exception as e:
+            safe_log_exception(f"Connection error: {e}")    
+            return f"Błąd połączenia: {str(e)}"
 
 def get_complexity_level(level):
     """Zwraca poziom złożoności."""
@@ -337,7 +371,7 @@ with col1:
     
     # Validation button
     if st.button("Sprawdź poprawność opisu"):
-        info_msg = f"Sprawdzanie poprawności opisu procesu: {process_description[:100]}..."
+        info_msg = f"Sprawdzanie poprawności opisu procesu: {process_description[:1000]}..."
         safe_log_info(info_msg) 
         if process_description:
             
@@ -441,6 +475,7 @@ with col1:
                 
                 # Call API
                 response = call_api(prompt, selected_model)
+                safe_log_info(f"Odpowiedź z modelu: {response[:5000]}...")
                 
                 # Store response
                 st.session_state.latest_response = response

@@ -3,4 +3,5 @@ requests
 streamlit
 Pillow
 python-dotenv
-os
+google-genai
+google-generativeai
