@@ -120,7 +120,7 @@ class AIApp(QMainWindow):
             "communication", "component", "deployment", "timing", "collaboration"
         ])
         
-        template_layout.addWidget(QLabel("Wybierz typ diagramu:"))
+        template_layout.addWidget(QLabel(tr("template_layout.select_label")))
         template_layout.addWidget(self.diagram_type_selector)
 
         self.template_selector.currentIndexChanged.connect(self.on_template_changed)
@@ -325,11 +325,11 @@ class AIApp(QMainWindow):
                     log_info(f"Loaded models: {len(models_data)} models found.")
                     return models_data
                 else:
-                    error_msg = f"Błąd podczas pobierania modeli: {response.status_code}, {response.text}"
+                    error_msg = tr("error_fetch_models").format(status_code=response.status_code, text=response.text)
                     log_error(error_msg)
                     return None
         except Exception as e:
-            error_msg = f"Wystąpił błąd podczas pobierania listy modeli: {e}"
+            error_msg = tr("error_fetch_models_exception").format(error=e)
             log_exception(error_msg)
             return None
 
@@ -346,7 +346,7 @@ class AIApp(QMainWindow):
                 genai.configure(api_key=API_KEY)
                 model_name = self.model_selector.currentText()
                 model = genai.GenerativeModel(model_name)
-                log_info(f"Wysyłam do modelu {model_name} z treścią: {prompt[:5000]}...")  # Logujemy tylko pierwsze 5000 znaków
+                log_info(tr("log_sending_to_model").format(model_name=model_name, prompt=prompt[:5000]))  # Logujemy tylko pierwsze 5000 znaków
                 response = model.generate_content(prompt)
                 response_content = response.text if hasattr(response, "text") else str(response)
                 log_info(f"Response from {model_name}: {response_content[:5000]}...")
@@ -368,7 +368,8 @@ class AIApp(QMainWindow):
                 self.api_thread.start()
                 log_info(f"Starting API thread for model {model_name} with prompt: {prompt[:5000]}...")  # Logujemy tylko pierwsze 5000 znaków
         except Exception as e:
-            error_msg = f"Wystąpił błąd podczas wysyłania zapytania do modelu {model_name}: {e}"
+            #error_msg = f"Wystąpił błąd podczas wysyłania zapytania do modelu {model_name}: {e}"
+            error_msg = tr("error_sending_request").format(model_name=model_name, error=e)
             log_exception(error_msg)
             self.output_box.setText(error_msg)
             self.send_button.setEnabled(True)
@@ -377,15 +378,16 @@ class AIApp(QMainWindow):
     def generate_bpmn_prompt(self, process_description, complexity, validation, output_format, domain):
             selected_template = self.template_selector.currentText()
             template_data = self.prompt_templates[selected_template]
-            if selected_template == "BPMN - domena bankowa":
+            if selected_template == tr("bpmn_template_bank"):
                 process_description=process_description
+                template = template_data[tr("bpmn_template_bank")]
                 return 
             
-            elif selected_template == "BPMN - zaawansowany":
+            elif selected_template == tr("bpmn_template_advanced"):
                 process_description=process_description
-                template = template_data["BPMN - zaawansowany"]
+                template = template_data[tr("bpmn_template_advanced")]
             else:
-                template = template_data["BPMN - podstawowy"]
+                template = template_data[tr("bpmn_template_basic")]
 
             return template.format(
                 process_description=process_description,
@@ -408,21 +410,25 @@ class AIApp(QMainWindow):
             validation = self.get_validation_rule()       # np. "syntax"
             output_format = self.get_output_format()      # np. "clean"
             domain = self.get_domain()                    # np. None lub "bankowość"
-            if selected_template == "BPMN - podstawowy":
+            if selected_template == tr("bpmn_template_basic"):
                 prompt = template_data["template"].format(
                 diagram_type=diagram_type,
                 process_description=process_description,
                 diagram_specific_requirements=get_diagram_specific_requirements(diagram_type)
             )
-            elif selected_template == "BPMN - zaawansowany":
+            elif selected_template == tr("bpmn_template_advanced"):
                 prompt = template_data["template"].format(
                 diagram_type=diagram_type,
                 process_description=process_description,
                 diagram_specific_requirements=get_diagram_specific_requirements(diagram_type)
             )
-            elif selected_template == "BPMN - domena bankowa":
+            elif selected_template == tr("bpmn_template_bank"):
                 prompt = template_data["template"].format(
-                process_description=process_description + "\n Zaawansowane elementy: " + complexity + "\n Walidacja: " + validation + "\n Format wyjściowy: " + output_format,
+                process_description = process_description + tr("bpmn_bank_details").format(
+                    complexity=complexity,
+                    validation=validation,
+                    output_format=output_format
+                ),
                 domain=domain,
                 )
             else:
@@ -440,7 +446,7 @@ class AIApp(QMainWindow):
 
         self.send_button.setEnabled(False)
         if not process_description:
-            self.output_box.setText("Nie wysyłaj pustego zapytania.")
+            self.output_box.setText(tr("error_sending_request_empty"))
             self.send_button.setEnabled(True)
             return
 
@@ -457,10 +463,12 @@ class AIApp(QMainWindow):
             genai.configure(api_key=API_KEY)
             model_name = self.model_selector.currentText()
             model = genai.GenerativeModel(model_name)
-            log_info(f"Wysyłam do modelu {model_name} z treścią: {prompt[:5000]}...")  # Logujemy tylko pierwsze 5000 znaków
+            #log_info(f"Wysyłam do modelu {model_name} z treścią: {prompt[:5000]}...")
+            log_info(tr("sending_to_model").format(model_name=model_name, prompt=prompt[:5000]))  # Logujemy tylko pierwsze 5000 znaków
             response = model.generate_content(prompt)
             response_content = response.text if hasattr(response, "text") else str(response)
-            log_info(f"Odpowiedź z {model_name}: {response_content[:5000]}...")   
+            #log_info(f"Odpowiedź z {model_name}: {response_content[:5000]}...")   
+            log_info(tr("response_from_model").format(model_name=model_name, response=response_content[:5000]))
             self.handle_api_response(model_name, response_content)
         else:
             self.start_api_thread(prompt, selected_model)
@@ -507,18 +515,17 @@ class AIApp(QMainWindow):
 
     def get_domain(self):
         """Zwraca domenę wybraną przez użytkownika. """
-        domain = { 
-            "NONE": "Brak domeny",
-            "bankowość": "Domena bankowa",
-            "ubezpieczenia": "Domena ubezpieczeń",
-            "logistyka": "Domena logistyki",
-            "zdrowie": "Domena ochrony zdrowia",
-            "e-commerce": "Domena e-commerce" 
-        }
+        domain_keys = [
+            "NONE",
+            "banking",
+            "insurance",
+            "logistics",
+            "healthcare",
+            "e-commerce"
+        ]
         # Możesz dodać ComboBox lub RadioButton do GUI, aby użytkownik mógł wybrać domenę
-        selected_domain = "bankowość"
-        # Domyślnie "bankowość"
-        return domain[selected_domain]
+        selected_domain = "banking"
+        return tr(f"domain_{selected_domain}")
     
     def handle_api_response(self, model_name, response_content):
         """Obsługuje odpowiedź z API."""
@@ -553,10 +560,10 @@ class AIApp(QMainWindow):
 
         # Jeśli to była odpowiedź na weryfikację, sprawdź czy model uznał kod za poprawny
         if self.last_prompt_type == "Verification":
-            if "kod jest poprawny" in response_content.lower():
-                self.output_box.append("Model uznał kod PlantUML za poprawny. Przerywam dalsze próby.\n")
+            if tr("msg_validation_success") in response_content.lower():
+                self.output_box.append(tr("msg_validation_success_message"))
                 # zapisz do logu komunikat o poprawności
-                log_info("Model uznał kod PlantUML za poprawny. Przerywam dalsze próby.")
+                log_info(tr("msg_validation_success_message"))
                 self.verification_attempts = 0
                 return
             # Jeśli nie, spróbuj jeszcze raz (ale show_plantuml_diagram już to obsłuży)
@@ -564,10 +571,10 @@ class AIApp(QMainWindow):
             if plantuml_blocks:
                 self.show_plantuml_diagram(plantuml_blocks[-1])
                 # Zapisz do logu komunikat o niepoprawności  
-                log_info("Model uznał kod PlantUML za niepoprawny. Próbuję ponownie.")
+                log_info(tr("msg_validation_failure_continue"))
                 
             else:
-                error_msg = ("Nie udało się uzyskać poprawionego kodu PlantUML.\n")
+                error_msg = (tr("msg_validation_failure"))
                 self.append_to_chat("System", error_msg)
                 log_error(error_msg)
 
@@ -592,7 +599,7 @@ class AIApp(QMainWindow):
             if plantuml_code:
                 to_save = bpmn_to_xml(plantuml_code)
             else:
-                error_msg = ("Brak poprawnego XML do zapisania.\n")
+                error_msg = (tr("msg_no_valid_xml"))
                 self.append_to_chat("System", error_msg)
                 return
         if hasattr(self, "latest_xml") and self.latest_xml:
@@ -601,15 +608,15 @@ class AIApp(QMainWindow):
                 filename = f"output_{timestamp}.xml"
                 with open(filename, "w", encoding="utf-8") as file:
                     file.write(self.latest_xml)
-                ok_msg = (f"Plik XML został zapisany jako '{filename}'.\n")
+                ok_msg = (tr("msg_xml_saved").format(filename=filename))
                 self.append_to_chat("System", ok_msg)
-                log_info(f"Plik XML został zapisany jako '{filename}'")
+                log_info(ok_msg)
             except Exception as e:
-                error_msg = (f"Błąd zapisu pliku XML: {e}\n")
+                error_msg = (tr("msg_error_saving_xml").format(error=e))
                 self.append_to_chat("System", error_msg)
                 log_exception(error_msg)
         else:
-            error_msg = ("Brak poprawnego pliku XML do zapisania.\n")
+            error_msg = (tr("msg_no_valid_xml_to_save"))
             self.append_to_chat("System", error_msg)
             log_exception(error_msg)
 
@@ -624,15 +631,15 @@ class AIApp(QMainWindow):
                 filename = f"output_{timestamp}.puml"
                 with open(filename, "w", encoding="utf-8") as file:
                     file.write(code)
-                ok_msg = (f"Plik PlantUML ({diagram_type}) został zapisany jako '{filename}'.\n")
+                ok_msg = tr("msg_plantuml_saved").format(diagram_type=diagram_type, filename=filename)
                 self.append_to_chat("System", ok_msg)
-                log_info(f"Plik PlantUML ({diagram_type}) został zapisany jako '{filename}'.")
+                log_info(ok_msg)
             except Exception as e:
-                error_msg = (f"Błąd zapisu pliku PlantUML: {e}\n")
+                error_msg = tr("msg_error_saving_plantuml").format(error=e)
                 self.append_to_chat("System", error_msg)
                 log_exception(error_msg)
         else:
-            error_msg = ("Brak kodu PlantUML do zapisania dla tej zakładki.\n")
+            error_msg = tr("msg_no_valid_plantuml_to_save")
             self.append_to_chat("System", error_msg)
             log_exception(error_msg)
 
@@ -646,16 +653,16 @@ class AIApp(QMainWindow):
                 filename = f"output_{timestamp}.xmi"
                 with open(filename, "w", encoding="utf-8") as file:
                     file.write(xmi_code)
-                ok_msg = (f"Plik XMI został zapisany jako '{filename}'.\n")
+                ok_msg = tr("msg_xmi_saved").format(filename=filename)
                 self.append_to_chat("System", ok_msg)
                 log_info(f"XMI saved: {filename}")
             except Exception as e:
                 tb = traceback.format_exc()
-                error_msg = f"Błąd podczas konwersji lub zapisu XMI: {e}\n{tb}"
+                error_msg = tr("msg_error_saving_xmi").format(error=e, traceback=tb)                
                 self.append_to_chat("System", error_msg)
                 log_exception(error_msg)
         else:
-            error_msg = "Brak kodu PlantUML do konwersji na XMI.\n"
+            error_msg = tr("msg_no_valid_plantuml_to_convert")
             self.append_to_chat("System", error_msg)
             log_exception(error_msg)
 
@@ -677,15 +684,15 @@ class AIApp(QMainWindow):
                     svg_data = fetch_plantuml_svg_www(plantuml_code)
                     with open(filename, "wb") as f:
                         f.write(svg_data)
-                ok_msg = (f"Diagram zapisany jako '{filename}'.\n")
+                ok_msg = tr("msg_diagram_saved").format(filename=filename)
                 self.append_to_chat("System", ok_msg)
-                log_info(f"Diagram zapisany jako: {filename}")
+                log_info(ok_msg)
             except Exception as e:
-                error_msg = (f"Błąd podczas zapisu diagramu: {e}\n")
+                error_msg = tr("msg_error_saving_diagram").format(error=e)
                 self.append_to_chat("System", error_msg)
                 log_exception(error_msg)
         else:
-            error_msg = ("Brak diagramu do zapisania.\n")
+            error_msg = tr("msg_no_valid_diagram_to_save")
             self.append_to_chat("System", error_msg)
             log_exception(error_msg)
 
@@ -763,7 +770,7 @@ class AIApp(QMainWindow):
             # Ładujemy jako zwykły tekst, highlighter zadziała automatycznie
             self.output_box.setPlainText(xml_content)
         except Exception as e:
-            error_msg = (f"Błąd podczas wczytywania pliku XML: {e}")
+            error_msg = tr("msg_error_loading_xml").format(error=e)
             self.append_to_chat("System", error_msg)
             
 
@@ -781,17 +788,14 @@ class AIApp(QMainWindow):
                 svg_data = fetch_plantuml_svg_local(plantuml_code, plantuml_jar_path)
             elif plantuml_generator_type == "www":
                 svg_data = fetch_plantuml_svg_www(plantuml_code)
-            # Tworzymy widget do wyświetlania SVG
             svg_widget = QSvgWidget()
             svg_widget.load(svg_data)
-            # Tworzymy kontener na SVG (np. QWidget z layoutem)
             tab = QWidget()
             layout = QVBoxLayout(tab)
             layout.addWidget(svg_widget)
             tab.setLayout(layout)
             # Nazwa zakładki na podstawie typu diagramu
             diagram_type = identify_plantuml_diagram_type(plantuml_code)
-            # print(f"Identified diagram type: {diagram_type}")
             idx = self.diagram_tabs.addTab(tab, diagram_type)
             self.diagram_tabs.setCurrentWidget(tab)
             # Zapisz kod PlantUML dla tej zakładki
@@ -799,7 +803,7 @@ class AIApp(QMainWindow):
             self.save_diagram_button.setEnabled(True)
             self.verification_attempts = 0  # Reset liczby prób po sukcesie
         except Exception as e:
-            error_msg = (f"Nie udało się pobrać diagramu PlantUML: {e}\n")
+            error_msg = tr("msg_error_fetching_plantuml").format(error=e)
             log_exception(error_msg)
             self.append_to_chat("System", error_msg)
             if self.diagram_type_selector.isEnabled():
@@ -808,19 +812,19 @@ class AIApp(QMainWindow):
                 diagram_type = identify_plantuml_diagram_type(plantuml_code)
             # Automatycznie wyślij prompt do weryfikacji kodu
             if self.last_prompt_type == "Verification" and self.verification_attempts >= 2:
-                error_msg = ("Próbowano dwukrotnie zweryfikować kod PlantUML. Przerywam dalsze próby.\n")
+                error_msg = tr("msg_verification_attempts_exceeded")
                 log_error(error_msg)
                 self.append_to_chat("System", error_msg)
                 QMessageBox.warning(
-                    self, "Weryfikacja kodu PlantUML",
-                    "Próbowano dwukrotnie zweryfikować kod PlantUML. Przerywam dalsze próby."
-                )
+                    self, rt("verification_template"),
+                    tr("msg_verification_attempts_exceeded")
+                    ),
                 return
             self.verification_attempts += 1
             verification_template = self.prompt_templates[tr("verification_template")]["template"]
             prompt = verification_template.format(plantuml_code=plantuml_code, diagram_type=diagram_type)
             self.last_prompt_type = "Verification"
-            error_msg = (f"Wysyłam kod do weryfikacji\n")
+            error_msg = tr("msg_sending_code_for_verification")
             self.append_to_chat("System", error_msg)
             self.send_to_api_custom_prompt(prompt)
 

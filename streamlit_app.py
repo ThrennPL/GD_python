@@ -7,30 +7,40 @@ import base64
 from io import BytesIO
 import os
 from dotenv import load_dotenv
+from translations_pl import TRANSLATIONS as PL
+from translations_en import TRANSLATIONS as EN
 
 
 # Load environment variables
 load_dotenv()
+
+LANG = "en"  # Domyślny język, można zmienić na "pl" dla polskiego
+
+def tr(key):
+    return EN[key] if LANG == "en" else PL[key]
 
 # Try to import custom modules with error handling
 try:
     from extract_code_from_response import extract_xml, extract_plantuml, extract_plantuml_blocks, is_valid_xml
     from input_validator import validate_input_text
     from plantuml_utils import plantuml_encode, identify_plantuml_diagram_type, fetch_plantuml_svg_local, fetch_plantuml_svg_www
-    from prompt_templates_pl import prompt_templates, get_diagram_specific_requirements
+    if LANG == "en":
+        from prompt_templates_en import prompt_templates, get_diagram_specific_requirements
+    else:
+        from prompt_templates_pl import prompt_templates, get_diagram_specific_requirements
     from logger_utils import setup_logger, log_info, log_error, log_exception
     from plantuml_to_ea import plantuml_to_xmi
     MODULES_LOADED = True
 except ImportError as e:
     MODULES_LOADED = False
-    st.error(f"Błąd importu modułów: {e}")
+    st.error(tr("modules_import_error").format(error=str(e)))
     st.stop()
 
 # Configuration - Load from environment variables
 try:
     setup_logger("streamlit_app.log")
 except Exception as e:
-    st.warning(f"Logger setup failed: {e}")
+    st.warning(tr("logger_setup_error").format(error=str(e)))
 
 # Load configuration from .env file
 plantuml_jar_path = os.getenv("PLANTUML_JAR_PATH", "plantuml.jar")
@@ -43,7 +53,7 @@ MODEL_PROVIDER = os.getenv("MODEL_PROVIDER", "local")  # lub "gemini"
 
 # Page configuration
 st.set_page_config(
-    page_title="Generator diagramów AI",
+    page_title=tr("setWindowTitle"),
     layout="wide",
     initial_sidebar_state="expanded"
 )
@@ -121,11 +131,12 @@ def get_loaded_models():
                 models_data = response.json().get("data", [])
                 return models_data
             else:
-                error_msg = f"Błąd podczas pobierania modeli: {response.status_code}, {response.text}"
+                error_msg = tr("error_fetch_models").format(status_code=response.status_code, text=response.text)
                 safe_log_error(error_msg)
                 return None
         except Exception as e:
-            error_msg = f"Wystąpił błąd podczas pobierania listy modeli: {e}"
+            #error_msg = f"Wystąpił błąd podczas pobierania listy modeli: {e}"
+            error_msg = tr("error_fetch_models_exception").format(error=str(e))
             safe_log_exception(error_msg)
             return None
 
@@ -147,7 +158,7 @@ def call_api(prompt, model_name):
             return content
         except Exception as e:
             safe_log_exception(f"Gemini API error: {e}")
-            return f"Błąd Gemini API: {e}"
+            return f"Error Gemini API: {e}"
     else:
         headers = {
             "Content-Type": "application/json", 
@@ -168,8 +179,9 @@ def call_api(prompt, model_name):
             else:
                 return f"Błąd API: {response.status_code} - {response.text}"
         except Exception as e:
-            safe_log_exception(f"Connection error: {e}")    
-            return f"Błąd połączenia: {str(e)}"
+            error_msg = tr("error_connection").format(error=str(e))
+            safe_log_exception(error_msg) 
+            return error_msg
 
 def get_complexity_level(level):
     """Zwraca poziom złożoności."""
@@ -201,16 +213,12 @@ def get_output_format(format_type):
     return output_format.get(format_type, output_format["clean"])
 
 def get_domain(domain):
-    """Zwraca domenę."""
-    domains = {
-        "NONE": "Brak domeny",
-        "bankowość": "Domena bankowa",
-        "ubezpieczenia": "Domena ubezpieczeń",
-        "logistyka": "Domena logistyki",
-        "zdrowie": "Domena ochrony zdrowia",
-        "e-commerce": "Domena e-commerce"
-    }
-    return domains.get(domain, domains["bankowość"])
+    """Zwraca tłumaczoną nazwę domeny na podstawie klucza."""
+    # domyślnie 'banking' jeśli nie znaleziono
+    domain_key = domain if domain in [
+        "NONE", "banking", "insurance", "logistics", "healthcare", "e-commerce"
+    ] else "banking"
+    return tr(f"domain_{domain_key}")
 
 def save_file(content, filename):
     """Zapisuje zawartość do pliku i zwraca link do pobrania."""
@@ -227,12 +235,13 @@ def display_plantuml_diagram(plantuml_code):
     try:
         if plantuml_generator_type == "www":
             if plantuml_code is not None:
-                safe_log_info(f"Kod Plant UML z promptu (display): {plantuml_code}")
+                safe_log_error(tr("plantuml_code_display").format(code=plantuml_code))
                 svg_data = fetch_plantuml_svg_www(plantuml_code)
                 
             else:
-                st.error("Nie ma kodu do wyświetlenia")
-                safe_log_error("Nie ma kodu do wyświetlenia: {plantuml_code}")
+                error_msg = tr("msg_error_fetching_plantuml")
+                st.error(error_msg)
+                safe_log_error(error_msg + f": {plantuml_code}")
             
             if isinstance(svg_data, bytes):
                 svg_str = svg_data.decode('utf-8')
@@ -259,59 +268,60 @@ def display_plantuml_diagram(plantuml_code):
                 )
             return True
     except Exception as e:
-        st.error(f"Nie udało się wyświetlić diagramu: {e}")
-        safe_log_exception(f"Nie udało się wyświetlić diagramu: {e}")
+        error_msg = tr("msg_error_displaying_plantuml_exception").format(error=str(e))
+        safe_log_exception(error_msg)
+        st.error(error_msg)
         return False
 
-@st.dialog(f"Kod PlantUML", width="large")
+@st.dialog(tr("show_plantuml_dialog"), width="large")
 def show_plantuml_modal():
-    st.markdown("**Kod PlantUML:**")
+    st.markdown("**"+tr("show_plantuml_dialog")+":**")
     st.code(plantuml_code, language="plantuml")
             
     col1, col2 = st.columns(2)
     with col1:
         if st.download_button(
-            label="Pobierz plik",
+            label=tr("download_plantuml_button"),
             data=plantuml_code,
             file_name=f"{diagram_type}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.puml",
             mime="text/plain"
         ):
-            st.success("Plik został pobrany!")
+            st.success(tr("download_plantuml_success"))
     
     with col2:
-        if st.button("Zamknij", type="primary"):
+        if st.button(tr("close_plantuml_button"), type="primary"):
             #st.session_state.show_plantuml_code = False
             st.rerun()
 
 # Load models
 if not st.session_state.models:
-    with st.spinner("Ładowanie modeli..."):
+    with st.spinner(tr("loading_models")):
         models = get_loaded_models()
         if models:
             st.session_state.models = models
 
 # Main UI
-st.title("Generator diagramów AI")
-st.markdown("Aplikacja do generowania diagramów PlantUML i XML przy użyciu modeli AI")
+st.title(tr("setWindowTitle"))
+st.markdown((tr("app_description")))
 
 # Sidebar configuration
 with st.sidebar:
-    st.header("Konfiguracja")
+    st.header(tr("configuration_lable"))
     
     # Model selection
     if st.session_state.models:
         model_names = [model.get("id", "unknown") for model in st.session_state.models]
-        selected_model = st.selectbox("Wybierz model AI:", model_names, 
+        selected_model = st.selectbox(tr("select_model_label"), model_names, 
                                       index = 0 if API_DEFAULT_MODEL not in model_names else model_names.index(API_DEFAULT_MODEL))
     else:
-        st.error("Nie udało się załadować modeli")
+        st.error(tr("model_loaded_error"))
         selected_model = None
     
     st.divider()
     
     # Template configuration
-    st.subheader("Szablon zapytania")
-    template_type = st.radio("Typ szablonu:", ["PlantUML", "XML"])
+    st.subheader(tr("template_lable"))
+    template_type = st.radio(tr("template_type_label"), ["PlantUML", "XML"])
     
     # Filter templates by type
     filtered_templates = [
@@ -319,9 +329,9 @@ with st.sidebar:
         if data.get("type") == template_type
     ]
     
-    selected_template = st.selectbox("Wybierz szablon:", filtered_templates)
+    selected_template = st.selectbox(tr("template_selector"), filtered_templates)
     
-    use_template = st.checkbox("Użyj szablonu do wiadomości", value=True)
+    use_template = st.checkbox(tr("use_template_checkboxuse_template_checkbox"), value=True)
     
     st.divider()
     
@@ -339,9 +349,9 @@ with st.sidebar:
         else:
             diagram_types = allowed_types
         
-        diagram_type = st.selectbox("Wybierz typ diagramu:", diagram_types)
+        diagram_type = st.selectbox(tr("template_layout.select_label"), diagram_types)
     else:
-        diagram_type = st.selectbox("Wybierz typ diagramu:", [
+        diagram_type = st.selectbox(tr("template_layout.select_label"), [
             "sequence", "activity", "usecase", "class", "state", "flowchart",
             "communication", "component", "deployment", "timing", "collaboration"
         ])
@@ -356,37 +366,38 @@ with st.sidebar:
         output_format = st.selectbox("Format wyjściowy:", 
                                    ["clean", "documented", "structured"])
         domain = st.selectbox("Domena:", 
-                            ["NONE", "bankowość", "ubezpieczenia", "logistyka", "zdrowie", "e-commerce"])
+                              ["NONE", "banking", "insurance", "logistics", "healthcare", "e-commerce"])
 
 # Main content area
 col1, col2 = st.columns([1, 1])
 
 with col1:
-    st.header("Opis procesu")
+    st.header(tr("input_box"))
     process_description = st.text_area(
         "Wprowadź opis procesu:",
         height=150,
-        placeholder="Opisz proces, który chcesz przekształcić w diagram..."
+        placeholder=tr("input_box.setToolTip"),
     )
     
     # Validation button
-    if st.button("Sprawdź poprawność opisu"):
-        info_msg = f"Sprawdzanie poprawności opisu procesu: {process_description[:1000]}..."
+    if st.button(tr("validate_input_button")):
+        info_msg = tr("msg_info_sending_code_for_verification_log").format(process_description=process_description[:1000])
         safe_log_info(info_msg) 
         if process_description:
             
             # Simulate validation (you can implement actual validation logic)
-            info_msg = ("**Przekazano opis procesu do weryfikacji**\n")
+            #info_msg = ("**Przekazano opis procesu do weryfikacji**\n")
+            info_msg = tr("msg_info_sending_code_for_verification")
             st.spinner({"role": "System", "content": info_msg})
-            safe_log_info("Przekazano opis procesu do weryfikacji") 
+            safe_log_info(info_msg) 
             # Pobierz tekst z input_box
             if not process_description:
-                st.session_state.conversation_history.append({"role": "System", "content":"Brak tekstu do walidacji.\n\n"})
+                st.session_state.conversation_history.append({"role": "System", "content": tr("msg_error_no_text_for_validation")})
                     
             # Pobierz szablon walidacji (np. "Weryfikacja opisu procesu")
-            template_data = prompt_templates.get("Weryfikacja opisu procesu")
+            template_data = prompt_templates.get(tr("proces_description_validation"))
             if not template_data:
-                st.session_state.conversation_history.append({"role": "System", "content": "Brak szablonu do weryfikacji opisu procesu.\n\n"})
+                st.session_state.conversation_history.append({"role": "System", "content": tr("msg_error_no_template_for_validation")})
             prompt = template_data["template"].format(
                 process_description=process_description,
                 diagram_type=diagram_type,
@@ -402,7 +413,7 @@ with col1:
                 st.session_state.verification_attempts = 0
             st.session_state.verification_attempts += 1
 
-            with st.spinner("Sprawdzanie poprawności opisu procesu..."):
+            with st.spinner(tr("msg_info_sending_description_for_verification")):
                 response = call_api(prompt, selected_model)
                 safe_log_info(f"Response from API: {response[:5000]}...")
                 # Store response
@@ -422,43 +433,47 @@ with col1:
                     st.session_state.plantuml_diagrams = plantuml_blocks
                     
                 st.rerun()
-                st.success("Opis procesu wygląda poprawnie!")
+                st.success(tr("msg_info_validation_success"))
         else:
-            st.warning("Wprowadź opis procesu do walidacji")
+            st.warning(tr("msg_warning_no_text_for_validation"))
     
     # Send query button
-    if st.button("Wyślij zapytanie", type="primary"):
+    if st.button(tr("send_button"), type="primary"):
         if not process_description:
-            st.error("Nie wysyłaj pustego zapytania.")
+            st.error(tr("error_sending_request_empty"))
         elif not selected_model:
-            st.error("Wybierz model AI.")
+            st.error(tr("error_sending_request_no_model"))
         else:
-            with st.spinner("Generowanie odpowiedzi..."):
+            with st.spinner(tr("msg_info_generating_response")):
                 # Prepare prompt
                 if use_template and selected_template in prompt_templates:
                     template_data = prompt_templates[selected_template]
                     
                     if diagram_type.lower() in ["bpmn", "bpmn_flow", "bpmn_component"]:
-                        if selected_template == "BPMN - podstawowy":
+                        if selected_template == tr("bpmn_template_basic"):
                             prompt = template_data["template"].format(
                                 diagram_type=diagram_type,
                                 process_description=process_description,
                                 diagram_specific_requirements=get_diagram_specific_requirements(diagram_type)
                             )
-                        elif selected_template == "BPMN - zaawansowany":
+                        elif selected_template == tr("bpmn_template_advanced"):
                             prompt = template_data["template"].format(
                                 diagram_type=diagram_type,
                                 process_description=process_description,
                                 diagram_specific_requirements=get_diagram_specific_requirements(diagram_type)
                             )
-                        elif selected_template == "BPMN - domena bankowa":
+                        elif selected_template == tr("bpmn_template_bank"):
                             complexity = get_complexity_level(complexity_level)
                             validation = get_validation_rule(validation_rule)
                             output_fmt = get_output_format(output_format)
                             domain_desc = get_domain(domain)
                             
                             prompt = template_data["template"].format(
-                                process_description=process_description + f"\n Zaawansowane elementy: {complexity}\n Walidacja: {validation}\n Format wyjściowy: {output_fmt}",
+                                process_description = process_description + tr("bpmn_bank_details").format(
+                                    complexity=complexity,
+                                    validation=validation,
+                                    output_format=output_format
+                                ),
                                 domain=domain_desc,
                             )
                         else:
@@ -475,7 +490,7 @@ with col1:
                 
                 # Call API
                 response = call_api(prompt, selected_model)
-                safe_log_info(f"Odpowiedź z modelu: {response[:5000]}...")
+                safe_log_info(f"Response from model: {response[:5000]}...")
                 
                 # Store response
                 st.session_state.latest_response = response
@@ -496,7 +511,7 @@ with col1:
                 st.rerun()
 
 with col2:
-    st.header("Odpowiedź modelu")
+    st.header(tr("conversation_lable"))
     with st.container(height=600):
         if st.session_state.conversation_history:
             # Display conversation history
@@ -510,7 +525,7 @@ with col2:
 
 # Display diagrams and download options
 if st.session_state.plantuml_diagrams:
-    st.header("Wygenerowane diagramy")
+    st.header(tr("generated_diagrams"))
     
     # Create tabs for each diagram
     if len(st.session_state.plantuml_diagrams) > 1:
@@ -521,50 +536,49 @@ if st.session_state.plantuml_diagrams:
 
                 st.subheader(f"Diagram {i+1}")
                 diagram_type_identified = identify_plantuml_diagram_type(plantuml_code)
-                st.subheader(f"Typ diagramu: {diagram_type_identified}")
+                st.subheader(tr("diagram_subheader_name") + f": {diagram_type_identified}")
                 diagrams = st.session_state.plantuml_diagrams
                 with st.expander(f"Diagram {i+1}"):
                     if plantuml_code is not None:
                         if not display_plantuml_diagram(plantuml_code):
                             # Weryfikacja kodu w przypadku błędów
                             diagram_type = identify_plantuml_diagram_type(plantuml_code)
-                            safe_log_info(f"Kod Plant UML z promptu: {plantuml_code}")
-                            verification_template = prompt_templates["Weryfikacja kodu PlantUML"]["template"]
+                            safe_log_info(tr("msg_info_validation_error").format(plantuml_code=plantuml_code)) 
+                            verification_template = prompt_templates[tr("verification_template")]["template"]
                             prompt = verification_template.format(plantuml_code=plantuml_code, diagram_type=diagram_type)
                             safe_log_info(f"Prompt for verification: {prompt}") 
-                            st.info("Wysyłam kod do weryfikacji: ")
+                            st.info(tr("msg_sending_code_for_verification"))
                             response = call_api(prompt, selected_model)
-                            safe_log_info(f"Response from API (Weryfikacje): {response[:5000]}...")  # Loguj pierwsze 5000 znaków odpowiedzi
+                            safe_log_info(f"Response from API (Verification): {response[:5000]}...")  # Loguj pierwsze 5000 znaków odpowiedzi
                             # wyciągniecie kodu PlantUML z odpowiedzi modelu
                             plantuml_code = extract_plantuml(response)
                             plantuml_code = plantuml_code.replace("!theme ocean", "")
                             plantuml_code = plantuml_code.replace("!theme grameful", "")
                             plantuml_code = plantuml_code.replace("!theme plain", "")
-                            safe_log_info(f"Kod Plant UML po wycięciu !theme ocean: {plantuml_code}")
                             if not display_plantuml_diagram(plantuml_code):
-                                st.error("Nie udało się pobrać diagramu PlantUML.")
+                                st.error(tr("msg_error_fetching_plantuml_log"))
                                 st.stop()
                             else:   
                                 #st.session_state.plantuml_diagrams[i] = plantuml_code
                                 if plantuml_code is not None:
                                     display_plantuml_diagram(plantuml_code)
                                 else:
-                                    st.error("Nie ma kodu do wyświetlenia")
+                                    st.error(tr("msg_error_displaying_plantuml"))
                 # Download buttons
                 col1, col2, col3, col4, col5, col6 = st.columns(6)
                 with col1:
-                    if st.button("Kod PlantUML", key=f"show_code_{i}"):
+                    if st.button(tr("show_plantuml_dialog"), key=f"show_code_{i}"):
                         st.session_state.show_plantuml_code = True
                         st.session_state.selected_diagram_index = i
                     
                 with col2:
                     if st.download_button(
-                        label="Pobierz PlantUML",
+                        label=tr("download_plantuml_button"),
                         data=plantuml_code,
                         file_name=f"diagram_{i+1}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.puml",
                         mime="text/plain"
                     ):
-                        st.success("Plik PlantUML został przygotowany do pobrania!")
+                        st.success(tr("msg_success_ready_for_downloading_plantuml"))
                 
                 with col3:
                     try:
@@ -577,78 +591,81 @@ if st.session_state.plantuml_diagrams:
                                 svg_data = f.read()
 
                         if st.download_button(
-                            label="Pobierz SVG",
+                            label=tr("download_svg_button"),
                             data=svg_data,
                             file_name=f"diagram_{i+1}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.svg",
                             mime="image/svg+xml"
                         ):
-                            st.success("Plik SVG został przygotowany do pobrania!")
+                            st.success(tr("msg_success_ready_for_downloading_SVG"))
                     except Exception as e:
-                        log_error(f"Błąd podczas przygotowania SVG: {e}")
-                        st.error(f"Błąd podczas przygotowania SVG: {e}")
+                        error_msg = tr("msg_error_preparing_svg").format(error=str(e))
+                        log_error(error_msg)
+                        st.error(error_msg)
                 
                 with col4:
                     if "klas" in diagram_type_identified.lower():
                         try:
                             xmi_content = plantuml_to_xmi(plantuml_code)
                             if st.download_button(
-                                label="Pobierz XMI",
+                                label=tr("download_xmi_button"),
                                 data=xmi_content,
                                 file_name=f"diagram_{i+1}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xmi",
                                 mime="application/xml"
                             ):
-                                st.success("Plik XMI został przygotowany do pobrania!")
+                                st.success(tr("msg_success_ready_for_downloading_XMI"))
                         except Exception as e:
-                            st.error(f"Błąd podczas generowania XMI: {e}"),
-                            safe_log_error(f"Błąd podczas generowania XMI: {e}")
+                            error_msg = tr("msg_error_generating_xmi").format(error=str(e))
+                            safe_log_error(error_msg)   
+                            st.error(error_msg)
+                            
                     #else:
                         #st.button(f"Pobierz XMI {i+1}", disabled=True, help="XMI dostępne tylko dla diagramów klas", key=f"xmi_button_{i}")
     else:
         # Single diagram
         plantuml_code = st.session_state.plantuml_diagrams[0]
         diagram_type_identified = identify_plantuml_diagram_type(plantuml_code)
-        st.subheader(f"Typ diagramu: {diagram_type_identified}")
+        st.subheader(tr("diagram_subheader_name") + f": {diagram_type_identified}")
         if not display_plantuml_diagram(plantuml_code):
             # Weryfikacja kodu w przypadku błędów
-            safe_log_info(f"Kod Plant UML z promptu (Weryfikacje pojedyńcze): {plantuml_code}")
+            safe_log_info(tr("msg_info_verifying_plantuml_code").format(plantuml_code=plantuml_code))
             diagram_type = identify_plantuml_diagram_type(plantuml_code)
-            verification_template = prompt_templates["Weryfikacja kodu PlantUML"]["template"]
+            verification_template = prompt_templates[tr("verification_template")]["template"]
             prompt = verification_template.format(plantuml_code=plantuml_code, diagram_type=diagram_type)
-            safe_log_info(f"Prompt for verification (Weryfikacje pojedyńcze): {prompt}") 
-            st.info("Wysyłam kod do weryfikacji")
+            info_msg = tr("msg_info_sending_code_for_verification_singele").format(plantuml_code=plantuml_code)
+            safe_log_info(info_msg) 
+            st.info(tr("msg_sending_code_for_verification"))
             response = call_api(prompt, selected_model)
-            safe_log_info(f"Response from API (Weryfikacje pojedyńcze): {response[:5000]}...")  # Loguj pierwsze 5000 znaków odpowiedzi
+            safe_log_info(tr("msg_info_response_from_api").format(response=response[:5000])) 
             # wyciągniecie kodu PlantUML z odpowiedzi modelu
             plantuml_code = extract_plantuml(response)
             plantuml_code = plantuml_code.replace("!theme ocean", "")
             plantuml_code = plantuml_code.replace("!theme grameful", "")
-            safe_log_info(f"Kod Plant UML po wycięciu !theme ocean: {plantuml_code}")
             if not display_plantuml_diagram(plantuml_code):
-                st.error("Nie udało się pobrać diagramu PlantUML.")
+                st.error(tr("msg_error_fetching_plantuml_log"))
                 st.stop()
             else:   
                 # st.session_state.plantuml_diagrams[i] = plantuml_code
                 if plantuml_code is not None:
                     display_plantuml_diagram(plantuml_code)
                 else:
-                    st.error("Nie ma kodu do wyświetlenia")  
+                    st.error(tr("msg_error_displaying_plantuml"))  
                 
         #display_plantuml_diagram(plantuml_code)
         # Download buttons
         col1, col2, col3, col4, col5, col6 = st.columns(6)
         with col1:
-            if st.button("Kod PlantUML"):
+            if st.button(tr("show_plantuml_dialog")):
                 st.session_state.show_plantuml_code = True
                 st.session_state.selected_diagram_index = 0  # Single diagram, index 0
             
         with col2:
             if st.download_button(
-                label="Pobierz PlantUML",
+                label=tr("download_plantuml_button"),
                 data=plantuml_code,
                 file_name=f"diagram_{datetime.now().strftime('%Y%m%d_%H%M%S')}.puml",
                 mime="text/plain"
             ):
-                st.success("Plik PlantUML został przygotowany do pobrania!")
+                st.success(tr("msg_success_ready_for_downloading_plantuml"))
         
         with col3:
             try:
@@ -660,44 +677,44 @@ if st.session_state.plantuml_diagrams:
                         svg_data = f.read()
                 
                 if st.download_button(
-                    label="Pobierz SVG",
+                    label=tr("download_svg_button"),
                     data=svg_data,
                     file_name=f"diagram_{datetime.now().strftime('%Y%m%d_%H%M%S')}.svg",
                     mime="image/svg+xml"
                 ):
-                    st.success("Plik SVG został przygotowany do pobrania!")
+                    st.success(tr("msg_success_ready_for_downloading_SVG"))
             except Exception as e:
-                st.error(f"Błąd podczas przygotowania SVG: {e}")
+                st.error(tr("msg_error_preparing_svg").format(error=str(e)))
         
         with col4:
             if "klas" in diagram_type_identified.lower():
                 try:
                     xmi_content = plantuml_to_xmi(plantuml_code)
                     if st.download_button(
-                        label="Pobierz XMI",
+                        label=tr("download_xmi_button"),
                         data=xmi_content,
                         file_name=f"diagram_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xmi",
                         mime="application/xml"
                     ):
-                        st.success("Plik XMI został przygotowany do pobrania!")
+                        st.success(tr("msg_success_ready_for_downloading_XMI"))
                 except Exception as e:
-                    st.error(f"Błąd podczas generowania XMI: {e}")
+                    st.error(tr("msg_error_generating_xmi").format(error=str(e)))
             else:
-                st.button("Pobierz XMI", disabled=True, help="XMI dostępne tylko dla diagramów klas")
+                st.button(tr("download_xmi_button"), disabled=True, help=tr("download_xmi_button_help"))
 
 # XML download option
 if st.session_state.latest_xml:
-    st.header("Wygenerowany XML")
-    with st.expander("Pokaż XML"):
+    st.header(tr("download_xml_header"))
+    with st.expander(tr("show_xml_button")):
         st.code(st.session_state.latest_xml, language="xml")
     
     if st.download_button(
-        label="Pobierz XML",
+        label=tr("download_xml_button"),
         data=st.session_state.latest_xml,
         file_name=f"output_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xml",
         mime="application/xml"
     ):
-        st.success("Plik XML został przygotowany do pobrania!")
+        st.success(tr("msg_success_ready_for_downloading_XML"))
 
 # Modal window for PlantUML code
 if st.session_state.show_plantuml_code and st.session_state.plantuml_diagrams:
@@ -710,11 +727,11 @@ if st.session_state.show_plantuml_code and st.session_state.plantuml_diagrams:
         plantuml_code = st.session_state.plantuml_diagrams[0]
         diagram_type = identify_plantuml_diagram_type(plantuml_code)
     
-    @st.dialog(f"Kod PlantUML - {diagram_type}", width="large")
+    @st.dialog(tr("show_plantuml_dialog") + f" - {diagram_type}", width="large")
     def show_plantuml_modal():
         st.code(plantuml_code, language="plantuml",height=500)
                 
-        if st.button("Zamknij", type="primary"):
+        if st.button(tr("close_plantuml_button"), type="primary"):
             st.session_state.show_plantuml_code = False
             st.rerun()
     
