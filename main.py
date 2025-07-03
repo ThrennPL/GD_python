@@ -229,7 +229,7 @@ class AIApp(QMainWindow):
 
     def validate_input_button_pressed(self):
         """Sprawdza poprawność tekstu z input_box."""
-        validate_input_text(self, self.diagram_type_selector.currentText(), LANG)
+        validate_input_text(self, self.diagram_type_selector.currentText(), LANG=LANG)
 
     def update_template_selector(self):
         selected_type = "PlantUML" if self.radio_plantuml.isChecked() else "XML"
@@ -297,11 +297,12 @@ class AIApp(QMainWindow):
                 self.model_selector.addItem(model_id)
         else:
             self.model_selector.addItem("No models available")
+        self.model_selector.setCurrentText(API_DEFAULT_MODEL)  # Ustaw domyślny model
     
     def get_loaded_models(self):
         """Pobiera listę modeli z API, obsługuje OpenAI i Gemini."""
         #MODEL_PROVIDER = os.getenv("MODEL_PROVIDER", "gemini")
-        log_info(f"Pobieranie listy modeli: {MODEL_PROVIDER}")
+        log_info(tr("msf_info_model_provider").format(MODEL_PROVIDER=MODEL_PROVIDER))
         try:
             if MODEL_PROVIDER == "gemini":
                 import google.generativeai as genai
@@ -465,9 +466,14 @@ class AIApp(QMainWindow):
             model = genai.GenerativeModel(model_name)
             #log_info(f"Wysyłam do modelu {model_name} z treścią: {prompt[:5000]}...")
             log_info(tr("sending_to_model").format(model_name=model_name, prompt=prompt[:5000]))  # Logujemy tylko pierwsze 5000 znaków
-            response = model.generate_content(prompt)
-            response_content = response.text if hasattr(response, "text") else str(response)
-            #log_info(f"Odpowiedź z {model_name}: {response_content[:5000]}...")   
+            try:
+                response = model.generate_content(prompt)
+                response_content = response.text if hasattr(response, "text") else str(response)
+            except Exception as e:
+                error_msg = tr("error_sending_request").format(model_name=model_name, error=e) #f"Wystąpił błąd podczas wysyłania zapytania do modelu {model_name}: {e}"
+                log_exception(error_msg)
+                self.output_box.setText(error_msg)
+                return
             log_info(tr("response_from_model").format(model_name=model_name, response=response_content[:5000]))
             self.handle_api_response(model_name, response_content)
         else:
@@ -547,7 +553,7 @@ class AIApp(QMainWindow):
         if plantuml_blocks:
             self.save_PlantUML_button.setEnabled(True)
             # Sprawdź typ diagramu
-            diagram_type = identify_plantuml_diagram_type(plantuml_blocks[-1])
+            diagram_type = identify_plantuml_diagram_type(plantuml_blocks[-1], LANG)
             # print(f"Identified diagram type: {diagram_type}")
             if "klas" in diagram_type.strip().lower():
                 self.save_xmi_button.setEnabled(True)
@@ -626,7 +632,7 @@ class AIApp(QMainWindow):
         if idx in self.plantuml_codes:
             try:
                 code = self.plantuml_codes[idx]
-                diagram_type = identify_plantuml_diagram_type(code)
+                diagram_type = identify_plantuml_diagram_type(code, LANG)
                 timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
                 filename = f"output_{timestamp}.puml"
                 with open(filename, "w", encoding="utf-8") as file:
@@ -670,18 +676,18 @@ class AIApp(QMainWindow):
         idx = self.diagram_tabs.currentIndex()
         if idx in self.plantuml_codes:
             plantuml_code = self.plantuml_codes[idx]
-            diagram_type = identify_plantuml_diagram_type(plantuml_code)
+            diagram_type = identify_plantuml_diagram_type(plantuml_code, LANG)
             try:
                 timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
                 filename = f"{diagram_type.replace(' ', '_')}_{timestamp}.svg"
                 if plantuml_generator_type == "local":
-                    svg_path = fetch_plantuml_svg_local(plantuml_code, plantuml_jar_path)
+                    svg_path = fetch_plantuml_svg_local(plantuml_code, plantuml_jar_path, LANG)
                     with open(svg_path, "r", encoding="utf-8") as f:
                         svg_data = f.read()
                     with open(filename, "w", encoding="utf-8") as f:
                         f.write(svg_data)
                 elif plantuml_generator_type == "www":
-                    svg_data = fetch_plantuml_svg_www(plantuml_code)
+                    svg_data = fetch_plantuml_svg_www(plantuml_code, LANG)
                     with open(filename, "wb") as f:
                         f.write(svg_data)
                 ok_msg = tr("msg_diagram_saved").format(filename=filename)
@@ -785,9 +791,9 @@ class AIApp(QMainWindow):
             plantuml_code = plantuml_code.replace("!theme grameful", "")
             plantuml_code = plantuml_code.replace("!theme plain", "")
             if plantuml_generator_type == "local":
-                svg_data = fetch_plantuml_svg_local(plantuml_code, plantuml_jar_path)
+                svg_data = fetch_plantuml_svg_local(plantuml_code, plantuml_jar_path, LANG)
             elif plantuml_generator_type == "www":
-                svg_data = fetch_plantuml_svg_www(plantuml_code)
+                svg_data = fetch_plantuml_svg_www(plantuml_code, LANG)
             svg_widget = QSvgWidget()
             svg_widget.load(svg_data)
             tab = QWidget()
@@ -795,7 +801,7 @@ class AIApp(QMainWindow):
             layout.addWidget(svg_widget)
             tab.setLayout(layout)
             # Nazwa zakładki na podstawie typu diagramu
-            diagram_type = identify_plantuml_diagram_type(plantuml_code)
+            diagram_type = identify_plantuml_diagram_type(plantuml_code, LANG)
             idx = self.diagram_tabs.addTab(tab, diagram_type)
             self.diagram_tabs.setCurrentWidget(tab)
             # Zapisz kod PlantUML dla tej zakładki

@@ -85,6 +85,7 @@ TRANSLATIONS = {
     "msg_info_sending_code_for_verification_singele": "Wysyłam kod do weryfikacji: {plantuml_code}\n",
     "msg_info_response_from_api": "Odpowiedź z API (Weryfikacja pojedyńcza): {response}\n",
     "msg_info_generating_response": "Generowanie odpowiedzi...",
+    "msf_info_model_provider": "Dostawca modeli: {MODEL_PROVIDER}\n",
 
     "msg_validation_success_message": "Model uznał kod PlantUML za poprawny. Przerywam dalsze próby.\n",
     "msg_validation_success": "kod jest poprawny",
@@ -113,6 +114,7 @@ TRANSLATIONS = {
     "msg_error_loading_plantuml": "Błąd podczas wczytywania pliku PlantUML: {error}",
     "msg_error_fetching_plantuml": "Nie udało się pobrać diagramu PlantUML: {error}",
     "msg_error_fetching_plantuml_log": "Nie udało się pobrać diagramu PlantUML",
+    "msg_error_downloading_SVG": "Nie udało się pobrać SVG: {response.status_code}",
     "msg_error_displaying_plantuml": "Nie ma kodu do wyświetlenia",
     "msg_error_displaying_plantuml_exception": "Nie udało się wyświetlić diagramu: {error}",
     "msg_error_preparing_svg": "Błąd podczas przygotowania pliku SVG: {error}",
@@ -122,5 +124,14 @@ TRANSLATIONS = {
     "msg_verification_attempts_exceeded": "Próbowano dwukrotnie zweryfikować kod PlantUML. Przerywam dalsze próby.\n",
     "msg_sending_code_for_verification": "Wysyłam kod do weryfikacji\n",
 
-
+    "diagram_type_state_diagram": "Diagram stanów",
+    "diagram_type_sequence_diagram": "Diagram sekwencji",
+    "diagram_type_class_diagram": "Diagram klas",
+    "diagram_type_usecase_diagram": "Diagram przypadków użycia",
+    "diagram_type_component_diagram": "Diagram komponentów",
+    "diagram_type_activity_diagram": "Diagram aktywności",
+    "diagram_type_object_diagram": "Diagram obiektów",
+    "diagram_type_deployment_diagram": "Diagram wdrożenia",
+    "diagram_type_flow_diagram": "Diagram przepływu danych",
+    "diagram_type_general": "Diagram ogólny (typ nieokreślony)",
 }

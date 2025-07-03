@@ -236,7 +236,7 @@ def display_plantuml_diagram(plantuml_code):
         if plantuml_generator_type == "www":
             if plantuml_code is not None:
                 safe_log_error(tr("plantuml_code_display").format(code=plantuml_code))
-                svg_data = fetch_plantuml_svg_www(plantuml_code)
+                svg_data = fetch_plantuml_svg_www(plantuml_code, LANG=LANG)
                 
             else:
                 error_msg = tr("msg_error_fetching_plantuml")
@@ -255,7 +255,7 @@ def display_plantuml_diagram(plantuml_code):
                 )
                 return True
         elif plantuml_generator_type == "local":
-            svg_path = fetch_plantuml_svg_local(plantuml_code, plantuml_jar_path)
+            svg_path = fetch_plantuml_svg_local(plantuml_code, plantuml_jar_path, LANG=LANG)
             with open(svg_path, "r", encoding="utf-8") as f:
                 svg_str = f.read()  
                 #resize SVG to fit the container
@@ -530,19 +530,19 @@ if st.session_state.plantuml_diagrams:
     # Create tabs for each diagram
     if len(st.session_state.plantuml_diagrams) > 1:
 #        tabs = st.tabs([f"{identify_plantuml_diagram_type(st.session_state.plantuml_diagrams[i+1])}" for i in range(len(st.session_state.plantuml_diagrams))])
-        tabs = st.tabs([f"{identify_plantuml_diagram_type(p)}" for p in st.session_state.plantuml_diagrams])        
+        tabs = st.tabs([f"{identify_plantuml_diagram_type(p, LANG=LANG)}" for p in st.session_state.plantuml_diagrams])        
         for i, (tab, plantuml_code) in enumerate(zip(tabs, st.session_state.plantuml_diagrams)):
             with tab:
 
                 st.subheader(f"Diagram {i+1}")
-                diagram_type_identified = identify_plantuml_diagram_type(plantuml_code)
+                diagram_type_identified = identify_plantuml_diagram_type(plantuml_code, LANG=LANG)
                 st.subheader(tr("diagram_subheader_name") + f": {diagram_type_identified}")
                 diagrams = st.session_state.plantuml_diagrams
                 with st.expander(f"Diagram {i+1}"):
                     if plantuml_code is not None:
                         if not display_plantuml_diagram(plantuml_code):
                             # Weryfikacja kodu w przypadku błędów
-                            diagram_type = identify_plantuml_diagram_type(plantuml_code)
+                            diagram_type = identify_plantuml_diagram_type(plantuml_code, LANG=LANG)
                             safe_log_info(tr("msg_info_validation_error").format(plantuml_code=plantuml_code)) 
                             verification_template = prompt_templates[tr("verification_template")]["template"]
                             prompt = verification_template.format(plantuml_code=plantuml_code, diagram_type=diagram_type)
@@ -583,10 +583,10 @@ if st.session_state.plantuml_diagrams:
                 with col3:
                     try:
                         if plantuml_generator_type == "www":
-                            svg_data = fetch_plantuml_svg_www(plantuml_code)
+                            svg_data = fetch_plantuml_svg_www(plantuml_code, LANG=LANG)
                              
                         else:
-                            svg_path = fetch_plantuml_svg_local(plantuml_code, plantuml_jar_path)
+                            svg_path = fetch_plantuml_svg_local(plantuml_code, plantuml_jar_path, LANG=LANG)
                             with open(svg_path, "rb") as f:
                                 svg_data = f.read()
 
@@ -623,12 +623,12 @@ if st.session_state.plantuml_diagrams:
     else:
         # Single diagram
         plantuml_code = st.session_state.plantuml_diagrams[0]
-        diagram_type_identified = identify_plantuml_diagram_type(plantuml_code)
+        diagram_type_identified = identify_plantuml_diagram_type(plantuml_code, LANG=LANG)
         st.subheader(tr("diagram_subheader_name") + f": {diagram_type_identified}")
         if not display_plantuml_diagram(plantuml_code):
             # Weryfikacja kodu w przypadku błędów
             safe_log_info(tr("msg_info_verifying_plantuml_code").format(plantuml_code=plantuml_code))
-            diagram_type = identify_plantuml_diagram_type(plantuml_code)
+            diagram_type = identify_plantuml_diagram_type(plantuml_code, LANG=LANG)
             verification_template = prompt_templates[tr("verification_template")]["template"]
             prompt = verification_template.format(plantuml_code=plantuml_code, diagram_type=diagram_type)
             info_msg = tr("msg_info_sending_code_for_verification_singele").format(plantuml_code=plantuml_code)
@@ -670,9 +670,9 @@ if st.session_state.plantuml_diagrams:
         with col3:
             try:
                 if plantuml_generator_type == "www":
-                    svg_data = fetch_plantuml_svg_www(plantuml_code)
+                    svg_data = fetch_plantuml_svg_www(plantuml_code, LANG=LANG)
                 else:
-                    svg_path = fetch_plantuml_svg_local(plantuml_code, plantuml_jar_path)
+                    svg_path = fetch_plantuml_svg_local(plantuml_code, plantuml_jar_path, LANG=LANG)
                     with open(svg_path, "rb") as f:
                         svg_data = f.read()
                 
@@ -722,10 +722,10 @@ if st.session_state.show_plantuml_code and st.session_state.plantuml_diagrams:
     selected_index = st.session_state.get('selected_diagram_index', 0)
     if selected_index < len(st.session_state.plantuml_diagrams):
         plantuml_code = st.session_state.plantuml_diagrams[selected_index]
-        diagram_type = identify_plantuml_diagram_type(plantuml_code)
+        diagram_type = identify_plantuml_diagram_type(plantuml_code, LANG=LANG)
     else:
         plantuml_code = st.session_state.plantuml_diagrams[0]
-        diagram_type = identify_plantuml_diagram_type(plantuml_code)
+        diagram_type = identify_plantuml_diagram_type(plantuml_code, LANG=LANG)
     
     @st.dialog(tr("show_plantuml_dialog") + f" - {diagram_type}", width="large")
     def show_plantuml_modal():

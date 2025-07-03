@@ -49,7 +49,7 @@ TRANSLATIONS = {
     "save_xmi_button": "Save XMI",
     "save_diagram_button": "Save diagram",
     "validate_input_button": "Validate process description",
-    "proces_description_validation": "Process Description Validation",
+    "proces_description_validation": "Process Description Verification",
 
     "msg.setWindowTitle": "Clean model response",
     "no_models": "No models available",
@@ -85,6 +85,7 @@ TRANSLATIONS = {
     "msg_info_sending_code_for_verification_singele": "Sending code for verification: {plantuml_code}\n",
     "msg_info_response_from_api": "Response from API (Single verification): {response}\n",
     "msg_info_generating_response": "Generating response...",
+    "msf_info_model_provider": "Model provider: {MODEL_PROVIDER}\n",
 
     "msg_validation_success_message": "The code is correct. Stopping further attempts.\n",
     "msg_validation_success": "the code is correct",
@@ -113,6 +114,7 @@ TRANSLATIONS = {
     "msg_error_loading_plantuml": "Error loading PlantUML file: {error}",
     "msg_error_fetching_plantuml": "Failed to fetch PlantUML diagram: {error}",
     "msg_error_fetching_plantuml_log": "Failed to fetch PlantUML diagram",
+    "msg_error_downloading_SVG": "Failed to download SVG: {response.status_code}",
     "msg_error_displaying_plantuml_exception": "Error displaying PlantUML diagram: {error}",
     "msg_error_preparing_svg": "Error preparing SVG file: {error}",
     "msg_error_generating_xmi": "Error generating XMI file: {error}",
@@ -121,4 +123,14 @@ TRANSLATIONS = {
     "msg_verification_attempts_exceeded": "Tried to verify PlantUML code twice. Stopping further attempts.\n",
     "msg_sending_code_for_verification": "Sending code for verification\n",
 
+    "diagram_type_state_diagram": "State diagram",
+    "diagram_type_sequence_diagram": "Sequence diagram",
+    "diagram_type_class_diagram": "Class diagram",
+    "diagram_type_usecase_diagram": "Use case diagram",
+    "diagram_type_component_diagram": "Component diagram",
+    "diagram_type_activity_diagram": "Activity diagram",
+    "diagram_type_object_diagram": "Object diagram",
+    "diagram_type_deployment_diagram": "Deployment diagram",
+    "diagram_type_flow_diagram": "Flow diagram",
+    "diagram_type_general": "General diagram (type not specified)",
 }

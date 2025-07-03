@@ -3,9 +3,10 @@
 ## 1. SEQUENCE DIAGRAM - Prosty przepływ sekwencyjny
 
 ### Przelew BLIK
-```
+`PL``
 Klient w aplikacji mobilnej wybiera opcję "BLIK" i generuje 6-cyfrowy kod. Następnie w sklepie podaje kod sprzedawcy, który wprowadza go do terminala płatniczego. Terminal wysyła żądanie autoryzacji do systemu BLIK. System BLIK weryfikuje kod u banku klienta. Bank sprawdza saldo i limity, po czym autoryzuje transakcję. Potwierdzenie trafia z powrotem przez system BLIK do terminala, a klient otrzymuje powiadomienie push o realizacji płatności.
-```
+`EN``
+The customer selects the "BLIK" option in the mobile application and generates a 6-digit code. Then, at the store, they provide the code to the cashier, who enters it into the payment terminal. The terminal sends an authorization request to the BLIK system. The BLIK system verifies the code with the customer's bank. The bank checks the account balance and limits, then authorizes the transaction. The confirmation is sent back through the BLIK system to the terminal, and the customer receives a push notification confirming the payment.
 
 ## 2. ACTIVITY DIAGRAM - Proces z decyzjami i rozgałęzieniami
 
@@ -26,9 +27,10 @@ W systemie bankowości elektronicznej działają różni użytkownicy. Klient in
 ## 4. CLASS DIAGRAM - Struktura obiektów i relacji
 
 ### System zarządzania kontami bankowymi
-```
+`PL``
 Bank ma wiele oddziałów i każdy oddział ma swój kod oraz adres. Klient może mieć wiele kont w banku, każde konto ma unikalny numer, typ (oszczędnościowe, rozliczeniowe, kredytowe) oraz saldo. Konto należy do jednego klienta, ale może mieć kilku pełnomocników. Każda transakcja jest powiązana z kontem, ma datę, kwotę, tytuł oraz status. Transakcje mogą być przelewami (mają odbiorcę), wypłatami z bankomatu (mają lokalizację) lub płatnościami kartą (mają dane sprzedawcy). Klient posiada dane osobowe oraz może mieć przypisanych doradców finansowych z konkretnych oddziałów.
-```
+`EN``
+The bank has multiple branches, and each branch has its own code and address. A customer can have multiple accounts at the bank; each account has a unique number, type (savings, checking, or credit), and balance. An account belongs to one customer but can have multiple authorized users. Each transaction is linked to an account and includes a date, amount, description, and status. Transactions can be transfers (with a recipient), ATM withdrawals (with a location), or card payments (with merchant information). The customer has personal data and may be assigned financial advisors from specific branches.
 
 ## 5. STATE DIAGRAM - Cykl życia obiektu
 
@@ -47,9 +49,10 @@ Klient wkłada kartę do terminala POS w sklepie. Terminal odczytuje dane karty 
 ## 7. COMPONENT DIAGRAM - Architektura systemu
 
 ### Architektura systemu bankowego
-```
+`PL``
 System bankowy składa się z kilku głównych komponentów. Frontend aplikacji mobilnej komunikuje się z API Gateway, które zarządza wszystkimi żądaniami zewnętrznymi. Za API Gateway znajduje się moduł autoryzacji i uwierzytelniania, który weryfikuje tożsamość użytkowników. Główna logika biznesowa jest podzielona na mikrousługi: serwis zarządzania kontami, serwis płatności, serwis zarządzania kartami oraz serwis historii transakcji. Każdy mikroserwis ma własną bazę danych. Dodatkowo działa serwis powiadomień, który wysyła SMS-y i emaile, oraz serwis raportowania, który generuje zestawienia finansowe. Wszystkie komponenty komunikują się przez magistralę komunikatów i są monitorowane przez system logowania.
-```
+`EN``
+The banking system consists of several main components. The mobile application frontend communicates with an API Gateway, which manages all external requests. Behind the API Gateway is the authorization and authentication module that verifies user identities. The core business logic is divided into microservices: the account management service, the payment service, the card management service, and the transaction history service. Each microservice has its own database. Additionally, there is a notification service that sends SMS messages and emails, and a reporting service that generates financial summaries. All components communicate via a message bus and are monitored by a logging system.
 
 ## 8. DEPLOYMENT DIAGRAM - Rozmieszczenie systemów
 

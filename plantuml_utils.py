@@ -9,9 +9,15 @@ import tempfile
 import os
 import tempfile
 
+from translations_pl import TRANSLATIONS as PL
+from translations_en import TRANSLATIONS as EN
+
 plantuml_alphabet = string.digits + string.ascii_uppercase + string.ascii_lowercase + '-_'
 base64_alphabet   = string.ascii_uppercase + string.ascii_lowercase + string.digits + '+/'
 b64_to_plantuml = bytes.maketrans(base64_alphabet.encode('utf-8'), plantuml_alphabet.encode('utf-8'))
+
+def tr(key, LANG="pl"):
+        return EN[key] if LANG == "en" else PL[key]
 
 def plantuml_encode(plantuml_text):
     """Kompresuje i koduje tekst PlantUML do formatu URL zgodnego z plantuml.com."""
@@ -19,29 +25,29 @@ def plantuml_encode(plantuml_text):
     compressed_string = zlibbed_str[2:-4]
     return base64.b64encode(compressed_string).translate(b64_to_plantuml).decode('utf-8')
 
-def identify_plantuml_diagram_type(plantuml_code: str) -> str:
+def identify_plantuml_diagram_type(plantuml_code: str, LANG="pl") -> str:
     code = plantuml_code.lower()
     if 'state' in code or '-->' in code and 'state' in code:
-        return "Diagram stanów"
+        return tr("diagram_type_state_diagram", LANG=LANG)
     if 'actor' in code and ('->' in code or '->>' in code or '->|' in code) and ('component' not in code or 'deployment' not in code):
-        return "Diagram sekwencji"
+        return tr("diagram_type_sequence_diagram", LANG=LANG)
     if 'class' in code or 'interface' in code or '--|' in code or '<|--' in code:
-        return "Diagram klas"
+        return tr("diagram_type_class_diagram", LANG=LANG)
     if ('usecase' in code or 'use case' in code) and ('actor' in code or '->' in code or '->>' in code):
-        return "Diagram przypadków użycia"
+        return tr("diagram_type_usecase_diagram", LANG=LANG)
     if 'component' in code or 'node' in code or 'package' in code or 'container' in code:
-        return "Diagram komponentów"
+        return tr("diagram_type_component_diagram", LANG=LANG)
     if 'activity' in code or 'start' in code or 'end' in code:
-        return "Diagram aktywności"
+        return tr("diagram_type_activity_diagram", LANG=LANG)
     if 'object' in code or 'note' in code:
-        return "Diagram obiektów"   
+        return tr("diagram_type_object_diagram", LANG=LANG)  
     if 'deployment' in code or 'artifact' in code:
-        return "Diagram wdrożenia"
+        return tr("diagram_type_deployment_diagram", LANG=LANG)
     if 'flow' in code or 'data' in code or 'process' in code:
-        return "Diagram przepływu danych"        
-    return "Diagram ogólny (typ nieokreślony)"
+        return tr("diagram_type_flow_diagram", LANG=LANG)     
+    return tr("diagram_type_general", LANG=LANG)
 
-def fetch_plantuml_svg_www(plantuml_code: str) -> bytes:
+def fetch_plantuml_svg_www(plantuml_code: str, LANG="pl") -> bytes:
     #Pobiera diagram PlantUML jako SVG z serwisu plantuml.com.
     encoded = plantuml_encode(plantuml_code)
     url = f"https://www.plantuml.com/plantuml/svg/{encoded}"
@@ -49,14 +55,15 @@ def fetch_plantuml_svg_www(plantuml_code: str) -> bytes:
     if response.status_code == 200:
         return response.content
     else:
-        error_msg = f"Nie udało się pobrać SVG: {response.status_code}"
+        error_msg = tr("msg_error_downloading_SVG", LANG=LANG).format(response.status_code) 
         raise Exception(error_msg)
     
-def fetch_plantuml_svg_local(plantuml_code: str, plantuml_jar_path: str = "plantuml.jar") -> str:
+def fetch_plantuml_svg_local(plantuml_code: str, plantuml_jar_path: str = "plantuml.jar", LANG="pl") -> str:
     """
     Generates SVG from PlantUML code using local plantuml.jar and returns the path to the SVG file.
     The temporary file is not deleted automatically – remove it when no longer needed.
     """
+
     tmpdir = tempfile.mkdtemp()
     puml_path = os.path.join(tmpdir, "diagram.puml")
     svg_path = os.path.join(tmpdir, "diagram.svg")
@@ -69,4 +76,4 @@ def fetch_plantuml_svg_local(plantuml_code: str, plantuml_jar_path: str = "plant
     ], check=True)
     # Return the path to the generated SVG file
     return svg_path
-    
+
