@@ -55,7 +55,10 @@ def fetch_plantuml_svg_www(plantuml_code: str, LANG="pl") -> bytes:
     if response.status_code == 200:
         return response.content
     else:
-        error_msg = tr("msg_error_downloading_SVG", LANG=LANG).format(response.status_code) 
+        error_msg = tr("msg_error_downloading_SVG", LANG=LANG).format(
+            status_code=response.status_code,
+            error_text=response.text
+        )
         raise Exception(error_msg)
     
 def fetch_plantuml_svg_local(plantuml_code: str, plantuml_jar_path: str = "plantuml.jar", LANG="pl") -> str:

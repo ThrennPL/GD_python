@@ -36,7 +36,7 @@ API_KEY = os.getenv("API_KEY", "")
 API_DEFAULT_MODEL = os.getenv("API_DEFAULT_MODEL", "models/gemini-2.0-flash")
 MODEL_PROVIDER = os.getenv("MODEL_PROVIDER", "gemini")  # lub "gemini"
 
-LANG = "en"  # Domyślny język, można zmienić na "pl" dla polskiego
+LANG = "pl"  # Domyślny język, można zmienić na "pl" dla polskiego
 
 def tr(key):
     return EN[key] if LANG == "en" else PL[key]

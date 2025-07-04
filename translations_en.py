@@ -114,7 +114,7 @@ TRANSLATIONS = {
     "msg_error_loading_plantuml": "Error loading PlantUML file: {error}",
     "msg_error_fetching_plantuml": "Failed to fetch PlantUML diagram: {error}",
     "msg_error_fetching_plantuml_log": "Failed to fetch PlantUML diagram",
-    "msg_error_downloading_SVG": "Failed to download SVG: {response.status_code}",
+    "msg_error_downloading_SVG": "Error downloading SVG (code: {status_code}):\n{error_text}",
     "msg_error_displaying_plantuml_exception": "Error displaying PlantUML diagram: {error}",
     "msg_error_preparing_svg": "Error preparing SVG file: {error}",
     "msg_error_generating_xmi": "Error generating XMI file: {error}",

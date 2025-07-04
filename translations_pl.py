@@ -114,7 +114,7 @@ TRANSLATIONS = {
     "msg_error_loading_plantuml": "Błąd podczas wczytywania pliku PlantUML: {error}",
     "msg_error_fetching_plantuml": "Nie udało się pobrać diagramu PlantUML: {error}",
     "msg_error_fetching_plantuml_log": "Nie udało się pobrać diagramu PlantUML",
-    "msg_error_downloading_SVG": "Nie udało się pobrać SVG: {response.status_code}",
+    "msg_error_downloading_SVG": "Błąd pobierania SVG (kod: {status_code}):\n{error_text}",
     "msg_error_displaying_plantuml": "Nie ma kodu do wyświetlenia",
     "msg_error_displaying_plantuml_exception": "Nie udało się wyświetlić diagramu: {error}",
     "msg_error_preparing_svg": "Błąd podczas przygotowania pliku SVG: {error}",
