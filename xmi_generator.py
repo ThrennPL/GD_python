@@ -196,7 +196,7 @@ class EAXMIGenerator:
         return ea_profile
 
     def generate_ea_extension_improved(self, xmi_root, classes, relations, enums, package_id, connector_ids):
-        """Ulepszona generacja EA Extension"""
+        """Ulepszona generacja EA Extension z poprawną strukturą konektorów."""
         extension = ET.SubElement(xmi_root, 'xmi:Extension')
         extension.set('extender', 'Enterprise Architect')
         extension.set('extenderID', '6.5')
@@ -266,80 +266,96 @@ class EAXMIGenerator:
             xrefs = ET.SubElement(element, 'xrefs')
             xrefs.set('value', 'CreateSmartLinksOnLoad=1;')
     
-        # CONNECTORS z poprawnymi właściwościami EA
+       # CONNECTORS z poprawnymi właściwościami EA
         connectors = ET.SubElement(extension, 'connectors')
     
-        for relation, conn_id in zip(relations, connector_ids):
-            if relation.source in classes and relation.target in classes:
-                connector = ET.SubElement(connectors, 'connector')
-                # UWAGA: Wcześniej tworzony uml:Association miał ID. Teraz konektor ma swoje własne.
-                # Dla generalizacji 'conn_id' będzie referencją do elementu 'generalization'.
-                # Dla innych relacji 'conn_id' to świeżo wygenerowane ID dla konektora.
-                if relation.relation_type == 'inheritance':
-                    # Dla dziedziczenia referencjonujemy istniejący element generalizacji
-                    connector.set('xmi:idref', conn_id)
-                else:
-                    # Dla innych relacji tworzymy nowy konektor z tym ID
-                    connector.set('xmi:id', conn_id)
+        # Używamy słownika do mapowania nazw klas na ich obiekty UMLClass dla łatwiejszego dostępu
+        # Zakładając, że `classes` przekazane do `generate_xmi` to słownik `Dict[str, UMLClass]`
+        # Jeśli nie, trzeba będzie go przekazać dodatkowo do tej funkcji.
+        # W tym kodzie zakładam, że `classes` to `class_ids` z oryginalnego kodu (Dict[str, str])
+        # i potrzebujemy dostępu do nazwy klasy.
+        
+        rel_iterator = iter(relations)
+        
+        for conn_id in connector_ids:
+            relation = next(rel_iterator)
+            if relation.source not in classes or relation.target not in classes:
+                continue
 
-                # Properties dla connectora - bez zmian
-                properties = ET.SubElement(connector, 'properties')
-                properties.set('ea_type', self._map_relation_type_to_ea(relation.relation_type))
-                if relation.label:
-                    properties.set('name', relation.label)
-                properties.set('direction', 'Source -> Destination')
-                properties.set('ea_type', self._map_relation_type_to_ea(relation.relation_type))
-                properties.set('direction', 'Source -> Destination')
-                properties.set('linemode', '3')
-                properties.set('linecolor', '-1')
-                properties.set('linewidth', '0')
-                properties.set('seonlycolor', '-1')
-                properties.set('senumbercolor', '-1')
-                properties.set('sefontcolor', '-1')
-                properties.set('selinestyle', '0')
-                properties.set('sefontsize', '0')
-                properties.set('sefontweight', '0')
-                properties.set('sefontitalic', '0')
-                properties.set('sefontunderline', '0')
-                properties.set('sefontfamily', 'Arial')
-                properties.set('eventflags', '0')
-                properties.set('stylesheet', '')
-                properties.set('ea_localid', str(self.ea_localid_counter))
-                properties.set('ea_guid', f'{{{uuid.uuid4()}}}')
+            connector = ET.SubElement(connectors, 'connector')
             
+            # Dla dziedziczenia referencjujemy istniejący element generalizacji
+            if relation.relation_type == 'inheritance':
+                connector.set('xmi:idref', conn_id)
+                
+                # Właściwości dla generalizacji są prostsze
+                properties = ET.SubElement(connector, 'properties')
+                properties.set('ea_type', 'Generalization')
+                properties.set('direction', 'Source -> Destination')
+                properties.set('stereotype', 'Generalization')
+
+                source = ET.SubElement(connector, 'source', {'xmi:idref': classes[relation.source]})
+                target = ET.SubElement(connector, 'target', {'xmi:idref': classes[relation.target]})
+                
+            else:
+                # Dla innych relacji tworzymy nowy konektor z pełną strukturą EA
+                connector.set('xmi:id', conn_id)
+
+                # --- ŹRÓDŁO RELACJI ---
+                source = ET.SubElement(connector, 'source')
+                source.set('xmi:idref', classes[relation.source])
+                ET.SubElement(source, 'model', {'type': 'Class', 'name': relation.source})
+                ET.SubElement(source, 'role', {
+                    'visibility': 'Public', 
+                    'targetScope': 'instance',
+                    'multiplicity': relation.source_multiplicity or '1..1'
+                })
+                ET.SubElement(source, 'type', {
+                    'aggregation': 'composite' if relation.relation_type == 'composition' else 'none',
+                    'containment': 'Unspecified'
+                })
+                ET.SubElement(source, 'modifiers', {'isOrdered': 'false', 'changeable': 'none', 'isNavigable': 'false'})
+                ET.SubElement(source, 'style', {'Navigable': 'Non-Navigable'})
+
+                # --- CEL RELACJI ---
+                target = ET.SubElement(connector, 'target')
+                target.set('xmi:idref', classes[relation.target])
+                ET.SubElement(target, 'model', {'type': 'Class', 'name': relation.target})
+                ET.SubElement(target, 'role', {
+                    'visibility': 'Public', 
+                    'targetScope': 'instance',
+                    'multiplicity': relation.target_multiplicity or '1..1'
+                })
+                ET.SubElement(target, 'type', {'aggregation': 'none', 'containment': 'Unspecified'})
+                ET.SubElement(target, 'modifiers', {'isOrdered': 'false', 'changeable': 'none', 'isNavigable': 'true'})
+                ET.SubElement(target, 'style', {'Navigable': 'Navigable'})
+                
+                # --- WŁAŚCIWOŚCI SAMEGO KONEKTORA ---
+                ET.SubElement(connector, 'model', {'ea_localid': str(self.ea_localid_counter)})
                 self.ea_localid_counter += 1
 
-                # POPRAWIONA sekcja Source - wszystkie atrybuty w jednym tagu
-                source_elem = ET.SubElement(connector, 'source')
-                source_elem.set('xmi:idref', classes[relation.source])
-                source_elem.set('aggregation', '1' if relation.relation_type == 'composition' else '0')
-                source_elem.set('multiplicity', relation.source_multiplicity or '1')
-                source_elem.set('role', '')
-                source_elem.set('roleType', 'false')
-                source_elem.set('containment', 'Unspecified')
-                source_elem.set('isNavigable', 'false')
-                source_elem.set('isOrdered', 'false')
-                source_elem.set('isChangeable', 'true')
+                properties = ET.SubElement(connector, 'properties', {
+                    'ea_type': self._map_relation_type_to_ea(relation.relation_type),
+                    'direction': 'Source -> Destination'
+                })
+                if relation.label:
+                    properties.set('name', relation.label)
 
-                # POPRAWIONA sekcja Target - wszystkie atrybuty w jednym tagu
-                target_elem = ET.SubElement(connector, 'target')
-                target_elem.set('xmi:idref', classes[relation.target])
-                target_elem.set('aggregation', '0')
-                target_elem.set('multiplicity', relation.target_multiplicity or '1')
-                target_elem.set('role', '')
-                target_elem.set('roleType', 'false')
-                target_elem.set('containment', 'Unspecified')
-                target_elem.set('isNavigable', 'true')
-                target_elem.set('isOrdered', 'false')
-                target_elem.set('isChangeable', 'true')
-
-                # Dodajemy referencje do końcówek, aby powiązać z diagramem
-                if relation.relation_type != 'inheritance':
-                    ET.SubElement(connector, 'memberEnd', {'xmi:idref': f'EAID_dst_{conn_id}'})
-                    ET.SubElement(connector, 'memberEnd', {'xmi:idref': f'EAID_src_{conn_id}'})
-            
-                #connector_id_counter += 1
-    
+                ET.SubElement(connector, 'modifiers', {'isRoot': 'false', 'isLeaf': 'false'})
+                ET.SubElement(connector, 'appearance', {
+                    'linemode': '3', 'linecolor': '-1', 'linewidth': '0', 'seqno': '0', 'headStyle': '0', 'lineStyle': '0'
+                })
+                
+                # Etykieta stereotypu (np. <<use>>)
+                if relation.relation_type == 'dependency':
+                     ET.SubElement(connector, 'labels', {'mb': '«use»'})
+                else:
+                     ET.SubElement(connector, 'labels')
+                     
+                ET.SubElement(connector, 'extendedProperties', {'virtualInheritance': '0'})
+                ET.SubElement(connector, 'style')
+                ET.SubElement(connector, 'xrefs')
+                ET.SubElement(connector, 'tags')
         return extension
 
     def _map_relation_type_to_ea(self, relation_type: str) -> str:
