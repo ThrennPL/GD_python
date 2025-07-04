@@ -1,6 +1,6 @@
 # Generator i Weryfikator Diagramów UML/BPMN z AI
 
-Aplikacja do generowania, wizualizacji i weryfikacji diagramów UML (PlantUML) oraz BPMN (XML) na podstawie opisu procesu, z wykorzystaniem modeli AI (np. LLM). Projekt oferuje zarówno wersję desktopową (PyQt5) , jak i webową (Streamlit) , umożliwiając wybór szablonu promptu, typu diagramu, walidację opisu procesu oraz automatyczną weryfikację kodu PlantUML .
+Aplikacja do generowania, wizualizacji i weryfikacji diagramów UML (PlantUML) oraz BPMN (XML) na podstawie opisu procesu, z wykorzystaniem modeli AI (np. LLM). Projekt oferuje zarówno wersję desktopową (PyQt5) , jak i webową (Streamlit) , umożliwiając wybór szablonu promptu, typu diagramu, walidację opisu procesu oraz automatyczną weryfikację kodu PlantUML . Aplikacja obsługuje **dwie wersje językowe (angielską i polską)**, z dedykowanymi szablonami promptów dla każdej z nich, co zapewnia lepsze rezultaty generowania w wybranym języku.
 
 ## Funkcje
 
@@ -13,6 +13,7 @@ Aplikacja do generowania, wizualizacji i weryfikacji diagramów UML (PlantUML) o
   * Obsługa wielu modeli AI (lokalnych lub poprzez API, np. OpenAI, Gemini)
   * Pobieranie wygenerowanych diagramów w formatach: PlantUML, SVG, XMI
   * Specjalne opcje dla diagramów BPMN (poziom złożoności, reguła walidacji, format wyjściowy, domena)
+  * **Dwie wersje językowe interfejsu i promptów (angielska i polska)**
   * Przykładowe prompty testowe dla branży bankowej
 
 ## Eksport XMI
@@ -101,6 +102,8 @@ python main.py
   * `main.py` - oryginalna aplikacja PyQt5
   * `run_streamlit.bat` - skrypt uruchamiający (Windows) dla wersji Streamlit
   * Pozostałe pliki Python - moduły pomocnicze (bez zmian)
+      * `translations_pl.py`, `translations_en.py` - pliki z tłumaczeniami interfejsu
+      * `prompt_templates_pl.py`, `prompt_templates_en.py` - pliki z szablonami promptów dla języka polskiego i angielskiego
 
 ## TODO (rozwojowe)
 
