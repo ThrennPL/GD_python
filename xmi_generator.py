@@ -7,6 +7,7 @@ from plantuml_model import UMLClass, UMLRelation, UMLEnum, UMLNote
 from plantuml_parser import PlantUMLParser
 from logger_utils import setup_logger, log_info, log_error, log_exception
 
+setup_logger("main_app.log")
 class EAXMIGenerator:
     """Generator plików XMI dla Enterprise Architect"""
     
@@ -169,19 +170,96 @@ class EAXMIGenerator:
             if relation.source in class_ids and relation.target in class_ids:
                 rel_key = (relation.source, relation.target, relation.label)
                 if relation.relation_type == 'inheritance':
+                    print(f"Relation inheritance: {relation}")
                     # Generalizacja - specjalny przypadek, zostaje bez zmian
-                    parent_elem = package.find(f".//packagedElement[@xmi:id='{class_ids[relation.source]}']", self.namespace)
-                    if parent_elem is not None:
-                        generalization = ET.SubElement(parent_elem, 'generalization')
-                        gen_id = f'EAID_{uuid.uuid4()}'
-                        generalization.set('xmi:id', gen_id)
-                        generalization.set('general', class_ids[relation.target])
-                        connector_ids_map[rel_key] = gen_id  # lub gen_id dla generalizacji
+                    child_class_id = class_ids[relation.source]
+                    parent_class_id = class_ids[relation.target]
+                    print(f"DEBUG: Szukam klasy dziecka: {relation.source} (ID: {child_class_id})")
+                    print(f"DEBUG: Szukam klasy rodzica: {relation.target} (ID: {parent_class_id})")
+                    
+                    # Znajdź wszystkie elementy dla debugowania
+                    all_elements = package.findall('.//packagedElement', self.namespace)
+                    print(f"DEBUG: Znaleziono {len(all_elements)} elementów packagedElement:")
+                    for elem in all_elements:
+                        elem_id = elem.get('xmi:id')
+                        elem_name = elem.get('name')
+                        print(f"  - {elem_name}: {elem_id}")
+
+                    # POPRAWKA: Użyj właściwego sposobu wyszukiwania z namespace
+                    # Metoda 1: XPath z namespace - POPRAWNA składnia
+                    child_class_elem = package.find(f".//packagedElement[@xmi:id='{child_class_id}']", self.namespace)
+                    
+                    # Metoda 2: Jeśli namespace nie działa, użyj getiterator i pętli
+                    if child_class_elem is None:
+                        for elem in package.iter('packagedElement'):
+                            if elem.get('xmi:id') == child_class_id:
+                                child_class_elem = elem
+                                break
+                    
+                    # Metoda 3: Użyj xpath bez prefiksu (sprawdź atrybut bezpośrednio)
+                    if child_class_elem is None:
+                        xpath_query = f".//packagedElement"
+                        candidates = package.findall(xpath_query, self.namespace)
+                        for candidate in candidates:
+                            if candidate.get('xmi:id') == child_class_id:
+                                child_class_elem = candidate
+                                break
+
+                    print(f"DEBUG: child_class_elem znaleziony: {child_class_elem is not None}")
+
+                    if child_class_elem is not None:
+                        # Sprawdź czy klasa rodzic również istnieje - użyj tej samej logiki
+                        parent_class_elem = package.find(f".//packagedElement[@xmi:id='{parent_class_id}']", self.namespace)
+                        
+                        if parent_class_elem is None:
+                            # Metoda 2: iteracja
+                            for elem in package.iter('packagedElement'):
+                                if elem.get('xmi:id') == parent_class_id:
+                                    parent_class_elem = elem
+                                    break
+                        
+                        if parent_class_elem is None:
+                            # Metoda 3: znajdź wszystkie i porównaj
+                            xpath_query = f".//packagedElement"
+                            candidates = package.findall(xpath_query, self.namespace)
+                            for candidate in candidates:
+                                if candidate.get('xmi:id') == parent_class_id:
+                                    parent_class_elem = candidate
+                                    break
+                                    
+                        print(f"DEBUG: parent_class_elem znaleziony: {parent_class_elem is not None}")
+
+                        if parent_class_elem is not None:
+                            # Dodaj element generalizacji do klasy dziecka
+                            generalization = ET.SubElement(child_class_elem, 'generalization')
+                            gen_id = f'EAID_{uuid.uuid4()}'
+                            generalization.set('xmi:type', 'uml:Generalization')
+                            generalization.set('xmi:id', gen_id)
+                            generalization.set('general', parent_class_id)  # Wskaż na klasę rodzica
+                            
+                            connector_ids_map[rel_key] = gen_id
+                            
+                            # Dodaj label jeśli istnieje
+                            if relation.label:
+                                tagged = ET.SubElement(generalization, 'taggedValue')
+                                tagged.set('name', 'label')
+                                tagged.set('value', relation.label)   
+                            log_info(f"Znaleziono generalizację: {relation.source} (dziecko) -> {relation.target} (rodzic) (label: {relation.label})")
+                            print(f"DEBUG: Znaleziono generalizację: {relation.source} (dziecko) -> {relation.target} (rodzic) (label: {relation.label})")
+                        else:
+                            log_error(f"Nie znaleziono klasy rodzica o xmi:id={parent_class_id} dla generalizacji!")
+                            print(f"DEBUG: Nie znaleziono klasy rodzica o xmi:id={parent_class_id} dla generalizacji!")
                     else:
-                        log_error(f"Nie znaleziono klasy o xmi:id={class_ids[relation.source]} dla generalizacji!")
+                        log_error(f"Nie znaleziono klasy dziecka o xmi:id={child_class_id} dla generalizacji!")
+                        print(f"DEBUG: Nie znaleziono klasy dziecka o xmi:id={child_class_id} dla generalizacji!")
+
+                        print(f"DEBUG: Dostępne klasy w classes_data:")
+                        for name, data in classes_data.items():
+                            print(f"  - {name}: {data['obj'].xmi_id}")
 
                 elif relation.relation_type == 'association':
                     # Asocjacja - pełna definicja z końcówkami
+                    print(f"Relation association: {relation}")
                     assoc_id = f'EAID_{uuid.uuid4()}'
                     assoc_elem = ET.SubElement(package, 'packagedElement')
                     assoc_elem.set('xmi:type', 'uml:Association')
@@ -220,7 +298,17 @@ class EAXMIGenerator:
                     
                     connector_ids_map[rel_key] = assoc_id
                 elif relation.relation_type == 'usage':
+                    print(f"Relation usage: {relation}")
                     usage_id = f'EAID_{uuid.uuid4()}'
+                    #wyświetlmy wszystkie elementy zidentyfikowane dla tej relacji
+                    usage_elem = package.find(f".//packagedElement[@xmi:id='{class_ids[relation.source]}']", self.namespace)
+                    if usage_elem is None:
+                        log_error(f"Nie znaleziono klasy usage o xmi:id={class_ids[relation.source]} dla użycia!")
+                        print(f"DEBUG: Nie znaleziono klasy usage o xmi:id={class_ids[relation.source]} dla użycia!")
+                        continue    
+                    else:
+                        log_info(f"Znaleziono klasę usage o xmi:id={class_ids[relation.source]} dla użycia!")
+                        print(f"DEBUG: Znaleziono klasę usage o xmi:id={class_ids[relation.source]} dla użycia!")
                     usage_elem = ET.SubElement(package, 'packagedElement')
                     usage_elem.set('xmi:type', 'uml:Usage')
                     usage_elem.set('xmi:id', usage_id)
@@ -229,6 +317,17 @@ class EAXMIGenerator:
                     usage_elem.set('client', class_ids[relation.source])
                     connector_ids_map[rel_key] = usage_id
                 elif relation.relation_type == 'dependency':
+                    print(f"Relation dependency: {relation}")
+                    #wyświetlmy wszystkie elementy zidentyfikowane dla tej relacji
+                    dep_elem = package.find(f".//packagedElement[@xmi:id='{class_ids[relation.source]}']", self.namespace)
+                    if dep_elem is None:
+                        log_error(f"Nie znaleziono klasy dependency o xmi:id={class_ids[relation.source]} dla zależności!")
+                        print(f"DEBUG: Nie znaleziono klasy dependency o xmi:id={class_ids[relation.source]} dla zależności!")
+                        continue    
+                    else:
+                        log_info(f"Znaleziono klasę dependency o xmi:id={class_ids[relation.source]} dla zależności!")
+                        print(f"DEBUG: Znaleziono klasę dependency o xmi:id={class_ids[relation.source]} dla zależności!")     
+
                     dep_id = f'EAID_{uuid.uuid4()}'
                     dep_elem = ET.SubElement(package, 'packagedElement')
                     dep_elem.set('xmi:type', 'uml:Dependency')
@@ -238,7 +337,17 @@ class EAXMIGenerator:
                     dep_elem.set('client', class_ids[relation.source])
                     connector_ids_map[rel_key] = dep_id
                 elif relation.relation_type == 'aggregation':
+                    print(f"Relation aggregation: {relation}")
                     # Asocjacja agregacji - podobna do zwykłej asocjacji, ale z innym typem
+                    #wyświetlmy wszystkie elementy zidentyfikowane dla tej relacji
+                    if relation.source not in class_ids or relation.target not in class_ids:
+                        log_error(f"Nie znaleziono klasy agregacji o xmi:id={class_ids.get(relation.source, 'N/A')} lub {class_ids.get(relation.target, 'N/A')} dla agregacji!")
+                        print(f"DEBUG: Nie znaleziono klasy agregacji o xmi:id={class_ids.get(relation.source, 'N/A')} lub {class_ids.get(relation.target, 'N/A')} dla agregacji!")
+                        continue    
+                    else:   
+                        log_info(f"Znaleziono klasy agregacji o xmi:id={class_ids[relation.source]} i {class_ids[relation.target]} dla agregacji!")
+                        print(f"DEBUG: Znaleziono klasy agregacji o xmi:id={class_ids[relation.source]} i {class_ids[relation.target]} dla agregacji!") 
+
                     assoc_id = f'EAID_{uuid.uuid4()}'
                     assoc_elem = ET.SubElement(package, 'packagedElement')
                     assoc_elem.set('xmi:type', 'uml:Association')
@@ -274,6 +383,7 @@ class EAXMIGenerator:
                     ET.SubElement(owned_end_target, 'upperValue', {'xmi:type': 'uml:LiteralUnlimitedNatural', 'value': tgt_upper})
                 
                 else:
+                    print(f"Relation other: {relation}")
                     # --- NOWY KOD: Tworzymy pełny element uml:Association ---
                     assoc_id = f'EAID_{uuid.uuid4()}'
                     connector_ids_map[rel_key] = assoc_id

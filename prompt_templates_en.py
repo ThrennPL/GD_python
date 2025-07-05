@@ -704,10 +704,10 @@ prompt_templates = {
             "- Is the relationship **bidirectional** or **unidirectional**?\n"
             "- What are the **roles** in the relationship?\n\n"
 
-            "**INHERITANCE:**\n"
-            "- Which classes share **common** characteristics?\n"
-            "- Which classes are **specializations** of other classes?\n"
-            "- Are **abstract classes** needed?\n\n"
+            "**INHERITANCE (VERY IMPORTANT!):**\n"
+            "- Which classes are **specializations** (children) of other, more general classes (parents)?\n"
+            "- **Key Rule:** The inheritance relationship (`--|>`) MUST always lead from the child to the parent. Example: `class Transfer extends TransactionType` in code means `Transfer --|> TransactionType` in PlantUML. Never the other way around! Verify this direction carefully.\n"
+            "- Are abstract classes needed to gather common features?\n\n"
 
             "**AGGREGATION/COMPOSITION:**\n"
             "- Which classes are **parts** of other classes?\n"
@@ -764,7 +764,7 @@ prompt_templates = {
             "**PlantUML RELATIONSHIP TYPES:**\n"
             "- `-->` : Association/uses\n"
             "- `--` : Bidirectional association\n"
-            "- `--|>` : Inheritance (extends)\n"
+            "- `--|>` : Inheritance (extends) (Remember: Always from CHILD to PARENT!)\n"
             "- `..|>` : Implementation (implements)\n"
             "- `||--` : Composition (part-whole, strong)\n"
             "- `o--` : Aggregation (part-whole, weak)\n"

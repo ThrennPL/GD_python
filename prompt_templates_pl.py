@@ -706,10 +706,10 @@ prompt_templates = {
                     "- Czy relacja jest **dwukierunkowa** czy **jednokierunkowa**?\n"
                     "- Jakie są **role** w relacji?\n\n"
                     
-                    "**DZIEDZICZENIE:**\n"
-                    "- Które klasy mają **wspólne** cechy?\n"
-                    "- Które klasy są **specjalizacjami** innych klas?\n"
-                    "- Czy potrzebne są **klasy abstrakcyjne**?\n\n"
+                    "**DZIEDZICZENIE (BARDZO WAŻNE!):**\n"
+                    "- Które klasy są **specjalizacjami** (dziećmi) innych, bardziej ogólnych klas (rodziców)?\n"
+                    "- **Kluczowa reguła:** Relacja dziedziczenia (`--|>`) MUSI zawsze prowadzić od dziecka do rodzica. Przykład: `class Przelew extends TypTransakcji` w kodzie oznacza `Przelew --|> TypTransakcji` w PlantUML. Nigdy na odwrót! Dokładnie zweryfikuj ten kierunek.\n"
+                    "- Czy potrzebne są klasy abstrakcyjne do zebrania wspólnych cech?\n\n"
                     
                     "**AGREGACJA/KOMPOZYCJA:**\n"
                     "- Które klasy są **częściami** innych klas?\n"
@@ -766,7 +766,7 @@ prompt_templates = {
                     "**TYPY RELACJI PlantUML:**\n"
                     "- `-->` : Asocjacja/używa\n"
                     "- `--` : Asocjacja dwukierunkowa\n"
-                    "- `--|>` : Dziedziczenie (extends)\n"
+                    "- `--|>` : Dziedziczenie (extends) (Pamiętaj: Zawsze od DZIECKA do RODZICA!)\n"
                     "- `..|>` : Implementacja (implements)\n"
                     "- `||--` : Kompozycja (część-całość, silna)\n"
                     "- `o--` : Agregacja (część-całość, słaba)\n"
