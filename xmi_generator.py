@@ -191,7 +191,10 @@ class EAXMIGenerator:
                     # Definiujemy końcówki asocjacji (memberEnd i ownedEnd)
                     source_end_id = f'EAID_src_{uuid.uuid4()}'
                     target_end_id = f'EAID_tgt_{uuid.uuid4()}'
-                    assoc_elem.set('memberEnd', f"{source_end_id} {target_end_id}")
+                    # Dodaj memberEnd jako osobne elementy
+                    ET.SubElement(assoc_elem, 'memberEnd', {'xmi:idref': source_end_id})
+                    ET.SubElement(assoc_elem, 'memberEnd', {'xmi:idref': target_end_id})
+                    #assoc_elem.set('memberEnd', f"{source_end_id} {target_end_id}")
 
                     # Właściwa definicja końcówek
                     owned_end_source = ET.SubElement(assoc_elem, 'ownedEnd')
