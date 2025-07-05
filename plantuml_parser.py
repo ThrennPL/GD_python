@@ -174,10 +174,23 @@ class PlantUMLParser:
                 ))
                 break
 
+    @staticmethod
+    def parse_multiplicity(multiplicity):
+        """Zwraca (lower, upper) jako stringi na podstawie notacji UML/PlantUML."""
+        if not multiplicity:
+            return "0", "*"
+        if ".." in multiplicity:
+            lower, upper = multiplicity.split("..")
+            return lower.strip(), upper.strip().replace("n", "*").replace("#", "*")
+        if multiplicity == "*":
+            return "0", "*"
+        return multiplicity, multiplicity
+
     def _extract_multiplicity_and_label(self, line: str):
-        """Wyciąga liczność i etykiety z linii relacji"""
+        """Wyciąga liczność i etykietę z linii relacji PlantUML."""
         mult_pattern = r'"([0-9*\.]+)"'
         multiplicities = re.findall(mult_pattern, line)
         label_match = re.search(r':\s*([^"]+)(?:\s|$)', line)
         label = label_match.group(1).strip() if label_match else None
         return multiplicities, label
+    

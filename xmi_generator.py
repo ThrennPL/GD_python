@@ -4,6 +4,7 @@ import xml.dom.minidom
 import uuid
 from typing import Dict, List, Optional
 from plantuml_model import UMLClass, UMLRelation, UMLEnum, UMLNote
+from plantuml_parser import PlantUMLParser
 from logger_utils import setup_logger, log_info, log_error, log_exception
 
 class EAXMIGenerator:
@@ -209,12 +210,13 @@ class EAXMIGenerator:
                     owned_end_target.set('type', class_ids[relation.target])
                     owned_end_target.set('association', assoc_id)
 
+                    src_lower, src_upper = PlantUMLParser.parse_multiplicity(relation.source_multiplicity)
+                    tgt_lower, tgt_upper = PlantUMLParser.parse_multiplicity(relation.target_multiplicity)
                     # Definicja nawigowalności - źródło jest nawigowalne, cel nie
-                    ET.SubElement(owned_end_source, 'lowerValue', {'xmi:type': 'uml:LiteralInteger', 'value': '0'})
-                    ET.SubElement(owned_end_source, 'upperValue', {'xmi:type': 'uml:LiteralUnlimitedNatural', 'value': '*'})
-                    
-                    ET.SubElement(owned_end_target, 'lowerValue', {'xmi:type': 'uml:LiteralInteger', 'value': '0'})
-                    ET.SubElement(owned_end_target, 'upperValue', {'xmi:type': 'uml:LiteralUnlimitedNatural', 'value': '*'})
+                    ET.SubElement(owned_end_source, 'lowerValue', {'xmi:type': 'uml:LiteralInteger', 'value': src_lower})
+                    ET.SubElement(owned_end_source, 'upperValue', {'xmi:type': 'uml:LiteralUnlimitedNatural', 'value': src_upper})
+                    ET.SubElement(owned_end_target, 'lowerValue', {'xmi:type': 'uml:LiteralInteger', 'value': tgt_lower})
+                    ET.SubElement(owned_end_target, 'upperValue', {'xmi:type': 'uml:LiteralUnlimitedNatural', 'value': tgt_upper})
                     
                     connector_ids_map[rel_key] = assoc_id
                 elif relation.relation_type == 'usage':
@@ -263,11 +265,13 @@ class EAXMIGenerator:
                     owned_end_target.set('association', assoc_id)
 
                     # Definicja nawigowalności - źródło jest nawigowalne, cel nie
-                    ET.SubElement(owned_end_source, 'lowerValue', {'xmi:type': 'uml:LiteralInteger', 'value': '0'})
-                    ET.SubElement(owned_end_source, 'upperValue', {'xmi:type': 'uml:LiteralUnlimitedNatural', 'value': '*'})
-                    
-                    ET.SubElement(owned_end_target, 'lowerValue', {'xmi:type': 'uml:LiteralInteger', 'value': '0'})
-                    ET.SubElement(owned_end_target, 'upperValue', {'xmi:type': 'uml:LiteralUnlimitedNatural', 'value': '*'})
+                    src_lower, src_upper = PlantUMLParser.parse_multiplicity(relation.source_multiplicity)
+                    tgt_lower, tgt_upper = PlantUMLParser.parse_multiplicity(relation.target_multiplicity)
+                    # Definicja nawigowalności - źródło jest nawigowalne, cel nie
+                    ET.SubElement(owned_end_source, 'lowerValue', {'xmi:type': 'uml:LiteralInteger', 'value': src_lower})
+                    ET.SubElement(owned_end_source, 'upperValue', {'xmi:type': 'uml:LiteralUnlimitedNatural', 'value': src_upper})
+                    ET.SubElement(owned_end_target, 'lowerValue', {'xmi:type': 'uml:LiteralInteger', 'value': tgt_lower})
+                    ET.SubElement(owned_end_target, 'upperValue', {'xmi:type': 'uml:LiteralUnlimitedNatural', 'value': tgt_upper})
                 
                 else:
                     # --- NOWY KOD: Tworzymy pełny element uml:Association ---
