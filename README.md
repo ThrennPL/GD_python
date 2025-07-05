@@ -61,12 +61,21 @@ Przykładowa konfiguracja w pliku `.env`:
 ```
 PLANTUML_JAR_PATH=plantuml.jar
 PLANTUML_GENERATOR_TYPE=local
-API_URL=http://localhost:1234/v1/models
-CHAT_URL=http://localhost:1234/v1/chat/completions
-API_KEY=
+#API_URL=https://api.openai.com/v1/models
+#API_URL=http://localhost:1234/v1/models
+API_URL=https://generativelanguage.googleapis.com/v1beta/models
 API_DEFAULT_MODEL=models/gemini-2.0-flash
-MODEL_PROVIDER=gemini  # lub "local", "openai"
+#API_DEFAULT_MODEL=google/gemma-3-4b
+#CHAT_URL=https://api.openai.com/v1/chat/completions
+#CHAT_URL=http://localhost:1234/v1/chat/completions
+CHAT_URL=https://generativelanguage.googleapis.com/v1v1beta/chat/completions
+API_KEY=
+MODEL_PROVIDER =gemini
+#MODEL_PROVIDER =local
+#MODEL_PROVIDER =openai
 ```
+
+Dla Gemini i OpenAI trzeba użyć własnych API_KEY
 
 ## Uruchomienie
 

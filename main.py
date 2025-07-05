@@ -335,41 +335,23 @@ class AIApp(QMainWindow):
             return None
 
     def start_api_thread(self, prompt, model_name=None):
-        """
-        Uruchamia wątek API z podanym promptem i modelem.
-        """
         if model_name is None:
             model_name = self.model_selector.currentText()
         try:
-            if MODEL_PROVIDER == "gemini":
-                import google.generativeai as genai
-                
-                genai.configure(api_key=API_KEY)
-                model_name = self.model_selector.currentText()
-                model = genai.GenerativeModel(model_name)
-                log_info(tr("log_sending_to_model").format(model_name=model_name, prompt=prompt[:5000]))  # Logujemy tylko pierwsze 5000 znaków
-                response = model.generate_content(prompt)
-                response_content = response.text if hasattr(response, "text") else str(response)
-                log_info(f"Response from {model_name}: {response_content[:5000]}...")
-                self.handle_api_response(model_name, response_content)
-                return response_content
-                            
-            else:
-                url = CHAT_URL
-                headers = {"Content-Type": "application/json","Authorization": f"Bearer {API_KEY}"} if API_KEY else {"Content-Type": "application/json"}
-                messages = [{"role": "user", "content": prompt}]
-                payload = {
-                    "model": model_name,
-                    "messages": messages,
-                    "temperature": 0.7
-                    }
-                self.api_thread = APICallThread(url, headers, payload, model_name)
-                self.api_thread.response_received.connect(self.handle_api_response)
-                self.api_thread.error_occurred.connect(self.handle_api_error)
-                self.api_thread.start()
-                log_info(f"Starting API thread for model {model_name} with prompt: {prompt[:5000]}...")  # Logujemy tylko pierwsze 5000 znaków
+            url = CHAT_URL
+            headers = {"Content-Type": "application/json","Authorization": f"Bearer {API_KEY}"} if API_KEY else {"Content-Type": "application/json"}
+            messages = [{"role": "user", "content": prompt}]
+            payload = {
+                "model": model_name,
+                "messages": messages,
+                "temperature": 0.7
+            }
+            self.api_thread = APICallThread(url, headers, payload, model_name, MODEL_PROVIDER)
+            self.api_thread.response_received.connect(self.handle_api_response)
+            self.api_thread.error_occurred.connect(self.handle_api_error)
+            self.api_thread.start()
+            log_info(f"Starting API thread for model {model_name} with prompt: {prompt[:5000]}...")
         except Exception as e:
-            #error_msg = f"Wystąpił błąd podczas wysyłania zapytania do modelu {model_name}: {e}"
             error_msg = tr("error_sending_request").format(model_name=model_name, error=e)
             log_exception(error_msg)
             self.output_box.setText(error_msg)
@@ -458,26 +440,7 @@ class AIApp(QMainWindow):
 
         # Uruchom wątek API z gotowym promptem i wybranym modelem
         selected_model = self.model_selector.currentText()
-
-        if MODEL_PROVIDER == "gemini":
-            import google.generativeai as genai
-            genai.configure(api_key=API_KEY)
-            model_name = self.model_selector.currentText()
-            model = genai.GenerativeModel(model_name)
-            #log_info(f"Wysyłam do modelu {model_name} z treścią: {prompt[:5000]}...")
-            log_info(tr("sending_to_model").format(model_name=model_name, prompt=prompt[:5000]))  # Logujemy tylko pierwsze 5000 znaków
-            try:
-                response = model.generate_content(prompt)
-                response_content = response.text if hasattr(response, "text") else str(response)
-            except Exception as e:
-                error_msg = tr("error_sending_request").format(model_name=model_name, error=e) #f"Wystąpił błąd podczas wysyłania zapytania do modelu {model_name}: {e}"
-                log_exception(error_msg)
-                self.output_box.setText(error_msg)
-                return
-            log_info(tr("response_from_model").format(model_name=model_name, response=response_content[:5000]))
-            self.handle_api_response(model_name, response_content)
-        else:
-            self.start_api_thread(prompt, selected_model)
+        self.start_api_thread(prompt, selected_model)
 
     def get_complexity_level(self):
         """Zwraca poziom złożoności wybrany przez użytkownika."""
@@ -822,7 +785,7 @@ class AIApp(QMainWindow):
                 log_error(error_msg)
                 self.append_to_chat("System", error_msg)
                 QMessageBox.warning(
-                    self, rt("verification_template"),
+                    self, tr("verification_template"),
                     tr("msg_verification_attempts_exceeded")
                     ),
                 return
