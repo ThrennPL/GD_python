@@ -142,24 +142,38 @@ class PlantUMLParser:
         return {"declaration": line, "modifiers": modifiers}
     
     def _parse_relation(self, line: str):
-        """Parsuje relacje między klasami - uproszczone wzorce"""
+        """Parsuje relacje między klasami - poprawione wzorce"""
         # Najpierw wyciągnij liczności i etykietę
         multiplicities, label = self._extract_multiplicity_and_label(line)
+        #print(f"DEBUG: line={line!r} multiplicities={multiplicities} label={label!r}")
+        
         # Usuń etykietę i liczności z linii
         line_clean = re.sub(r':\s*.*$', '', line.strip())
         line_clean = re.sub(r'"[0-9*\.]+"\s*', '', line_clean)
-
+        
+        #print(f"DEBUG: line_clean={line_clean!r}")  # Dodatkowy debug
+        
         patterns = [
-            (r'(\w+)\s*<\|\-\-\s*(\w+)', 'inheritance', True),
-            (r'(\w+)\s*\-\-\|\>\s*(\w+)', 'inheritance', False),
+            # Dziedziczenie - POPRAWIONE WZORCE
+            (r'(\w+)\s*<\|\-\-\s*(\w+)', 'inheritance', True),   # A <|-- B (A dziedziczy z B)
+            (r'(\w+)\s*\-\-\|\>\s*(\w+)', 'inheritance', False),  # A --|> B (A dziedziczy z B)
+            (r'(\w+)\s*\|\>\s*(\w+)', 'inheritance', False),      # A |> B (skrócona forma)
+            (r'(\w+)\s*<\|\s*(\w+)', 'inheritance', True),        # A <| B (skrócona forma)
+            
+            # Kompozycja
             (r'(\w+)\s*\*\-\-\s*(\w+)', 'composition', False),
             (r'(\w+)\s*\-\-\*\s*(\w+)', 'composition', True),
+            
+            # Agregacja
             (r'(\w+)\s*o\-\-\s*(\w+)', 'aggregation', False),
             (r'(\w+)\s*\-\-o\s*(\w+)', 'aggregation', True),
+            
+            # Asocjacja
             (r'(\w+)\s*\-\->\s*(\w+)', 'association', False),
             (r'(\w+)\s*<\-\-\s*(\w+)', 'association', True),
             (r'(\w+)\s*\-\-\s*(\w+)', 'association', False),
         ]
+        
         for pattern, rel_type, reversed_ in patterns:
             match = re.match(pattern, line_clean)
             if match:
@@ -167,12 +181,18 @@ class PlantUMLParser:
                     source, target = match.group(2), match.group(1)
                 else:
                     source, target = match.group(1), match.group(2)
+                
                 source_mult = multiplicities[0] if len(multiplicities) > 0 else None
                 target_mult = multiplicities[1] if len(multiplicities) > 1 else None
+                
+                #print(f"DEBUG: Found relation: {source} --{rel_type}--> {target} (label: {label})")
+                
                 self.relations.append(UMLRelation(
                     source, target, rel_type, label, source_mult, target_mult
                 ))
-                break
+                return  # Ważne: przerwij po znalezieniu pierwszego dopasowania
+        
+        #print(f"DEBUG: No pattern matched for line: {line_clean!r}")
 
     @staticmethod
     def parse_multiplicity(multiplicity):
@@ -190,7 +210,7 @@ class PlantUMLParser:
         """Wyciąga liczność i etykietę z linii relacji PlantUML."""
         mult_pattern = r'"([0-9*\.]+)"'
         multiplicities = re.findall(mult_pattern, line)
-        label_match = re.search(r':\s*([^"]+)(?:\s|$)', line)
+        label_match = re.search(r':\s*"([^"]+)"', line)
         label = label_match.group(1).strip() if label_match else None
         return multiplicities, label
     
