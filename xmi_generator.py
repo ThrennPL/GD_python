@@ -54,7 +54,6 @@ class EAXMIGenerator:
         for class_name, uml_class in classes.items():
             class_id = f'EAID_{uuid.uuid4()}'
             uml_class.xmi_id = class_id # Zapisz ID w obiekcie dla łatwego dostępu
-            
             class_data_entry = {'obj': uml_class, 'attrs': {}, 'ops': {}}
             classes_data[class_name] = class_data_entry
             class_elem = ET.SubElement(package, 'packagedElement')
@@ -141,7 +140,7 @@ class EAXMIGenerator:
                     tagged.set('name', 'modifiers')
                     tagged.set('value', ','.join(modifiers))
             
-            classes_data[class_id] = class_data_entry
+            #classes_data[class_id] = class_data_entry
     
         class_ids = {class_name: data['obj'].xmi_id for class_name, data in classes_data.items()}
 
@@ -179,6 +178,93 @@ class EAXMIGenerator:
                         connector_ids_map[rel_key] = gen_id  # lub gen_id dla generalizacji
                     else:
                         log_error(f"Nie znaleziono klasy o xmi:id={class_ids[relation.source]} dla generalizacji!")
+
+                elif relation.relation_type == 'association':
+                    # Asocjacja - pełna definicja z końcówkami
+                    assoc_id = f'EAID_{uuid.uuid4()}'
+                    assoc_elem = ET.SubElement(package, 'packagedElement')
+                    assoc_elem.set('xmi:type', 'uml:Association')
+                    assoc_elem.set('xmi:id', assoc_id)
+                    assoc_elem.set('name', relation.label or '')
+                    assoc_elem.set('visibility', 'public')
+
+                    # Definiujemy końcówki asocjacji (memberEnd i ownedEnd)
+                    source_end_id = f'EAID_src_{uuid.uuid4()}'
+                    target_end_id = f'EAID_tgt_{uuid.uuid4()}'
+                    assoc_elem.set('memberEnd', f"{source_end_id} {target_end_id}")
+
+                    # Właściwa definicja końcówek
+                    owned_end_source = ET.SubElement(assoc_elem, 'ownedEnd')
+                    owned_end_source.set('xmi:id', source_end_id)
+                    owned_end_source.set('visibility', 'public')
+                    owned_end_source.set('type', class_ids[relation.source])
+                    owned_end_source.set('association', assoc_id)
+
+                    owned_end_target = ET.SubElement(assoc_elem, 'ownedEnd')
+                    owned_end_target.set('xmi:id', target_end_id)
+                    owned_end_target.set('visibility', 'public')
+                    owned_end_target.set('type', class_ids[relation.target])
+                    owned_end_target.set('association', assoc_id)
+
+                    # Definicja nawigowalności - źródło jest nawigowalne, cel nie
+                    ET.SubElement(owned_end_source, 'lowerValue', {'xmi:type': 'uml:LiteralInteger', 'value': '0'})
+                    ET.SubElement(owned_end_source, 'upperValue', {'xmi:type': 'uml:LiteralUnlimitedNatural', 'value': '*'})
+                    
+                    ET.SubElement(owned_end_target, 'lowerValue', {'xmi:type': 'uml:LiteralInteger', 'value': '0'})
+                    ET.SubElement(owned_end_target, 'upperValue', {'xmi:type': 'uml:LiteralUnlimitedNatural', 'value': '*'})
+                    
+                    connector_ids_map[rel_key] = assoc_id
+                elif relation.relation_type == 'usage':
+                    usage_id = f'EAID_{uuid.uuid4()}'
+                    usage_elem = ET.SubElement(package, 'packagedElement')
+                    usage_elem.set('xmi:type', 'uml:Usage')
+                    usage_elem.set('xmi:id', usage_id)
+                    usage_elem.set('visibility', 'public')
+                    usage_elem.set('supplier', class_ids[relation.target])
+                    usage_elem.set('client', class_ids[relation.source])
+                    connector_ids_map[rel_key] = usage_id
+                elif relation.relation_type == 'dependency':
+                    dep_id = f'EAID_{uuid.uuid4()}'
+                    dep_elem = ET.SubElement(package, 'packagedElement')
+                    dep_elem.set('xmi:type', 'uml:Dependency')
+                    dep_elem.set('xmi:id', dep_id)
+                    dep_elem.set('visibility', 'public')
+                    dep_elem.set('supplier', class_ids[relation.target])
+                    dep_elem.set('client', class_ids[relation.source])
+                    connector_ids_map[rel_key] = dep_id
+                elif relation.relation_type == 'aggregation':
+                    # Asocjacja agregacji - podobna do zwykłej asocjacji, ale z innym typem
+                    assoc_id = f'EAID_{uuid.uuid4()}'
+                    assoc_elem = ET.SubElement(package, 'packagedElement')
+                    assoc_elem.set('xmi:type', 'uml:Association')
+                    assoc_elem.set('xmi:id', assoc_id)
+                    assoc_elem.set('name', relation.label or '')
+                    assoc_elem.set('visibility', 'public')
+
+                    # Definiujemy końcówki asocjacji (memberEnd i ownedEnd)
+                    source_end_id = f'EAID_src_{uuid.uuid4()}'
+                    target_end_id = f'EAID_tgt_{uuid.uuid4()}'
+                    assoc_elem.set('memberEnd', f"{source_end_id} {target_end_id}")
+
+                    # Właściwa definicja końcówek
+                    owned_end_source = ET.SubElement(assoc_elem, 'ownedEnd')
+                    owned_end_source.set('xmi:id', source_end_id)
+                    owned_end_source.set('visibility', 'public')
+                    owned_end_source.set('type', class_ids[relation.source])
+                    owned_end_source.set('association', assoc_id)
+
+                    owned_end_target = ET.SubElement(assoc_elem, 'ownedEnd')
+                    owned_end_target.set('xmi:id', target_end_id)
+                    owned_end_target.set('visibility', 'public')
+                    owned_end_target.set('type', class_ids[relation.target])
+                    owned_end_target.set('association', assoc_id)
+
+                    # Definicja nawigowalności - źródło jest nawigowalne, cel nie
+                    ET.SubElement(owned_end_source, 'lowerValue', {'xmi:type': 'uml:LiteralInteger', 'value': '0'})
+                    ET.SubElement(owned_end_source, 'upperValue', {'xmi:type': 'uml:LiteralUnlimitedNatural', 'value': '*'})
+                    
+                    ET.SubElement(owned_end_target, 'lowerValue', {'xmi:type': 'uml:LiteralInteger', 'value': '0'})
+                    ET.SubElement(owned_end_target, 'upperValue', {'xmi:type': 'uml:LiteralUnlimitedNatural', 'value': '*'})
                 
                 else:
                     # --- NOWY KOD: Tworzymy pełny element uml:Association ---
@@ -293,6 +379,7 @@ class EAXMIGenerator:
 
         for class_id, data in classes_data.items():
             uml_class = data['obj']
+            class_id = uml_class.xmi_id
             element = ET.SubElement(elements, 'element')
             element.set('xmi:idref', class_id)
             element.set('xmi:type', 'uml:Interface' if uml_class.stereotype == 'interface' else 'uml:Class')
@@ -411,10 +498,60 @@ class EAXMIGenerator:
         for relation in relations:
             rel_key = (relation.source, relation.target, relation.label)
             conn_id = connector_ids_map.get(rel_key)
-            if not conn_id: continue
-            
-            # ... cała logika generowania <connector> z <source>, <target> itd.
-            # Ta część była już poprawna.
+            if not conn_id:
+                continue
+
+            connector = ET.SubElement(connectors, 'connector')
+            connector.set('xmi:idref', conn_id)
+
+            # Źródło
+            source_id = classes_data[relation.source]['obj'].xmi_id
+            source_elem = ET.SubElement(connector, 'source', {'xmi:idref': source_id})
+            ET.SubElement(source_elem, 'model', {
+                'ea_localid': str(self.ea_localid_counter),
+                'type': 'Class',
+                'name': relation.source
+            })
+            self.ea_localid_counter += 1
+            ET.SubElement(source_elem, 'role', {'visibility': 'Public', 'targetScope': 'instance'})
+            ET.SubElement(source_elem, 'type', {'aggregation': 'none', 'containment': 'Unspecified'})
+            ET.SubElement(source_elem, 'constraints')
+            ET.SubElement(source_elem, 'modifiers', {'isOrdered': 'false', 'changeable': 'none', 'isNavigable': 'false'})
+            ET.SubElement(source_elem, 'style', {'value': 'Union=0;Derived=0;AllowDuplicates=0;Owned=0;Navigable=Non-Navigable;'})
+            ET.SubElement(source_elem, 'documentation')
+            ET.SubElement(source_elem, 'xrefs')
+            ET.SubElement(source_elem, 'tags')
+
+            # Cel
+            target_id = classes_data[relation.target]['obj'].xmi_id
+            target_elem = ET.SubElement(connector, 'target', {'xmi:idref': target_id})
+            ET.SubElement(target_elem, 'model', {
+                'ea_localid': str(self.ea_localid_counter),
+                'type': 'Class',
+                'name': relation.target
+            })
+            self.ea_localid_counter += 1
+            ET.SubElement(target_elem, 'role', {'visibility': 'Public', 'targetScope': 'instance'})
+            ET.SubElement(target_elem, 'type', {'aggregation': 'none', 'containment': 'Unspecified'})
+            ET.SubElement(target_elem, 'constraints')
+            ET.SubElement(target_elem, 'modifiers', {'isOrdered': 'false', 'changeable': 'none', 'isNavigable': 'true'})
+            ET.SubElement(target_elem, 'style', {'value': 'Union=0;Derived=0;AllowDuplicates=0;Owned=0;Navigable=Navigable;'})
+            ET.SubElement(target_elem, 'documentation')
+            ET.SubElement(target_elem, 'xrefs')
+            ET.SubElement(target_elem, 'tags')
+
+            # Pozostałe sekcje konektora
+            ET.SubElement(connector, 'model', {'ea_localid': str(self.ea_localid_counter)})
+            self.ea_localid_counter += 1
+            ET.SubElement(connector, 'properties', {'ea_type': self._map_relation_type_to_ea(relation.relation_type), 'direction': 'Source -> Destination'})
+            ET.SubElement(connector, 'modifiers', {'isRoot': 'false', 'isLeaf': 'false'})
+            ET.SubElement(connector, 'documentation')
+            ET.SubElement(connector, 'appearance', {'linemode': '3', 'linecolor': '-1', 'linewidth': '0', 'seqno': '0', 'headStyle': '0', 'lineStyle': '0'})
+            ET.SubElement(connector, 'labels', {'mb': f'«{relation.relation_type}»'})
+            ET.SubElement(connector, 'extendedProperties', {'virtualInheritance': '0'})
+            ET.SubElement(connector, 'style')
+            ET.SubElement(connector, 'xrefs')
+            ET.SubElement(connector, 'tags')
         
         return extension
 
