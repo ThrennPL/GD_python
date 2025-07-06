@@ -432,7 +432,7 @@ class EAXMIGenerator:
             class_ids, 
             relations, 
             package_id,
-            connector_ids
+            connector_ids_map  
         )
     
         # Konwertuj do ładnego XML
@@ -686,70 +686,103 @@ class EAXMIGenerator:
 
     # BARDZO WAŻNE: Dodaj generację diagramu z elementami
     def generate_diagram_with_layout(self, extension, classes, relations, package_id, connector_ids):
-        """Generuje diagram z podstawowym layoutem"""
+        """Generuje diagram w pełni zgodny z formatem EA"""
         diagrams = ET.SubElement(extension, 'diagrams')
-    
-        diagram = ET.SubElement(diagrams, 'diagram')
+        
         diagram_id = f'EAID_{uuid.uuid4()}'
+        diagram = ET.SubElement(diagrams, 'diagram')
         diagram.set('xmi:id', diagram_id)
-    
-        # EA wymaga tych właściwości
-        properties = ET.SubElement(diagram, 'properties')
-        properties.set('name', 'Class Diagram')
-        properties.set('type', 'Logical')
-        properties.set('documentation', '')
-        properties.set('tooltype', 'UML')
-        properties.set('version', '1.0')
-        properties.set('author', 'PlantUML Converter')
-        properties.set('created_date', '2024-01-01 00:00:00')
-        properties.set('modified_date', '2024-01-01 00:00:00')
-        properties.set('htmlpath', '')
-        properties.set('show_details', '0')
-        properties.set('orientation', 'P')
-        properties.set('papersize', 'A4')
-        properties.set('scale', '100')
-        properties.set('showpagebreaks', 'false')
-        properties.set('showpackagecontents', 'true')
-        properties.set('showpubliconly', 'false')
-        properties.set('showattributes', 'true')
-        properties.set('showoperations', 'true')
-        properties.set('showstereotype', 'true')
-        properties.set('showparents', 'false')
-        properties.set('showlagunagecollection', 'false')
-        properties.set('swimlanes', 'locked=false;orientation=0;width=0;inbar=false;names=false;color=-1;bold=false;fcol=0;tcol=-1;ofCol=-1;ufCol=-1;hl=0;ufh=0;hh=0;cls=0;')
-        properties.set('matrixitems', 'locked=false;matrixactive=false;swimlanesactive=true;kanbanactive=false;width=1;clrLine=0;')
-        properties.set('ea_localid', str(self.ea_localid_counter))
-        properties.set('ea_guid', f'{{{uuid.uuid4()}}}')
-    
-        self.ea_localid_counter += 1
-    
-        # Style
-        style = ET.SubElement(diagram, 'style')
-        style.set('value', 'MDGDgm=Extended::Class Diagram;STBLDgm=;ShowNotes=1;VisibleAttributeDetail=0;VisibleOperationDetail=0;VisibleTypeDetail=1;VisibleStereotype=1;VisibleTaggedValues=0;VisibleConstraints=0;VisibleCompartmentItems=1;')
-    
-        # Elements na diagramie z pozycjonowaniem
-        elements = ET.SubElement(diagram, 'elements')
-    
-        connectors = ET.SubElement(diagram, 'connectors')
-        for conn_id in connector_ids:
-            connector = ET.SubElement(connectors, 'connector')
-            connector.set('connector_id', conn_id)
 
+        # <model> z przypisaniem pakietu
+        ET.SubElement(diagram, 'model', {
+            'package': package_id,
+            'localID': str(self.ea_localid_counter),
+            'owner': package_id
+        })
+        self.ea_localid_counter += 1
+
+        # <properties>
+        ET.SubElement(diagram, 'properties', {
+            'name': 'Classes',
+            'type': 'Logical'
+        })
+
+        # <project> - metadane
+        ET.SubElement(diagram, 'project', {
+            'author': '195841',
+            'version': '1.0',
+            'created': '2025-06-26 20:31:14',
+            'modified': '2025-06-26 20:36:44'
+        })
+
+        # <style1> i <style2> - skopiowane z Twojego wzoru
+        ET.SubElement(diagram, 'style1', {
+            'value': (
+                'ShowPrivate=1;ShowProtected=1;ShowPublic=1;HideRelationships=0;Locked=0;Border=1;HighlightForeign=1;'
+                'PackageContents=1;SequenceNotes=0;ScalePrintImage=0;PPgs.cx=0;PPgs.cy=0;DocSize.cx=795;DocSize.cy=1134;'
+                'ShowDetails=0;Orientation=P;Zoom=100;ShowTags=0;OpParams=1;VisibleAttributeDetail=0;ShowOpRetType=1;'
+                'ShowIcons=1;CollabNums=0;HideProps=0;ShowReqs=0;ShowCons=0;PaperSize=9;HideParents=0;UseAlias=0;'
+                'HideAtts=0;HideOps=0;HideStereo=0;HideElemStereo=0;ShowTests=0;ShowMaint=0;ConnectorNotation=UML 2.1;'
+                'ExplicitNavigability=0;ShowShape=1;AllDockable=0;AdvancedElementProps=1;AdvancedFeatureProps=1;'
+                'AdvancedConnectorProps=1;m_bElementClassifier=1;SPT=1;ShowNotes=0;SuppressBrackets=0;SuppConnectorLabels=0;'
+                'PrintPageHeadFoot=0;ShowAsList=0;'
+            )
+        })
+
+        ET.SubElement(diagram, 'style2', {
+            'value': (
+                'ExcludeRTF=0;DocAll=0;HideQuals=0;AttPkg=1;ShowTests=0;ShowMaint=0;SuppressFOC=1;MatrixActive=0;'
+                'SwimlanesActive=1;KanbanActive=0;MatrixLineWidth=1;MatrixLineClr=0;MatrixLocked=0;'
+                'TConnectorNotation=UML 2.1;TExplicitNavigability=0;AdvancedElementProps=1;AdvancedFeatureProps=1;'
+                'AdvancedConnectorProps=1;m_bElementClassifier=1;SPT=1;MDGDgm=;STBLDgm=;ShowNotes=0;'
+                'VisibleAttributeDetail=0;ShowOpRetType=1;SuppressBrackets=0;SuppConnectorLabels=0;PrintPageHeadFoot=0;'
+                'ShowAsList=0;SuppressedCompartments=;Theme=:119;SaveTag=4C19637D;'
+            )
+        })
+
+        ET.SubElement(diagram, 'swimlanes', {
+            'value': (
+                'locked=false;orientation=0;width=0;inbar=false;names=false;color=-1;bold=false;fcol=0;tcol=-1;ofCol=-1;'
+                'ufCol=-1;hl=1;ufh=0;hh=0;cls=0;bw=0;hli=0;bro=0;'
+                'SwimlaneFont=lfh:-10,lfw:0,lfi:0,lfu:0,lfs:0,lfface:Calibri,lfe:0,lfo:0,lfchar:1,lfop:0,lfcp:0,lfq:0,'
+                'lfpf=0,lfWidth=0;'
+            )
+        })
+
+        ET.SubElement(diagram, 'matrixitems', {
+            'value': 'locked=false;matrixactive=false;swimlanesactive=true;kanbanactive=false;width=1;clrLine=0;'
+        })
+
+        ET.SubElement(diagram, 'extendedProperties')
+
+        # Elementy diagramu (pozycje klas)
+        elements_node = ET.SubElement(diagram, 'elements')
         x, y = 100, 100
         for i, (class_name, class_id) in enumerate(classes.items()):
-            element = ET.SubElement(elements, 'element')
-            element.set('geometry', f'Left={x};Top={y};Right={x+120};Bottom={y+80};')
+            element = ET.SubElement(elements_node, 'element')
+            element.set('geometry', f'Left={x};Top={y};Right={x+90};Bottom={y+98};')
             element.set('subject', class_id)
             element.set('seqno', str(i + 1))
-            element.set('style', 'DUID=...;NSL=0;BCol=-1;BFol=-1;LCol=-1;LWth=-1;fontsz=0;bold=0;italic=0;ul=0;charset=0;pitch=0;')
-        
-            # Przesunięcie dla następnego elementu
+            element.set('style', f'DUID={uuid.uuid4().hex[:8].upper()};NSL=0;BCol=-1;BFol=-1;LCol=-1;LWth=-1;'
+                                f'fontsz=0;bold=0;black=0;italic=0;ul=0;charset=0;pitch=0;')
             x += 150
-            if x > 600:  # Nowy rząd
+            if x > 800:
                 x = 100
-                y += 120
-    
+                y += 200
+
+        # Konektory (połączenia)
+        for rel in relations:
+            rel_key = (rel.source, rel.target, rel.label)
+            conn_id = connector_ids.get(rel_key)
+            if not conn_id:
+                continue
+            element = ET.SubElement(elements_node, 'element')
+            element.set('geometry', 'SX=0;SY=0;EX=0;EY=0;EDGE=3;')
+            element.set('subject', conn_id)
+            element.set('style', f'Mode=3;EOID={uuid.uuid4().hex[:8].upper()};SOID={uuid.uuid4().hex[:8].upper()};Color=-1;LWidth=0;Hidden=0;')
+
         return diagram
+
 
 
     def _clean_attribute_name(self, attr: str) -> str:
