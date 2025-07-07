@@ -211,6 +211,10 @@ class PlantUMLParser:
         mult_pattern = r'"([0-9*\.]+)"'
         multiplicities = re.findall(mult_pattern, line)
         label_match = re.search(r':\s*"([^"]+)"', line)
+        # a jeżeli label nie jest w cudzysłowie, to zaczyna się od ": "
+        if not label_match:
+            label_match = re.search(r':\s*([^:]+)', line)
+        multiplicities = [self.parse_multiplicity(m) for m in multiplicities]
         label = label_match.group(1).strip() if label_match else None
         return multiplicities, label
     
