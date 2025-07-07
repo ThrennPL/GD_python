@@ -165,33 +165,25 @@ class EAXMIGenerator:
 
         connector_ids_map = {}
 
-        for relation in relations:
-            if relation.relation_type == 'inheritance':
-                print(f"DEBUG: Relation: {relation.relation_type} {relation.source} -> {relation.target}")
-
         # Generuj relacje - TO JEST KLUCZOWE
         for relation in relations:
-            if (relation.source in (class_ids, enum_ids)) and (relation.target in (class_ids, enum_ids)):
+            if relation.source in class_ids and relation.target in class_ids:
                 rel_key = (relation.source, relation.target, relation.label)
                 if relation.relation_type == 'inheritance':
                     print(f"Relation inheritance: {relation}")
                     # Generalizacja - specjalny przypadek, zostaje bez zmian
                     child_class_id = class_ids[relation.source]
-                    if child_class_id is None:
-                        child_class_id = enum_ids.get(relation.source, None)
                     parent_class_id = class_ids[relation.target]
-                    if parent_class_id is None:
-                        parent_class_id = enum_ids.get(relation.target, None)
-                    #print(f"DEBUG: Szukam klasy dziecka: {relation.source} (ID: {child_class_id})")
-                    #print(f"DEBUG: Szukam klasy rodzica: {relation.target} (ID: {parent_class_id})")
+                    print(f"DEBUG: Szukam klasy dziecka: {relation.source} (ID: {child_class_id})")
+                    print(f"DEBUG: Szukam klasy rodzica: {relation.target} (ID: {parent_class_id})")
                     
                     # Znajdź wszystkie elementy dla debugowania
                     all_elements = package.findall('.//packagedElement', self.namespace)
-                    #print(f"DEBUG: Znaleziono {len(all_elements)} elementów packagedElement:")
+                    print(f"DEBUG: Znaleziono {len(all_elements)} elementów packagedElement:")
                     for elem in all_elements:
                         elem_id = elem.get('xmi:id')
                         elem_name = elem.get('name')
-                        #print(f"  - {elem_name}: {elem_id}")
+                        print(f"  - {elem_name}: {elem_id}")
 
                     # POPRAWKA: Użyj właściwego sposobu wyszukiwania z namespace
                     # Metoda 1: XPath z namespace - POPRAWNA składnia
@@ -213,7 +205,7 @@ class EAXMIGenerator:
                                 child_class_elem = candidate
                                 break
 
-                    #print(f"DEBUG: child_class_elem znaleziony: {child_class_elem is not None}")
+                    print(f"DEBUG: child_class_elem znaleziony: {child_class_elem is not None}")
 
                     if child_class_elem is not None:
                         # Sprawdź czy klasa rodzic również istnieje - użyj tej samej logiki
@@ -235,7 +227,7 @@ class EAXMIGenerator:
                                     parent_class_elem = candidate
                                     break
                                     
-                        #print(f"DEBUG: parent_class_elem znaleziony: {parent_class_elem is not None}")
+                        print(f"DEBUG: parent_class_elem znaleziony: {parent_class_elem is not None}")
 
                         if parent_class_elem is not None:
                             # Dodaj element generalizacji do klasy dziecka
@@ -252,18 +244,18 @@ class EAXMIGenerator:
                                 tagged = ET.SubElement(generalization, 'taggedValue')
                                 tagged.set('name', 'label')
                                 tagged.set('value', relation.label)   
-                            #log_info(f"Znaleziono generalizację: {relation.source} (dziecko) -> {relation.target} (rodzic) (label: {relation.label})")
-                            #print(f"DEBUG: Znaleziono generalizację: {relation.source} (dziecko) -> {relation.target} (rodzic) (label: {relation.label})")
-                        #else:
-                            #log_error(f"Nie znaleziono klasy rodzica o xmi:id={parent_class_id} dla generalizacji!")
-                            #print(f"DEBUG: Nie znaleziono klasy rodzica o xmi:id={parent_class_id} dla generalizacji!")
-                    #else:
-                        #log_error(f"Nie znaleziono klasy dziecka o xmi:id={child_class_id} dla generalizacji!")
-                        #print(f"DEBUG: Nie znaleziono klasy dziecka o xmi:id={child_class_id} dla generalizacji!")
+                            log_info(f"Znaleziono generalizację: {relation.source} (dziecko) -> {relation.target} (rodzic) (label: {relation.label})")
+                            print(f"DEBUG: Znaleziono generalizację: {relation.source} (dziecko) -> {relation.target} (rodzic) (label: {relation.label})")
+                        else:
+                            log_error(f"Nie znaleziono klasy rodzica o xmi:id={parent_class_id} dla generalizacji!")
+                            print(f"DEBUG: Nie znaleziono klasy rodzica o xmi:id={parent_class_id} dla generalizacji!")
+                    else:
+                        log_error(f"Nie znaleziono klasy dziecka o xmi:id={child_class_id} dla generalizacji!")
+                        print(f"DEBUG: Nie znaleziono klasy dziecka o xmi:id={child_class_id} dla generalizacji!")
 
-                        #print(f"DEBUG: Dostępne klasy w classes_data:")
-                        #for name, data in classes_data.items():
-                            #print(f"  - {name}: {data['obj'].xmi_id}")
+                        print(f"DEBUG: Dostępne klasy w classes_data:")
+                        for name, data in classes_data.items():
+                            print(f"  - {name}: {data['obj'].xmi_id}")
 
                 elif relation.relation_type == 'association':
                     # Asocjacja - pełna definicja z końcówkami
@@ -309,30 +301,20 @@ class EAXMIGenerator:
                     print(f"Relation usage: {relation}")
                     usage_id = f'EAID_{uuid.uuid4()}'
                     #wyświetlmy wszystkie elementy zidentyfikowane dla tej relacji
-                    usage_elem_sorce_ids = class_ids if relation.source in class_ids else enum_ids
-                    usage_elem = package.find(f".//packagedElement[@xmi:id='{usage_elem_sorce_ids[relation.source]}']", self.namespace)
+                    usage_elem = package.find(f".//packagedElement[@xmi:id='{class_ids[relation.source]}']", self.namespace)
                     if usage_elem is None:
-                        #log_error(f"Nie znaleziono klasy usage o xmi:id={usage_elem_sorce_ids[relation.source]} dla użycia!")
-                        #print(f"DEBUG: Nie znaleziono klasy usage o xmi:id={usage_elem_sorce_ids[relation.source]} dla użycia!")
+                        log_error(f"Nie znaleziono klasy usage o xmi:id={class_ids[relation.source]} dla użycia!")
+                        print(f"DEBUG: Nie znaleziono klasy usage o xmi:id={class_ids[relation.source]} dla użycia!")
                         continue    
-                    #else:
-                        #log_info(f"Znaleziono klasę usage o xmi:id={usage_elem_sorce_ids[relation.source]} dla użycia!")
-                        #print(f"DEBUG: Znaleziono klasę usage o xmi:id={usage_elem_sorce_ids[relation.source]} dla użycia!")
-                    usage_elem_target_ids = class_ids if relation.target in class_ids else enum_ids
-                    usage_elem_target = package.find(f".//packagedElement[@xmi:id='{usage_elem_target_ids[relation.target]}']", self.namespace)
-                    if usage_elem_target is None:
-                        #log_error(f"Nie znaleziono klasy usage o xmi:id={usage_elem_target_ids[relation.target]} dla użycia!")    
-                        #print(f"DEBUG: Nie znaleziono klasy usage o xmi:id={usage_elem_target_ids[relation.target]} dla użycia!")
-                        continue
-                    #else:
-                        #log_info(f"Znaleziono klasę usage o xmi:id={usage_elem_target_ids[relation.target]} dla użycia!")
-                        #print(f"DEBUG: Znaleziono klasę usage o xmi:id={usage_elem_target_ids[relation.target]} dla użycia!")
+                    else:
+                        log_info(f"Znaleziono klasę usage o xmi:id={class_ids[relation.source]} dla użycia!")
+                        print(f"DEBUG: Znaleziono klasę usage o xmi:id={class_ids[relation.source]} dla użycia!")
                     usage_elem = ET.SubElement(package, 'packagedElement')
                     usage_elem.set('xmi:type', 'uml:Usage')
                     usage_elem.set('xmi:id', usage_id)
                     usage_elem.set('visibility', 'public')
-                    usage_elem.set('supplier', usage_elem_target_ids[relation.target])
-                    usage_elem.set('client', usage_elem_sorce_ids[relation.source])
+                    usage_elem.set('supplier', class_ids[relation.target])
+                    usage_elem.set('client', class_ids[relation.source])
                     connector_ids_map[rel_key] = usage_id
                 elif relation.relation_type == 'dependency':
                     print(f"Relation dependency: {relation}")
@@ -432,21 +414,6 @@ class EAXMIGenerator:
                     # Druga końcówka (źródłowa) jest własnością asocjacji, ale nie jest nawigowalna
                     # Zgodnie z formatem EA, często jest definiowana wewnątrz typu, a nie jako ownedEnd
                     # Dla uproszczenia, na razie zostawiamy tak. Kluczowe jest, że cel jest ownedEnd.
-            else:
-                # jak wyświetlić czy to brak klasy żródła lub celu?
-                # Jeśli nie znaleziono klasy źródłowej lub docelowej, logujemy błąd
-                if relation.source not in class_ids:
-                    print(f"DEBUG: Nie znaleziono klasy źródłowej: {relation.source} \n class_ids: {class_ids}")
-                    log_error(f"Nie znaleziono klasy źródłowej: {relation.source}") 
-                if relation.target not in class_ids:
-                    print(f"DEBUG: Nie znaleziono klasy docelowej: {relation.target} \n class_ids: {class_ids}")
-                    log_error(f"Nie znaleziono klasy docelowej: {relation.target}") 
-
-                #print(f"DEBUG: Nie znaleziono klas dla relacji: {relation.source} -> {relation.target} ({relation.relation_type})")
-                #log_error(f"Nie znaleziono klas dla relacji: {relation.source} -> {relation.target} ({relation.relation_type})")
-                # Jeśli nie znaleziono klas, nie dodajemy konektora
-                # Można też dodać wyjątek lub inny mechanizm obsługi błędów
-                continue
             rel_key = (relation.source, relation.target, relation.label)
             # wygeneruj ID dla konektora (assoc_id lub gen_id)
             #connector_ids_map[rel_key] = new_connector_id
