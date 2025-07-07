@@ -214,7 +214,7 @@ class PlantUMLParser:
         # a jeżeli label nie jest w cudzysłowie, to zaczyna się od ": "
         if not label_match:
             label_match = re.search(r':\s*([^:]+)', line)
-        multiplicities = [self.parse_multiplicity(m) for m in multiplicities]
+        # multiplicities = [self.parse_multiplicity(m) for m in multiplicities]
         label = label_match.group(1).strip() if label_match else None
         return multiplicities, label
     
