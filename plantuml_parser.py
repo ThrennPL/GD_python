@@ -97,6 +97,48 @@ class PlantUMLParser:
         return None
     
     def _parse_class_definition(self, line: str) -> UMLClass:
+        """Parsuje definicję klasy z obsługą extends i implements"""
+        # Wzorzec dla klasy z extends/implements
+        # Przykłady:
+        # class Przelew extends Konto
+        # class Przelew extends Konto implements Validatable
+        # abstract class Przelew extends Konto
+        # class Przelew extends Konto {
+        
+        pattern = r'(?:abstract\s+)?class\s+(\w+)(?:\s+extends\s+(\w+))?(?:\s+implements\s+(\w+(?:\s*,\s*\w+)*))?(?:\s*<<(\w+)>>)?(?:\s*\{?)'
+        match = re.match(pattern, line)
+        
+        if match:
+            name = match.group(1)
+            extends_class = match.group(2)  # Klasa nadrzędna
+            implements_interfaces = match.group(3)  # Interfejsy (może być lista)
+            stereotype = match.group(4)
+            is_abstract = 'abstract' in line
+            
+            # Utworz klasę
+            uml_class = UMLClass(name, [], [], stereotype, is_abstract)
+            self.classes[name] = uml_class
+            
+            # Jeśli klasa dziedziczy po innej klasie, dodaj relację dziedziczenia
+            if extends_class:
+                self.relations.append(UMLRelation(
+                    name, extends_class, 'inheritance', None, None, None
+                ))
+                print(f"DEBUG: Found inheritance: {name} extends {extends_class}")
+            
+            # Jeśli klasa implementuje interfejsy, dodaj relacje implementacji
+            if implements_interfaces:
+                # Podziel interfejsy (mogą być oddzielone przecinkami)
+                interfaces = [iface.strip() for iface in implements_interfaces.split(',')]
+                for interface in interfaces:
+                    self.relations.append(UMLRelation(
+                        name, interface, 'realization', None, None, None
+                    ))
+                    print(f"DEBUG: Found implementation: {name} implements {interface}")
+            
+            return uml_class
+        
+        # Fallback - stary wzorzec bez extends/implements
         match = re.match(r'(?:abstract\s+)?class\s+(\w+)(?:\s*<<(\w+)>>)?', line)
         if match:
             name = match.group(1)
@@ -105,16 +147,36 @@ class PlantUMLParser:
             uml_class = UMLClass(name, [], [], stereotype, is_abstract)
             self.classes[name] = uml_class
             return uml_class
+        
         return None
     
     def _parse_interface_definition(self, line: str) -> UMLClass:
-        """Parsuje definicję interfejsu"""
-        match = re.match(r'interface\s+(\w+)', line)
+        """Parsuje definicję interfejsu z obsługą extends"""
+        # Wzorzec dla interfejsu z extends
+        # Przykłady:
+        # interface Validatable
+        # interface Validatable extends BaseInterface
+        
+        pattern = r'interface\s+(\w+)(?:\s+extends\s+(\w+))?'
+        match = re.match(pattern, line)
+        
         if match:
             name = match.group(1)
+            extends_interface = match.group(2)  # Interfejs nadrzędny
+            
+            # Utworz interfejs
             uml_class = UMLClass(name, [], [], "interface")
             self.classes[name] = uml_class
+            
+            # Jeśli interfejs dziedziczy po innym interfejsie, dodaj relację dziedziczenia
+            if extends_interface:
+                self.relations.append(UMLRelation(
+                    name, extends_interface, 'inheritance', None, None, None
+                ))
+                print(f"DEBUG: Found interface inheritance: {name} extends {extends_interface}")
+            
             return uml_class
+        
         return None
     
     def _parse_class_member(self, line: str, current_class: UMLClass):
@@ -145,8 +207,7 @@ class PlantUMLParser:
         """Parsuje relacje między klasami - poprawione wzorce"""
         # Najpierw wyciągnij liczności i etykietę
         multiplicities, label = self._extract_multiplicity_and_label(line)
-        #print(f"DEBUG: line={line!r} multiplicities={multiplicities} label={label!r}")
-        
+                
         # Usuń etykietę i liczności z linii
         line_clean = re.sub(r':\s*.*$', '', line.strip())
         line_clean = re.sub(r'"[0-9*\.]+"\s*', '', line_clean)
@@ -159,6 +220,10 @@ class PlantUMLParser:
             (r'(\w+)\s*\-\-\|\>\s*(\w+)', 'inheritance', False),  # A --|> B (A dziedziczy z B)
             (r'(\w+)\s*\|\>\s*(\w+)', 'inheritance', False),      # A |> B (skrócona forma)
             (r'(\w+)\s*<\|\s*(\w+)', 'inheritance', True),        # A <| B (skrócona forma)
+            
+            # Realizacja/Implementacja
+            (r'(\w+)\s*<\|\.\.\s*(\w+)', 'realization', True),   # A <|.. B (A implementuje B)
+            (r'(\w+)\s*\.\.\|\>\s*(\w+)', 'realization', False),  # A ..|> B (A implementuje B)
             
             # Kompozycja
             (r'(\w+)\s*\*\-\-\s*(\w+)', 'composition', False),
@@ -192,7 +257,7 @@ class PlantUMLParser:
                 ))
                 return  # Ważne: przerwij po znalezieniu pierwszego dopasowania
         
-        #print(f"DEBUG: No pattern matched for line: {line_clean!r}")
+        print(f"DEBUG: Relation not found: {line_clean!r}")
 
     @staticmethod
     def parse_multiplicity(multiplicity):
@@ -217,4 +282,3 @@ class PlantUMLParser:
         # multiplicities = [self.parse_multiplicity(m) for m in multiplicities]
         label = label_match.group(1).strip() if label_match else None
         return multiplicities, label
-    
