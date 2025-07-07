@@ -165,9 +165,13 @@ class EAXMIGenerator:
 
         connector_ids_map = {}
 
+        for relation in relations:
+            if relation.relation_type == 'inheritance':
+                print(f"DEBUG: Relation: {relation.relation_type} {relation.source} -> {relation.target}")
+
         # Generuj relacje - TO JEST KLUCZOWE
         for relation in relations:
-            if relation.source in class_ids and relation.target in class_ids:
+            if (relation.source in class_ids) and (relation.target in class_ids):
                 rel_key = (relation.source, relation.target, relation.label)
                 if relation.relation_type == 'inheritance':
                     print(f"Relation inheritance: {relation}")
@@ -414,6 +418,12 @@ class EAXMIGenerator:
                     # Druga końcówka (źródłowa) jest własnością asocjacji, ale nie jest nawigowalna
                     # Zgodnie z formatem EA, często jest definiowana wewnątrz typu, a nie jako ownedEnd
                     # Dla uproszczenia, na razie zostawiamy tak. Kluczowe jest, że cel jest ownedEnd.
+            else:
+                print(f"DEBUG: Nie znaleziono klas dla relacji: {relation.source} -> {relation.target} ({relation.relation_type})")
+                log_error(f"Nie znaleziono klas dla relacji: {relation.source} -> {relation.target} ({relation.relation_type})")
+                # Jeśli nie znaleziono klas, nie dodajemy konektora
+                # Można też dodać wyjątek lub inny mechanizm obsługi błędów
+                continue
             rel_key = (relation.source, relation.target, relation.label)
             # wygeneruj ID dla konektora (assoc_id lub gen_id)
             #connector_ids_map[rel_key] = new_connector_id
