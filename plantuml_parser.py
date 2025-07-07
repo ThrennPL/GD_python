@@ -86,7 +86,7 @@ class PlantUMLParser:
                 self._parse_class_member(line, current_class)
 
             # Parsowanie relacji
-            elif any(rel in line for rel in ['-->', '<--', '--', '||--', '|>', '<|']):
+            elif any(rel in line for rel in ['-->', '<--', '--', '||--', '|>', '<|','<|--', '--|>', '..|>', '<|..', '*--', 'o--']):
                 self._parse_relation(line)
 
     def _parse_enum_definition(self, line: str) -> UMLEnum:
@@ -250,7 +250,7 @@ class PlantUMLParser:
                 source_mult = multiplicities[0] if len(multiplicities) > 0 else None
                 target_mult = multiplicities[1] if len(multiplicities) > 1 else None
                 
-                #print(f"DEBUG: Found relation: {source} --{rel_type}--> {target} (label: {label})")
+                print(f"DEBUG: Found relation: {source} --{rel_type}--> {target} (label: {label})")
                 
                 self.relations.append(UMLRelation(
                     source, target, rel_type, label, source_mult, target_mult
