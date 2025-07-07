@@ -166,24 +166,33 @@ class EAXMIGenerator:
         connector_ids_map = {}
 
         # Generuj relacje - TO JEST KLUCZOWE
+        i = 0
         for relation in relations:
-            if relation.source in class_ids and relation.target in class_ids:
+            i += 1
+            print(f"{i} Startujemy z dla relacji: {relation}") #dodajmy jeszcze licznik relacji
+            if ((relation.source in class_ids) or (relation.source in enum_ids)) and ((relation.target in class_ids) or (relation.target in enum_ids)):
+                print(f"{i} weszło do warunku")
                 rel_key = (relation.source, relation.target, relation.label)
                 if relation.relation_type == 'inheritance':
                     print(f"Relation inheritance: {relation}")
                     # Generalizacja - specjalny przypadek, zostaje bez zmian
                     child_class_id = class_ids[relation.source]
+                    print(f"inheritance: child_class_id:{child_class_id} z class_ids")
+                    if relation.target not in class_ids:
+                        child_class_id = enum_ids.get(relation.source, None)                  
+                        print(f"inheritance: child_class_id: {child_class_id} z enum_ids")
                     parent_class_id = class_ids[relation.target]
-                    print(f"DEBUG: Szukam klasy dziecka: {relation.source} (ID: {child_class_id})")
-                    print(f"DEBUG: Szukam klasy rodzica: {relation.target} (ID: {parent_class_id})")
-                    
+                    print(f"inheritance: parent_class_id:{parent_class_id} z class_ids")
+                    if relation.target not in class_ids:
+                        parent_class_id = enum_ids.get(relation.target, None)
+                        print(f"inheritance: parent_class_id: {parent_class_id} z enum_ids")
                     # Znajdź wszystkie elementy dla debugowania
                     all_elements = package.findall('.//packagedElement', self.namespace)
-                    print(f"DEBUG: Znaleziono {len(all_elements)} elementów packagedElement:")
+                    #print(f"DEBUG: Znaleziono {len(all_elements)} elementów packagedElement:")
                     for elem in all_elements:
                         elem_id = elem.get('xmi:id')
                         elem_name = elem.get('name')
-                        print(f"  - {elem_name}: {elem_id}")
+                        #print(f"  - {elem_name}: {elem_id}")
 
                     # POPRAWKA: Użyj właściwego sposobu wyszukiwania z namespace
                     # Metoda 1: XPath z namespace - POPRAWNA składnia
@@ -205,7 +214,7 @@ class EAXMIGenerator:
                                 child_class_elem = candidate
                                 break
 
-                    print(f"DEBUG: child_class_elem znaleziony: {child_class_elem is not None}")
+                    #print(f"DEBUG: child_class_elem znaleziony: {child_class_elem is not None}")
 
                     if child_class_elem is not None:
                         # Sprawdź czy klasa rodzic również istnieje - użyj tej samej logiki
@@ -227,7 +236,7 @@ class EAXMIGenerator:
                                     parent_class_elem = candidate
                                     break
                                     
-                        print(f"DEBUG: parent_class_elem znaleziony: {parent_class_elem is not None}")
+                        #print(f"DEBUG: parent_class_elem znaleziony: {parent_class_elem is not None}")
 
                         if parent_class_elem is not None:
                             # Dodaj element generalizacji do klasy dziecka
@@ -268,7 +277,8 @@ class EAXMIGenerator:
                     assoc_elem.set('visibility', 'public')
 
                     # Definiujemy końcówki asocjacji (memberEnd i ownedEnd)
-                    source_end_id = f'EAID_src_{uuid.uuid4()}'
+                    source_end_id = f'EAID_src_{uuid.uuid4()}' 
+
                     target_end_id = f'EAID_tgt_{uuid.uuid4()}'
                     # Dodaj memberEnd jako osobne elementy
                     ET.SubElement(assoc_elem, 'memberEnd', {'xmi:idref': source_end_id})
@@ -279,13 +289,21 @@ class EAXMIGenerator:
                     owned_end_source = ET.SubElement(assoc_elem, 'ownedEnd')
                     owned_end_source.set('xmi:id', source_end_id)
                     owned_end_source.set('visibility', 'public')
-                    owned_end_source.set('type', class_ids[relation.source])
+                    if relation.source in class_ids:
+                        owned_end_source_type = class_ids[relation.source]
+                    else:
+                        owned_end_source_type = enum_ids[relation.source]
+                    owned_end_source.set('type', owned_end_source_type) #class_ids[relation.source])
                     owned_end_source.set('association', assoc_id)
 
                     owned_end_target = ET.SubElement(assoc_elem, 'ownedEnd')
                     owned_end_target.set('xmi:id', target_end_id)
                     owned_end_target.set('visibility', 'public')
-                    owned_end_target.set('type', class_ids[relation.target])
+                    if relation.target in class_ids:
+                        owned_end_target_type = class_ids[relation.target]
+                    else:
+                        owned_end_target_type = enum_ids[relation.target]
+                    owned_end_target.set('type', owned_end_target_type)
                     owned_end_target.set('association', assoc_id)
 
                     src_lower, src_upper = PlantUMLParser.parse_multiplicity(relation.source_multiplicity)
@@ -301,7 +319,10 @@ class EAXMIGenerator:
                     print(f"Relation usage: {relation}")
                     usage_id = f'EAID_{uuid.uuid4()}'
                     #wyświetlmy wszystkie elementy zidentyfikowane dla tej relacji
-                    usage_elem = package.find(f".//packagedElement[@xmi:id='{class_ids[relation.source]}']", self.namespace)
+                    if relation.source in class_ids:
+                        usage_elem = package.find(f".//packagedElement[@xmi:id='{class_ids[relation.source]}']", self.namespace)
+                    else:
+                        usage_elem = package.find(f".//packagedElement[@xmi:id='{enum_ids[relation.source]}']", self.namespace)
                     if usage_elem is None:
                         log_error(f"Nie znaleziono klasy usage o xmi:id={class_ids[relation.source]} dla użycia!")
                         print(f"DEBUG: Nie znaleziono klasy usage o xmi:id={class_ids[relation.source]} dla użycia!")
@@ -313,28 +334,42 @@ class EAXMIGenerator:
                     usage_elem.set('xmi:type', 'uml:Usage')
                     usage_elem.set('xmi:id', usage_id)
                     usage_elem.set('visibility', 'public')
-                    usage_elem.set('supplier', class_ids[relation.target])
-                    usage_elem.set('client', class_ids[relation.source])
+                    if relation.source in class_ids:
+                        usage_elem.set('supplier', class_ids[relation.source])
+                    else:
+                        usage_elem.set('supplier', enum_ids[relation.source])
+                    if relation.target in class_ids:
+                        usage_elem.set('client', class_ids[relation.target])
+                    else:
+                        usage_elem.set('client', enum_ids[relation.target])
                     connector_ids_map[rel_key] = usage_id
                 elif relation.relation_type == 'dependency':
                     print(f"Relation dependency: {relation}")
                     #wyświetlmy wszystkie elementy zidentyfikowane dla tej relacji
-                    dep_elem = package.find(f".//packagedElement[@xmi:id='{class_ids[relation.source]}']", self.namespace)
+                    if relation.source in class_ids:
+                        dep_elem = package.find(f".//packagedElement[@xmi:id='{class_ids[relation.source]}']", self.namespace)
+                    else:
+                        dep_elem = package.find(f".//packagedElement[@xmi:id='{enum_ids[relation.source]}']", self.namespace)   
                     if dep_elem is None:
                         log_error(f"Nie znaleziono klasy dependency o xmi:id={class_ids[relation.source]} dla zależności!")
                         print(f"DEBUG: Nie znaleziono klasy dependency o xmi:id={class_ids[relation.source]} dla zależności!")
                         continue    
-                    else:
-                        log_info(f"Znaleziono klasę dependency o xmi:id={class_ids[relation.source]} dla zależności!")
-                        print(f"DEBUG: Znaleziono klasę dependency o xmi:id={class_ids[relation.source]} dla zależności!")     
-
                     dep_id = f'EAID_{uuid.uuid4()}'
                     dep_elem = ET.SubElement(package, 'packagedElement')
                     dep_elem.set('xmi:type', 'uml:Dependency')
                     dep_elem.set('xmi:id', dep_id)
                     dep_elem.set('visibility', 'public')
-                    dep_elem.set('supplier', class_ids[relation.target])
-                    dep_elem.set('client', class_ids[relation.source])
+                    if relation.target in class_ids:
+                        dep_elem_supplier = class_ids[relation.target]
+                    else:
+                        dep_elem_supplier = enum_ids[relation.target]
+                    dep_elem.set('supplier', dep_elem_supplier)
+                    #dep_elem.set('supplier', class_ids[relation.target])
+                    if relation.source in class_ids:
+                        dep_elem_client = class_ids[relation.source]
+                    else:
+                        dep_elem_client = enum_ids[relation.source]
+                    dep_elem.set('client', dep_elem_client)
                     connector_ids_map[rel_key] = dep_id
                 elif relation.relation_type == 'aggregation':
                     print(f"Relation aggregation: {relation}")
@@ -364,13 +399,21 @@ class EAXMIGenerator:
                     owned_end_source = ET.SubElement(assoc_elem, 'ownedEnd')
                     owned_end_source.set('xmi:id', source_end_id)
                     owned_end_source.set('visibility', 'public')
-                    owned_end_source.set('type', class_ids[relation.source])
+                    if relation.source in class_ids:
+                        owned_end_source_type = class_ids[relation.source]
+                    else:
+                        owned_end_source_type = enum_ids[relation.source]
+                    owned_end_source.set('type', owned_end_source_type)
                     owned_end_source.set('association', assoc_id)
 
                     owned_end_target = ET.SubElement(assoc_elem, 'ownedEnd')
                     owned_end_target.set('xmi:id', target_end_id)
                     owned_end_target.set('visibility', 'public')
-                    owned_end_target.set('type', class_ids[relation.target])
+                    if relation.target in class_ids:
+                        owned_end_target_type = class_ids[relation.target]
+                    else:
+                        owned_end_target_type = enum_ids[relation.target]
+                    owned_end_target.set('type', owned_end_target_type)
                     owned_end_target.set('association', assoc_id)
 
                     # Definicja nawigowalności - źródło jest nawigowalne, cel nie
@@ -382,6 +425,61 @@ class EAXMIGenerator:
                     ET.SubElement(owned_end_target, 'lowerValue', {'xmi:type': 'uml:LiteralInteger', 'value': tgt_lower})
                     ET.SubElement(owned_end_target, 'upperValue', {'xmi:type': 'uml:LiteralUnlimitedNatural', 'value': tgt_upper})
                 
+                elif relation.relation_type == 'composition':
+                    print(f"Relation composition: {relation}")
+                    # Asocjacja agregacji - podobna do zwykłej asocjacji, ale z innym typem
+                    #wyświetlmy wszystkie elementy zidentyfikowane dla tej relacji
+                    if relation.source not in class_ids or relation.target not in class_ids:
+                        log_error(f"Nie znaleziono klasy composition o xmi:id={class_ids.get(relation.source, 'N/A')} lub {class_ids.get(relation.target, 'N/A')} dla composition!")
+                        print(f"DEBUG: Nie znaleziono klasy composition o xmi:id={class_ids.get(relation.source, 'N/A')} lub {class_ids.get(relation.target, 'N/A')} dla composition!")
+                        continue    
+                    else:   
+                        log_info(f"Znaleziono klasy composition o xmi:id={class_ids[relation.source]} i {class_ids[relation.target]} dla composition!")
+                        print(f"DEBUG: Znaleziono klasy composition o xmi:id={class_ids[relation.source]} i {class_ids[relation.target]} dla composition!") 
+
+                    assoc_id = f'EAID_{uuid.uuid4()}'
+                    assoc_elem = ET.SubElement(package, 'packagedElement')
+                    assoc_elem.set('xmi:type', 'uml:Association')
+                    assoc_elem.set('xmi:id', assoc_id)
+                    assoc_elem.set('name', relation.label or '')
+                    assoc_elem.set('visibility', 'public')
+
+                    # Definiujemy końcówki asocjacji (memberEnd i ownedEnd)
+                    source_end_id = f'EAID_src_{uuid.uuid4()}'
+                    target_end_id = f'EAID_tgt_{uuid.uuid4()}'
+                    assoc_elem.set('memberEnd', f"{source_end_id} {target_end_id}")
+
+                    # Właściwa definicja końcówek
+                    owned_end_source = ET.SubElement(assoc_elem, 'ownedEnd')
+                    owned_end_source.set('xmi:id', source_end_id)
+                    owned_end_source.set('visibility', 'public')
+                    if relation.source in class_ids:
+                        owned_end_source_type = class_ids[relation.source]
+                    else:
+                        owned_end_source_type = enum_ids[relation.source]
+                    owned_end_source.set('type', owned_end_source_type)
+                    #owned_end_source.set('type', class_ids[relation.source])
+                    owned_end_source.set('association', assoc_id)
+
+                    owned_end_target = ET.SubElement(assoc_elem, 'ownedEnd')
+                    owned_end_target.set('xmi:id', target_end_id)
+                    owned_end_target.set('visibility', 'public')
+                    if relation.target in class_ids:
+                        owned_end_target_type = class_ids[relation.target]
+                    else:
+                        owned_end_target_type = enum_ids[relation.target]
+                    owned_end_target.set('type', owned_end_target_type)
+                    owned_end_target.set('association', assoc_id)
+
+                    # Definicja nawigowalności - źródło jest nawigowalne, cel nie
+                    src_lower, src_upper = PlantUMLParser.parse_multiplicity(relation.source_multiplicity)
+                    tgt_lower, tgt_upper = PlantUMLParser.parse_multiplicity(relation.target_multiplicity)
+                    # Definicja nawigowalności - źródło jest nawigowalne, cel nie
+                    ET.SubElement(owned_end_source, 'lowerValue', {'xmi:type': 'uml:LiteralInteger', 'value': src_lower})
+                    ET.SubElement(owned_end_source, 'upperValue', {'xmi:type': 'uml:LiteralUnlimitedNatural', 'value': src_upper})
+                    ET.SubElement(owned_end_target, 'lowerValue', {'xmi:type': 'uml:LiteralInteger', 'value': tgt_lower})
+                    ET.SubElement(owned_end_target, 'upperValue', {'xmi:type': 'uml:LiteralUnlimitedNatural', 'value': tgt_upper})
+
                 else:
                     print(f"Relation other: {relation}")
                     # --- NOWY KOD: Tworzymy pełny element uml:Association ---
@@ -414,6 +512,31 @@ class EAXMIGenerator:
                     # Druga końcówka (źródłowa) jest własnością asocjacji, ale nie jest nawigowalna
                     # Zgodnie z formatem EA, często jest definiowana wewnątrz typu, a nie jako ownedEnd
                     # Dla uproszczenia, na razie zostawiamy tak. Kluczowe jest, że cel jest ownedEnd.
+            else:
+                if relation.relation_type not in ('inheritance', 'composition', 'aggregation', 'association', 'dependency', 'realization'):
+                    print(f"Nienzny typ relacji: {relation.relation_type}")
+                    
+                print(f"___Sprzedzenie żródła relacji dla nie zakwalifikowanej relacji {relation}")
+                if relation.source not in class_ids:
+                    print(f"---Źródła relacji: {relation.source} nie ma w class_ids {class_ids} \n")
+                    if relation.source not in enum_ids:
+                        print(f"---Źródła relacji: {relation.source} nie ma też w enum_ids\n")
+                    else:
+                        print(f"+++Źródła relacji: {relation.source} jest w enum_ids\n")
+                else:
+                    print(f"+++Źródła relacji: {relation.source} jest w class_ids\n")
+                        
+                print(f"___Sprzedzenie celu relacji dla nie zakwalifikowanej relacji {relation}")
+                if relation.target not in class_ids: 
+                    print(f"---Celu relacji: {relation.target} nie ma w class_ids {class_ids}\n")
+                    if relation.target not in enum_ids:
+                        print(f"---Celu relacji: {relation.target} nie ma też w enum_ids\n")
+                    else:
+                        print(f"+++Celu relacji: {relation.target} jest w enum_ids\n")
+                else:
+                    print(f"+++Celu relacji: {relation.target} jest w class_ids\n")
+
+                
             rel_key = (relation.source, relation.target, relation.label)
             # wygeneruj ID dla konektora (assoc_id lub gen_id)
             #connector_ids_map[rel_key] = new_connector_id
@@ -606,7 +729,13 @@ class EAXMIGenerator:
                         link = ET.SubElement(links_section, rel_type_name)
                         link.set('xmi:id', conn_id) # Tutaj używamy xmi:id, bo to jest definicja linku
                         link.set('start', class_id)
-                        link.set('end', classes_data[rel.target]['obj'].xmi_id) # Potrzebujemy ID celu
+                        if rel.target in classes_data:
+                            link.set('end', classes_data[rel.target]['obj'].xmi_id)
+                        elif rel.target in enums:
+                            #print (f"{rel.target} jest enumerator {enums}")
+                            link.set('end', enums[rel.target])
+                        else:
+                            print(f"Nie znaleziono danych o klasie lub enumeratorze {rel.target}")
 
         # Sekcja CONNECTORS (pozostaje taka sama jak w poprzedniej poprawce)
         # ... wklej tutaj kompletną sekcję generowania konektorów z poprzedniej odpowiedzi ...
@@ -640,7 +769,10 @@ class EAXMIGenerator:
             ET.SubElement(source_elem, 'tags')
 
             # Cel
-            target_id = classes_data[relation.target]['obj'].xmi_id
+            if relation.target in classes_data:
+                target_id = classes_data[relation.target]['obj'].xmi_id
+            else:
+                target_id = enums[relation.target]
             target_elem = ET.SubElement(connector, 'target', {'xmi:idref': target_id})
             ET.SubElement(target_elem, 'model', {
                 'ea_localid': str(self.ea_localid_counter),

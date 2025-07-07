@@ -1,0 +1,147 @@
+# Seria promptów biznesowych dla testowania diagramów klas
+
+## 1. Proces podstawowy - Wypożyczalnia książek
+
+**Prompt:**
+"W bibliotece czytelnik może wypożyczyć książkę. Każda książka ma tytuł, autora, numer ISBN i liczbę stron. Czytelnik musi mieć aktywną kartę biblioteczną z numerem i datą ważności. Bibliotekarz rejestruje wypożyczenie, sprawdza dostępność książki i ustala datę zwrotu. Książka może być dostępna, wypożyczona lub zarezerwowana."
+
+**Cel testu:** Podstawowe encje biznesowe i ich stany.
+
+---
+
+## 2. Proces e-commerce - Składanie zamówienia
+
+**Prompt:**
+"Klient przegląda produkty w sklepie internetowym i dodaje je do koszyka. Każdy produkt ma nazwę, cenę, opis i kategorię. Klient podaje swoje dane: imię, nazwisko, adres dostawy i dane do płatności. Po złożeniu zamówienia system generuje numer zamówienia i oblicza łączną kwotę. Zamówienie może być nowe, opłacone, w realizacji, wysłane lub dostarczone. Klient może anulować zamówienie tylko jeśli jest w stanie 'nowe' lub 'opłacone'."
+
+**Cel testu:** Złożone relacje biznesowe i reguły stanów.
+
+---
+
+## 3. Proces szkoleniowy - Zapisy na kursy
+
+**Prompt:**
+"Szkoła językowa oferuje kursy angielskiego na różnych poziomach. Każdy kurs ma nazwę, poziom, cenę, maksymalną liczbę uczestników i prowadzącego. Uczestnik może się zapisać na kurs, jeśli są wolne miejsca. Prowadzący to nauczyciel z certyfikatami i doświadczeniem. Kurs może być planowany, aktywny, zakończony lub anulowany. Uczestnik może zrezygnować z kursu do 7 dni przed rozpoczęciem."
+
+**Cel testu:** Hierarchie ról i reguły biznesowe z czasem.
+
+---
+
+## 4. Proces bankowy - Przelew pieniędzy
+
+**Prompt:**
+"Klient banku może wykonać przelew ze swojego konta na inne konto. Każde konto ma numer, saldo i właściciela. Klient autoryzuje przelew podając kwotę, numer konta odbiorcy i tytuł. Bank sprawdza czy klient ma wystarczające środki, blokuje kwotę, wykonuje przelew i aktualizuje salda. Przelew może być w trakcie realizacji, zrealizowany lub odrzucony. Istnieją różne typy przelewów: zwykły, ekspresowy i zagraniczny."
+
+**Cel testu:** Dziedziczenie typów transakcji i operacje finansowe.
+
+---
+
+## 5. Proces medyczny - Wizyta u lekarza
+
+**Prompt:**
+"Pacjent umawia wizytę u lekarza na określoną datę i godzinę. Lekarz ma specjalizację, numer PWZ i kalendarz dostępności. Podczas wizyty lekarz bada pacjenta, stawia diagnozę i wypisuje recepty. Pacjent ma historię chorób, uczulenia i przyjmowane leki. Recepta zawiera leki z dawkowaniem. Wizyta może być zaplanowana, odbyta lub anulowana."
+
+**Cel testu:** Relacje między osobami i dokumentami medycznymi.
+
+---
+
+## 6. Proces hotelowy - Rezerwacja pokoju
+
+**Prompt:**
+"Gość rezerwuje pokój w hotelu na określone daty. Hotel ma różne typy pokoi: single, double, suite, każdy z inną ceną za noc. Gość podaje dane osobowe i preferencje. System sprawdza dostępność pokoju w podanych terminach. Rezerwacja może być potwierdzona, anulowana lub zrealizowana. Gość płaci za pobyt przy meldunku lub wcześniej online."
+
+**Cel testu:** Zarządzanie dostępnością i rezerwacjami.
+
+---
+
+## 7. Proces logistyczny - Dostawa paczki
+
+**Prompt:**
+"Firma kurierska odbiera paczkę od nadawcy i dostarcza do odbiorcy. Paczka ma wymiary, wagę, wartość i typ zawartości. Nadawca i odbiorca mają adresy i numery telefonów. Kurier ma trasę dostaw i pojazd. Paczka przechodzi przez stany: nadana, w transporcie, w magazynie, w doręczeniu, dostarczona. Można śledzić lokalizację paczki."
+
+**Cel testu:** Śledzenie stanu obiektów w procesie.
+
+---
+
+## 8. Proces produkcyjny - Wytwarzanie produktu
+
+**Prompt:**
+"Fabryka produkuje różne modele telefonów. Każdy telefon składa się z podzespołów: ekran, bateria, procesor, obudowa. Podzespoły są dostarczane przez różnych dostawców. Proces produkcji składa się z etapów: montaż, testowanie, pakowanie. Każdy etap może być rozpoczęty, w trakcie lub zakończony. Pracownik odpowiada za określony etap produkcji."
+
+**Cel testu:** Kompozycja obiektów i procesy wieloetapowe.
+
+---
+
+## 9. Proces edukacyjny - Ocenianie uczniów
+
+**Prompt:**
+"Nauczyciel prowadzi przedmiot i ocenia uczniów. Każdy uczeń ma numer w dzienniku i dane osobowe. Nauczyciel wystawia oceny z różnych kategorii: odpowiedzi ustne, kartkówki, sprawdziany, projekty. Każda ocena ma datę, wagę i komentarz. Na koniec semestru obliczana jest średnia ważona. Ocena końcowa może być wystawiona, poprawiona lub anulowana."
+
+**Cel testu:** Kalkulacje biznesowe i kategorie danych.
+
+---
+
+## 10. Proces eventowy - Organizacja konferencji
+
+**Prompt:**
+"Firma organizuje konferencję z wieloma sesjami i prelegentami. Uczestnicy rejestrują się online, wybierają sesje i płacą za udział. Każda sesja ma prelegenta, temat, salę i maksymalną liczbę uczestników. Prelegent ma biografię i materiały prezentacyjne. Uczestnik otrzymuje bilet elektroniczny i potwierdzi udział. Konferencja może być planowana, otwarta do zapisów, pełna lub zakończona."
+
+**Cel testu:** Zarządzanie wydarzeniami i ich uczestnikami.
+
+---
+
+## 11. Proces bardzo prosty - Wypożyczenie roweru
+
+**Prompt:**
+"Użytkownik wypożycza rower miejski. Rower ma numer i stację macierzystą. Użytkownik odblokowuje rower kodem, jeździ i zwraca na dowolnej stacji."
+
+**Cel testu:** Minimalny proces biznesowy - test graniczny.
+
+---
+
+## 12. Proces kompleksowy - Zarządzanie projektem
+
+**Prompt:**
+"Firma realizuje projekty IT dla klientów. Każdy projekt ma kierownika, zespół programistów, budżet i deadline. Projekt składa się z zadań przypisanych do programistów. Zadanie ma opis, priorytet, szacowany czas i status. Programista loguje przepracowane godziny na zadania. Klient może zgłaszać uwagi i zmiany. Projekt przechodzi przez fazy: inicjacja, planowanie, wykonanie, testowanie, wdrożenie, zamknięcie. Każda faza ma swoje deliverables i kryteria akceptacji."
+
+**Cel testu:** Bardzo złożony proces z wieloma powiązaniami.
+
+---
+
+## 13. Proces z błędami - Nieprecyzyjny opis
+
+**Prompt:**
+"Ludzie kupują rzeczy w sklepie. Sprzedawca im pomaga. Czasami płacą gotówką, czasami kartą. Mają paragony. Niektóre rzeczy można zwrócić."
+
+**Cel testu:** Odporność systemu na nieprecyzyjne opisy.
+
+---
+
+## 14. Proces wielobranżowy - Klinika weterynaryjna
+
+**Prompt:**
+"Właściciel zwierzęcia umawia wizytę u weterynarza. Zwierzę ma gatunek, rasę, wiek i historię zdrowia. Weterynarz przeprowadza badanie, stawia diagnozę i ordynuje leczenie. Może zlecić badania laboratoryjne lub zabiegi. Właściciel płaci za wizytę i leki. Zwierzę może wymagać kolejnych wizyt kontrolnych."
+
+**Cel testu:** Specjalistyczny słownik branżowy.
+
+---
+
+## 15. Proces samoobsługowy - Bankomat
+
+**Prompt:**
+"Klient banku korzysta z bankomatu. Wkłada kartę, wprowadza PIN i wybiera operację: sprawdzenie salda, wypłata gotówki, przelew między kontami. Bankomat sprawdza czy karta jest ważna, PIN poprawny i czy są wystarczające środki. Po operacji drukuje potwierdzenie i zwraca kartę."
+
+**Cel testu:** Automatyzacja procesów i walidacja.
+
+---
+
+## Kryteria oceny wyników:
+
+1. **Analiza procesów:** Czy system poprawnie zidentyfikował rzeczowniki, czasowniki i przymiotniki?
+2. **Mapowanie na klasy:** Czy obiekty biznesowe zostały poprawnie przekształcone w klasy?
+3. **Relacje biznesowe:** Czy reguły biznesowe zostały odzwierciedlone w relacjach między klasami?
+4. **Stany i enumeracje:** Czy stany obiektów zostały poprawnie zmodelowane?
+5. **Kompletność:** Czy wszystkie elementy z opisu znalazły się w diagramie?
+6. **Logika biznesowa:** Czy diagram pozwala na implementację opisanego procesu?
+
+Te prompty testują system na rzeczywistych scenariuszach biznesowych, gdzie szablon musi sam wyprowadzić strukturę klas z opisów procesów.
