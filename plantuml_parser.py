@@ -23,7 +23,7 @@ class PlantUMLParser:
             line = line.strip()
 
             # Obsługa notatek jednolinijkowych
-            m = re.match(r'note\s+\w+\s+of\s+([A-Za-z0-9_ąćęłńóśźżĄĆĘŁŃÓŚŹŻ]+)\s*:\s*(.+)', line)
+            m = re.match(r'note\s+\w+\s+of\s+([A-Za-z0-9_ąćęłńóśźźĄĆĘŁŃÓŚŹŻ]+)\s*:\s*(.+)', line)
             if m:
                 note_target = m.group(1)
                 note_text = m.group(2)
@@ -86,7 +86,8 @@ class PlantUMLParser:
                 self._parse_class_member(line, current_class)
 
             # Parsowanie relacji
-            elif any(rel in line for rel in ['-->', '<--', '--', '||--', '|>', '<|','<|--', '--|>', '..|>', '<|..', '*--', 'o--']):
+            # Upewnij się, że PlantUML-owy symbol relacji jest w linii
+            if any(rel_sym in line for rel_sym in ['-->', '<--', '--', '||--', '|>', '<|','<|--', '--|>', '..|>', '<|..', '*--', 'o--']):
                 self._parse_relation(line)
 
     def _parse_enum_definition(self, line: str) -> UMLEnum:
@@ -204,32 +205,36 @@ class PlantUMLParser:
         return {"declaration": line, "modifiers": modifiers}
     
     def _parse_relation(self, line: str):
-        """Parsuje relacje między klasami - poprawione wzorce"""
-        # Najpierw wyciągnij liczności i etykietę
-        multiplicities, label = self._extract_multiplicity_and_label(line)
+        """Parsuje relacje między klasami - poprawione wzorce i obsługa liczności"""
+        # Najpierw wyciągnij surowe stringi liczności i etykietę
+        raw_multiplicities, label = self._extract_multiplicity_and_label(line)
                 
-        # Usuń etykietę i liczności z linii
+        # Usuń etykietę i liczności z linii, aby dopasować czysty wzorzec relacji
         line_clean = re.sub(r':\s*.*$', '', line.strip())
         line_clean = re.sub(r'"[0-9*\.]+"\s*', '', line_clean)
         
-        #print(f"DEBUG: line_clean={line_clean!r}")  # Dodatkowy debug
-        
         patterns = [
-            # Dziedziczenie - POPRAWIONE WZORCE
-            (r'(\w+)\s*<\|\-\-\s*(\w+)', 'inheritance', True),   # A <|-- B (A dziedziczy z B)
-            (r'(\w+)\s*\-\-\|\>\s*(\w+)', 'inheritance', False),  # A --|> B (A dziedziczy z B)
-            (r'(\w+)\s*\|\>\s*(\w+)', 'inheritance', False),      # A |> B (skrócona forma)
-            (r'(\w+)\s*<\|\s*(\w+)', 'inheritance', True),        # A <| B (skrócona forma)
+            # Specyficzne wzorce dla złożonych relacji na początku
+            # Kompozycja po lewej, Agregacja po prawej (Zamówienie *--o Koszyk)
+            (r'(\w+)\s*\*\-\-o\s*(\w+)', 'composition_aggregation_left', False), 
+            # Agregacja po lewej, Kompozycja po prawej (Koszyk o--* Zamówienie)
+            (r'(\w+)\s*o\-\-\*\s*(\w+)', 'aggregation_composition_left', False), 
+            
+            # Dziedziczenie
+            (r'(\w+)\s*<\|\-\-\s*(\w+)', 'inheritance', True),
+            (r'(\w+)\s*\-\-\|\>\s*(\w+)', 'inheritance', False),
+            (r'(\w+)\s*\|\>\s*(\w+)', 'inheritance', False),
+            (r'(\w+)\s*<\|\s*(\w+)', 'inheritance', True),
             
             # Realizacja/Implementacja
-            (r'(\w+)\s*<\|\.\.\s*(\w+)', 'realization', True),   # A <|.. B (A implementuje B)
-            (r'(\w+)\s*\.\.\|\>\s*(\w+)', 'realization', False),  # A ..|> B (A implementuje B)
+            (r'(\w+)\s*<\|\.\.\s*(\w+)', 'realization', True),
+            (r'(\w+)\s*\.\.\|\>\s*(\w+)', 'realization', False),
             
-            # Kompozycja
+            # Kompozycja (ogólna)
             (r'(\w+)\s*\*\-\-\s*(\w+)', 'composition', False),
             (r'(\w+)\s*\-\-\*\s*(\w+)', 'composition', True),
             
-            # Agregacja
+            # Agregacja (ogólna)
             (r'(\w+)\s*o\-\-\s*(\w+)', 'aggregation', False),
             (r'(\w+)\s*\-\-o\s*(\w+)', 'aggregation', True),
             
@@ -247,20 +252,61 @@ class PlantUMLParser:
                 else:
                     source, target = match.group(1), match.group(2)
                 
-                source_mult = multiplicities[0] if len(multiplicities) > 0 else None
-                target_mult = multiplicities[1] if len(multiplicities) > 1 else None
+                # Zastosuj parse_multiplicity do wyodrębnionych surowych stringów
+                # Defaultowe wartości dla source_mult i target_mult, jeśli nie podano
+                s_mult_lower, s_mult_upper = ("0", "*") # Domyślna dla asocjacji/ogólna
+                t_mult_lower, t_mult_upper = ("0", "*")
+
+                if len(raw_multiplicities) > 0:
+                    s_mult_lower, s_mult_upper = self.parse_multiplicity(raw_multiplicities[0])
+                if len(raw_multiplicities) > 1:
+                    t_mult_lower, t_mult_upper = self.parse_multiplicity(raw_multiplicities[1])
+
+                source_mult = f"{s_mult_lower}..{s_mult_upper}" if s_mult_lower != s_mult_upper else s_mult_lower
+                target_mult = f"{t_mult_lower}..{t_mult_upper}" if t_mult_lower != t_mult_upper else t_mult_lower
                 
-                print(f"DEBUG: Found relation: {source} --{rel_type}--> {target} (label: {label})")
+                # Specjalna obsługa dla nowych, złożonych typów relacji
+                if rel_type == 'composition_aggregation_left':
+                    actual_rel_type = 'composition'
+                    # Te domyślne liczności powinny być używane TYLKO jeśli nie podano ich jawnie w PlantUML
+                    if not raw_multiplicities or len(raw_multiplicities) < 1: 
+                         source_mult = "1" # Domyślna dla strony kompozycji
+                    if not raw_multiplicities or len(raw_multiplicities) < 2:
+                         target_mult = "0..*" # Domyślna dla strony agregacji
+                    
+                    print(f"DEBUG: Found complex relation: {source} --{actual_rel_type}--> {target} (label: {label}) (source_mult: {source_mult}, target_mult: {target_mult})")
+
+                    self.relations.append(UMLRelation(
+                        source, target, actual_rel_type, label, source_mult, target_mult
+                    ))
+                    return
+
+                elif rel_type == 'aggregation_composition_left':
+                    actual_rel_type = 'aggregation' 
+                    if not raw_multiplicities or len(raw_multiplicities) < 1:
+                         source_mult = "0..*"
+                    if not raw_multiplicities or len(raw_multiplicities) < 2:
+                         target_mult = "1"
+                    
+                    print(f"DEBUG: Found complex relation: {source} --{actual_rel_type}--> {target} (label: {label}) (source_mult: {source_mult}, target_mult: {target_mult})")
+
+                    self.relations.append(UMLRelation(
+                        source, target, actual_rel_type, label, source_mult, target_mult
+                    ))
+                    return
+
+                # Standardowa obsługa dla pozostałych relacji
+                print(f"DEBUG: Found relation: {source} --{rel_type}--> {target} (label: {label}) (source_mult: {source_mult}, target_mult: {target_mult})")
                 
                 self.relations.append(UMLRelation(
                     source, target, rel_type, label, source_mult, target_mult
                 ))
-                return  # Ważne: przerwij po znalezieniu pierwszego dopasowania
+                return
         
         print(f"DEBUG: Relation not found: {line_clean!r}")
 
     @staticmethod
-    def parse_multiplicity(multiplicity):
+    def parse_multiplicity(multiplicity: str) -> tuple[str, str]:
         """Zwraca (lower, upper) jako stringi na podstawie notacji UML/PlantUML."""
         if not multiplicity:
             return "0", "*"
@@ -269,16 +315,27 @@ class PlantUMLParser:
             return lower.strip(), upper.strip().replace("n", "*").replace("#", "*")
         if multiplicity == "*":
             return "0", "*"
-        return multiplicity, multiplicity
+        return multiplicity, multiplicity # W przypadku "1", "2" itp.
 
-    def _extract_multiplicity_and_label(self, line: str):
-        """Wyciąga liczność i etykietę z linii relacji PlantUML."""
+    def _extract_multiplicity_and_label(self, line: str) -> tuple[list[str], str]:
+        """Wyciąga surowe stringi liczności i etykietę z linii relacji PlantUML."""
+        # Wzorzec na liczności w cudzysłowach
         mult_pattern = r'"([0-9*\.]+)"'
         multiplicities = re.findall(mult_pattern, line)
-        label_match = re.search(r':\s*"([^"]+)"', line)
-        # a jeżeli label nie jest w cudzysłowie, to zaczyna się od ": "
-        if not label_match:
-            label_match = re.search(r':\s*([^:]+)', line)
-        # multiplicities = [self.parse_multiplicity(m) for m in multiplicities]
-        label = label_match.group(1).strip() if label_match else None
+
+        # Usunięcie liczności z linii, żeby łatwiej wyciągnąć etykietę
+        line_without_mult = re.sub(mult_pattern, '', line)
+
+        label_match = re.search(r':\s*(?:(?:")([^"]+)(?:")|([^\s:]+))', line_without_mult)
+        # Zmodyfikowany regex do wyciągania etykiety:
+        # - ': ' po którym następuje cudzysłów i tekst w cudzysłowie (grupa 1)
+        # - LUB ': ' po którym następuje dowolny tekst nie będący spacją/dwukropkiem (grupa 2)
+        
+        label = None
+        if label_match:
+            if label_match.group(1): # Etykieta w cudzysłowie
+                label = label_match.group(1).strip()
+            elif label_match.group(2): # Etykieta bez cudzysłowu
+                label = label_match.group(2).strip()
+
         return multiplicities, label
