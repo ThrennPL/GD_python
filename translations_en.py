@@ -46,8 +46,11 @@ TRANSLATIONS = {
     "send_button": "Send query",
     "save_xml_button": "Save XML",
     "save_plantuml_button": "Save PlantUML",
+    "dialog_save_plantuml_title": "Save PlantUML",
     "save_xmi_button": "Save XMI",
+    "dialog_save_xmi_title": "Save XMI",
     "save_diagram_button": "Save diagram",
+    "dialog_save_diagram_title": "Save diagram",
     "validate_input_button": "Validate process description",
     "proces_description_validation": "Process Description Verification",
 

@@ -11,7 +11,7 @@ import re
 import requests
 from PyQt5.QtGui import QTextCharFormat, QColor, QFont
 from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QSplitter, QTextEdit, QPushButton, QWidget, QDialog, QLabel, QTabWidget, QComboBox, QCheckBox, QLabel, QGroupBox, QVBoxLayout, QHBoxLayout, QRadioButton, QButtonGroup, QMessageBox
+from PyQt5.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QSplitter, QTextEdit, QPushButton, QWidget, QDialog, QLabel, QTabWidget, QComboBox, QCheckBox, QLabel, QGroupBox, QVBoxLayout, QHBoxLayout, QRadioButton, QButtonGroup, QMessageBox, QFileDialog  
 from PyQt5.QtSvg import QSvgWidget
 from xml.etree.ElementTree import fromstring, ParseError
 #import plantuml_encoder
@@ -597,12 +597,28 @@ class AIApp(QMainWindow):
                 code = self.plantuml_codes[idx]
                 diagram_type = identify_plantuml_diagram_type(code, LANG)
                 timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-                filename = f"output_{timestamp}.puml"
+                default_filename = f"output_{timestamp}.puml"
+                
+                # Otwórz okno dialogowe do wyboru pliku
+                filename, _ = QFileDialog.getSaveFileName(
+                    self,
+                    tr("dialog_save_plantuml_title"),  # Tytuł okna
+                    default_filename,  # Domyślna nazwa pliku
+                    "PlantUML Files (*.puml);;All Files (*)"  # Filtr plików
+                )
+                
+                # Jeśli użytkownik anulował dialog, filename będzie pusty
+                if not filename:
+                    return
+                
+                # Zapisz plik
                 with open(filename, "w", encoding="utf-8") as file:
                     file.write(code)
+                
                 ok_msg = tr("msg_plantuml_saved").format(diagram_type=diagram_type, filename=filename)
                 self.append_to_chat("System", ok_msg)
                 log_info(ok_msg)
+                
             except Exception as e:
                 error_msg = tr("msg_error_saving_plantuml").format(error=e)
                 self.append_to_chat("System", error_msg)
@@ -613,18 +629,35 @@ class AIApp(QMainWindow):
             log_exception(error_msg)
 
     def save_xmi(self):
+        """Zapisuje kod XMI z aktywnej zakładki do pliku."""
         idx = self.diagram_tabs.currentIndex()
         if idx in self.plantuml_codes:
             plantuml_code = self.plantuml_codes[idx]
             try:
                 xmi_code = plantuml_to_xmi(plantuml_code)
                 timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-                filename = f"output_{timestamp}.xmi"
+                default_filename = f"output_{timestamp}.xmi"
+                
+                # Otwórz okno dialogowe do wyboru pliku
+                filename, _ = QFileDialog.getSaveFileName(
+                    self,
+                    tr("dialog_save_xmi_title"),  # Tytuł okna
+                    default_filename,  # Domyślna nazwa pliku
+                    "XMI Files (*.xmi);;All Files (*)"  # Filtr plików
+                )
+                
+                # Jeśli użytkownik anulował dialog, filename będzie pusty
+                if not filename:
+                    return
+                
+                # Zapisz plik
                 with open(filename, "w", encoding="utf-8") as file:
                     file.write(xmi_code)
+                
                 ok_msg = tr("msg_xmi_saved").format(filename=filename)
                 self.append_to_chat("System", ok_msg)
                 log_info(f"XMI saved: {filename}")
+                
             except Exception as e:
                 tb = traceback.format_exc()
                 error_msg = tr("msg_error_saving_xmi").format(error=e, traceback=tb)                
@@ -642,7 +675,20 @@ class AIApp(QMainWindow):
             diagram_type = identify_plantuml_diagram_type(plantuml_code, LANG)
             try:
                 timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-                filename = f"{diagram_type.replace(' ', '_')}_{timestamp}.svg"
+                default_filename = f"{diagram_type.replace(' ', '_')}_{timestamp}.svg"
+                 
+                # Otwórz okno dialogowe do wyboru pliku
+                filename, _ = QFileDialog.getSaveFileName(
+                    self,
+                    tr("dialog_save_diagram_title"),  # Tytuł okna
+                    default_filename,  # Domyślna nazwa pliku
+                    "XMI Files (*.xmi);;All Files (*)"  # Filtr plików
+                )
+                
+                # Jeśli użytkownik anulował dialog, filename będzie pusty
+                if not filename:
+                    return
+            
                 if plantuml_generator_type == "local":
                     svg_path = fetch_plantuml_svg_local(plantuml_code, plantuml_jar_path, LANG)
                     with open(svg_path, "r", encoding="utf-8") as f:

@@ -46,8 +46,11 @@ TRANSLATIONS = {
     "send_button": "Wyślij zapytanie",
     "save_xml_button": "Zapisz XML",
     "save_plantuml_button": "Zapisz PlantUML",
+    "dialog_save_plantuml_title": "Zapisz kod PlantUML",
     "save_xmi_button": "Zapisz XMI",
+    "dialog_save_xmi_title": "Zapisz XMI",
     "save_diagram_button": "Zapisz diagram",
+    "dialog_save_diagram_title": "Zapisz diagram",
     "validate_input_button": "Sprawdź poprawność opisu procesu",
     "proces_description_validation": "Weryfikacja opisu procesu",
 
