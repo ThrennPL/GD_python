@@ -249,7 +249,7 @@ def display_plantuml_diagram(plantuml_code):
         if plantuml_generator_type == "www":
             if plantuml_code is not None:
                 safe_log_error(tr("plantuml_code_display").format(code=plantuml_code))
-                svg_data = fetch_plantuml_svg_www(plantuml_code, LANG=LANG)
+                svg_data, err_msg = fetch_plantuml_svg_www(plantuml_code, LANG=LANG)
                 
             else:
                 error_msg = tr("msg_error_fetching_plantuml")
@@ -268,7 +268,7 @@ def display_plantuml_diagram(plantuml_code):
                 )
                 return True
         elif plantuml_generator_type == "local":
-            svg_path = fetch_plantuml_svg_local(plantuml_code, plantuml_jar_path, LANG=LANG)
+            svg_path, err_msg  = fetch_plantuml_svg_local(plantuml_code, plantuml_jar_path, LANG=LANG)
             with open(svg_path, "r", encoding="utf-8") as f:
                 svg_str = f.read()  
                 #resize SVG to fit the container
@@ -596,10 +596,10 @@ if st.session_state.plantuml_diagrams:
                 with col3:
                     try:
                         if plantuml_generator_type == "www":
-                            svg_data = fetch_plantuml_svg_www(plantuml_code, LANG=LANG)
+                            svg_data, err_msg  = fetch_plantuml_svg_www(plantuml_code, LANG=LANG)
                              
                         else:
-                            svg_path = fetch_plantuml_svg_local(plantuml_code, plantuml_jar_path, LANG=LANG)
+                            svg_path, err_msg  = fetch_plantuml_svg_local(plantuml_code, plantuml_jar_path, LANG=LANG)
                             with open(svg_path, "rb") as f:
                                 svg_data = f.read()
 
@@ -683,9 +683,9 @@ if st.session_state.plantuml_diagrams:
         with col3:
             try:
                 if plantuml_generator_type == "www":
-                    svg_data = fetch_plantuml_svg_www(plantuml_code, LANG=LANG)
+                    svg_data, err_msg  = fetch_plantuml_svg_www(plantuml_code, LANG=LANG)
                 else:
-                    svg_path = fetch_plantuml_svg_local(plantuml_code, plantuml_jar_path, LANG=LANG)
+                    svg_path, err_msg  = fetch_plantuml_svg_local(plantuml_code, plantuml_jar_path, LANG=LANG)
                     with open(svg_path, "rb") as f:
                         svg_data = f.read()
                 

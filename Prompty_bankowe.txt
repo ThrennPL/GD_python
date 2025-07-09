@@ -133,3 +133,8 @@ Potwierdzenie transakcji przesyłane do klienta.
 - Some procesy mają warunki błędów i obsługę wyjątków
 - Różne stopnie złożoności - od 3 do 10+ uczestników
 - Mieszanka procesów automatycznych i manualnych
+
+
+
+Błędne prompty:
+Testuję aplikację do generowania diagramów na podstawie kodu PlantUML. Podeślij jeden przykład błędnego kodu

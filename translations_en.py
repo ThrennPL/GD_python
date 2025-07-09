@@ -85,6 +85,7 @@ TRANSLATIONS = {
     "msg_info_validation_success": "The process description looks correct!",
     "msg_info_validation_error": "PlantUML code from prompt: {plantuml_code}\n",
     "msg_info_verifying_plantuml_code": "Verifying PlantUML code: {plantuml_code}\n",
+    "msg_info_verifying_plantuml_code_error_line": "PlantUML error code from prompt: {err_msg}\n",
     "msg_info_sending_code_for_verification_singele": "Sending code for verification: {plantuml_code}\n",
     "msg_info_response_from_api": "Response from API (Single verification): {response}\n",
     "msg_info_generating_response": "Generating response...",

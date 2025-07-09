@@ -699,13 +699,13 @@ class AIApp(QMainWindow):
                     return
             
                 if plantuml_generator_type == "local":
-                    svg_path = fetch_plantuml_svg_local(plantuml_code, plantuml_jar_path, LANG)
+                    svg_path, error_msg = fetch_plantuml_svg_local(plantuml_code, plantuml_jar_path, LANG)
                     with open(svg_path, "r", encoding="utf-8") as f:
                         svg_data = f.read()
                     with open(filename, "w", encoding="utf-8") as f:
                         f.write(svg_data)
                 elif plantuml_generator_type == "www":
-                    svg_data = fetch_plantuml_svg_www(plantuml_code, LANG)
+                    svg_data, error_msg = fetch_plantuml_svg_www(plantuml_code, LANG)
                     with open(filename, "wb") as f:
                         f.write(svg_data)
                 ok_msg = tr("msg_diagram_saved").format(filename=filename)
@@ -809,9 +809,9 @@ class AIApp(QMainWindow):
             plantuml_code = plantuml_code.replace("!theme grameful", "")
             plantuml_code = plantuml_code.replace("!theme plain", "")
             if plantuml_generator_type == "local":
-                svg_data = fetch_plantuml_svg_local(plantuml_code, plantuml_jar_path, LANG)
+                svg_data, err_msg = fetch_plantuml_svg_local(plantuml_code, plantuml_jar_path, LANG)
             elif plantuml_generator_type == "www":
-                svg_data = fetch_plantuml_svg_www(plantuml_code, LANG)
+                svg_data, err_msg = fetch_plantuml_svg_www(plantuml_code, LANG)
             svg_widget = QSvgWidget()
             svg_widget.load(svg_data)
             tab = QWidget()
@@ -825,11 +825,31 @@ class AIApp(QMainWindow):
             # Zapisz kod PlantUML dla tej zakładki
             self.plantuml_codes[idx] = plantuml_code
             self.save_diagram_button.setEnabled(True)
-            self.verification_attempts = 0  # Reset liczby prób po sukcesie
+            if err_msg is None:
+                self.verification_attempts = 0  # Reset liczby prób po sukcesie
         except Exception as e:
             error_msg = tr("msg_error_fetching_plantuml").format(error=e)
             log_exception(error_msg)
             self.append_to_chat("System", error_msg)
+        if err_msg is not None:
+            try:
+                line_parts = err_msg.split(':', 1)
+                log_info(f"Extracted line parts from error message: {line_parts}")
+                if len(line_parts) > 0:
+                    line_num_str = line_parts[0].strip()
+                    log_info(f"Extracted line number string: {line_num_str}")
+                    if line_num_str.isdigit():
+                        line_num = int(line_num_str)
+                        log_info(f"Parsed line number: {line_num}")
+                        pluntuml_lines = plantuml_code.splitlines()
+                        log_info(f"Number of lines in PlantUML code: {pluntuml_lines}")
+                        if 0 < line_num <= len(pluntuml_lines):
+                            problematic_line = pluntuml_lines[line_num - 1].strip()
+                        log_info(f"Problematic line extracted: {problematic_line}")
+                        err_msg = f"{err_msg}: '{problematic_line}'"
+            except Exception as e:
+                log_error(f"Error while parsing error message: {e}")
+
             if self.diagram_type_selector.isEnabled():
                 diagram_type = self.diagram_type_selector.currentText()
             else:
@@ -846,8 +866,9 @@ class AIApp(QMainWindow):
                 return
             self.verification_attempts += 1
             verification_template = self.prompt_templates[tr("verification_template")]["template"]
-            prompt = verification_template.format(plantuml_code=plantuml_code, diagram_type=diagram_type)
+            prompt = tr("msg_info_verifying_plantuml_code_error_line").format(err_msg=err_msg)  + verification_template.format(plantuml_code=plantuml_code, diagram_type=diagram_type)
             self.last_prompt_type = "Verification"
+            print(f"Błąd diagramu PlantUML: {self.verification_attempts}, {self.last_prompt_type}, {err_msg}")
             error_msg = tr("msg_sending_code_for_verification")
             self.append_to_chat("System", error_msg)
             self.send_to_api_custom_prompt(prompt)

@@ -8,9 +8,16 @@ import subprocess
 import tempfile
 import os
 import tempfile
-
+from dotenv import load_dotenv 
+from logger_utils import setup_logger, log_info, log_error, log_exception
 from translations_pl import TRANSLATIONS as PL
 from translations_en import TRANSLATIONS as EN
+
+load_dotenv()
+
+plantuml_jar_path = os.getenv("PLANTUML_JAR_PATH", "plantuml.jar")
+plantuml_generator_type = os.getenv("PLANTUML_GENERATOR_TYPE", "local")
+plantuml_url = os.getenv("PLANTUML_URL", "https://www.plantuml.com/plantuml")
 
 plantuml_alphabet = string.digits + string.ascii_uppercase + string.ascii_lowercase + '-_'
 base64_alphabet   = string.ascii_uppercase + string.ascii_lowercase + string.digits + '+/'
@@ -50,10 +57,23 @@ def identify_plantuml_diagram_type(plantuml_code: str, LANG="pl") -> str:
 def fetch_plantuml_svg_www(plantuml_code: str, LANG="pl") -> bytes:
     #Pobiera diagram PlantUML jako SVG z serwisu plantuml.com.
     encoded = plantuml_encode(plantuml_code)
-    url = f"https://www.plantuml.com/plantuml/svg/{encoded}"
+    url = f"{plantuml_url}/svg/{encoded}"
     response = requests.get(url)
+    log_info(f"Pobieranie SVG z serwisu plantuml.com: {url}")
+    
+    error_headers = {
+        'line': response.headers.get('X-PlantUML-Diagram-Error-Line', ''),
+        'error': response.headers.get('X-PlantUML-Diagram-Error', ''),
+        'description': response.headers.get('X-PlantUML-Diagram-Description', '')
+    }
+    
+    error_msg = ''
+    if error_headers['line'].isdigit():
+        error_msg = f"{int(error_headers['line'])+1}: {error_headers['error']} : {error_headers['description']}" 
+  
     if response.status_code == 200:
-        return response.content
+        log_error(f"Nie udało się pobrać SVG: {response.status_code}, Error: {error_msg}")
+        return response.content, error_msg
     else:
         error_msg = tr("msg_error_downloading_SVG", LANG=LANG).format(
             status_code=response.status_code,
@@ -74,9 +94,18 @@ def fetch_plantuml_svg_local(plantuml_code: str, plantuml_jar_path: str = "plant
     with open(puml_path, "w", encoding="utf-8") as f:
         f.write(plantuml_code)
     # Generate SVG using plantuml.jar
-    subprocess.run([
-        "java", "-jar", plantuml_jar_path, "-tsvg", puml_path,"-charset","UTF-8"
-    ], check=True)
-    # Return the path to the generated SVG file
-    return svg_path
+    result = subprocess.run([
+        "java", "-jar", plantuml_jar_path, "-stdrpt:2", "-tsvg", puml_path,"-charset","UTF-8"
+    ], capture_output=True)
+    stdout_jar = result.stdout.decode("utf-8")
+
+    error_msg = ''
+    if ":" in stdout_jar:
+        error_msg = stdout_jar.split(":", 1)[1].strip()
+        log_error(f"Extracted error message: {error_msg}")
+    else:
+        error_msg= stdout_jar
+
+    log_info(f"PlantUML stdout: {error_msg}")
+    return svg_path, error_msg
 
