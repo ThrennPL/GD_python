@@ -5,3 +5,5 @@ Pillow
 python-dotenv
 google-genai
 google-generativeai
+psycopg2-binary
+mysql-connector-python

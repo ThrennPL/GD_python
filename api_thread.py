@@ -3,6 +3,9 @@ import re
 import requests
 import os
 from PyQt5.QtCore import QThread, pyqtSignal
+from dotenv import load_dotenv
+
+load_dotenv()
 
 class APICallThread(QThread):
     response_received = pyqtSignal(str, str)  # Sygnalizuje odebranie odpowiedzi (model, treść)
@@ -46,4 +49,4 @@ class APICallThread(QThread):
                     log_error(f"Błąd API: {error_msg}")
         except Exception as e:
             self.error_occurred.emit(f"Connection error: {e}")
-            log_error(f"Błąd połaczenia: {e}")
+            log_error(f"Błąd połaczenia: {e}")    

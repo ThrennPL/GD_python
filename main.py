@@ -6,6 +6,7 @@ from api_thread import APICallThread
 from plantuml_utils import plantuml_encode, identify_plantuml_diagram_type, fetch_plantuml_svg_local, fetch_plantuml_svg_www
 #from prompt_templates import prompt_templates, get_diagram_specific_requirements
 from logger_utils import setup_logger, log_info, log_error, log_exception
+from mysql_connector import log_ai_interaction
 import sys
 import re
 import requests
@@ -18,6 +19,7 @@ from xml.etree.ElementTree import fromstring, ParseError
 from datetime import datetime
 from zlib import compress
 import traceback
+import threading
 import os
 from dotenv import load_dotenv
 from translations_pl import TRANSLATIONS as PL
@@ -350,6 +352,13 @@ class AIApp(QMainWindow):
             self.api_thread.response_received.connect(self.handle_api_response)
             self.api_thread.error_occurred.connect(self.handle_api_error)
             self.api_thread.start()
+            '''try:
+                threading.Thread(
+                        target=log_ai_interaction,
+                        args=("testowy", "testowy", "testowy", None, None, None)
+                    ).start()
+            except Exception as e:
+                log_error(f"Error logging AI interaction: {e}")'''
             log_info(f"Starting API thread for model {model_name} with prompt: {prompt[:5000]}...")
         except Exception as e:
             error_msg = tr("error_sending_request").format(model_name=model_name, error=e)

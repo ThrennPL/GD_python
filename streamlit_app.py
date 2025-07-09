@@ -11,6 +11,7 @@ from translations_pl import TRANSLATIONS as PL
 from translations_en import TRANSLATIONS as EN
 
 
+
 # Load environment variables
 load_dotenv()
 
@@ -155,6 +156,13 @@ def call_api(prompt, model_name):
                 content = response.candidates[0].content.parts[0].text
             else:
                 content = str(response)
+            if os.getenv("DB_HOST") is not None:
+                if os.getenv("DB_PROVIDER") == "mysql":
+                    from mysql_connector import log_ai_interaction
+                    log_ai_interaction(request=prompt, response=content, model_name=model_name, status_code=None)
+                elif os.getenv("DB_PROVIDER") == "postgresql":
+                    from PostgreSQL_connector import log_ai_interaction
+                    log_ai_interaction(request=prompt, response=content, model_name=model_name, status_code=None)
             return content
         except Exception as e:
             safe_log_exception(f"Gemini API error: {e}")
@@ -175,6 +183,7 @@ def call_api(prompt, model_name):
             if response.status_code == 200:
                 result = response.json()
                 content = result['choices'][0]['message']['content']
+                log_ai_interaction(request=prompt, response=content, model_name=model_name, status_code=response.status_code)
                 return content
             else:
                 return f"Błąd API: {response.status_code} - {response.text}"
@@ -182,6 +191,10 @@ def call_api(prompt, model_name):
             error_msg = tr("error_connection").format(error=str(e))
             safe_log_exception(error_msg) 
             return error_msg
+    
+    
+
+    
 
 def get_complexity_level(level):
     """Zwraca poziom złożoności."""
