@@ -682,7 +682,7 @@ class AIApp(QMainWindow):
                     self,
                     tr("dialog_save_diagram_title"),  # Tytuł okna
                     default_filename,  # Domyślna nazwa pliku
-                    "XMI Files (*.xmi);;All Files (*)"  # Filtr plików
+                    "SVG Files (*.svg);;All Files (*)"  # Filtr plików
                 )
                 
                 # Jeśli użytkownik anulował dialog, filename będzie pusty
