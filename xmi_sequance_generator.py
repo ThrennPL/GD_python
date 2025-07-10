@@ -105,14 +105,14 @@ class XMISequenceGenerator:
         
         # Interakcja wewnątrz kolaboracji
         self.id_map['interaction'] = self._generuj_ea_id("EAID")
-        ET.SubElement(collaboration, 'ownedBehavior', {
+        interaction = ET.SubElement(collaboration, 'ownedBehavior', {
             'xmi:type': 'uml:Interaction',
             'xmi:id': self.id_map['interaction'],
             'name': 'EA_Interaction1',
             'visibility': 'public'
         })
         
-        return package_element
+        return package_element, interaction
     
     def _stworz_rozszerzenia_ea(self, root: ET.Element, nazwa_diagramu: str) -> None:
         """
@@ -129,7 +129,7 @@ class XMISequenceGenerator:
             'extenderID': '6.5'
         })
         
-        # Sekcja elements
+
         self._stworz_sekcje_elements(extension, nazwa_diagramu, teraz)
         
         # Puste sekcje
@@ -141,6 +141,7 @@ class XMISequenceGenerator:
         self._stworz_sekcje_diagrams(extension, nazwa_diagramu, teraz)
     
     def _stworz_sekcje_elements(self, extension: ET.Element, nazwa_diagramu: str, teraz: str) -> None:
+
         """
         Tworzy sekcję elements w rozszerzeniach EA.
         
@@ -190,6 +191,16 @@ class XMISequenceGenerator:
             'iscontrolled': 'FALSE', 'isprotected': 'FALSE', 'usedtd': 'FALSE', 
             'logxml': 'FALSE', 'packageFlags': 'isModel=1;VICON=3;'
         })
+        
+        # Sekcja elements
+        for key, actor_id in self.id_map.items():
+            if key.startswith("actor_"):
+                ET.SubElement(elements, 'element', {
+                    'xmi:idref': actor_id,
+                    'xmi:type': 'uml:Actor',
+                    'name': key.replace("actor_", ""),
+                    'scope': 'public'
+                })
     
     def _stworz_primitivetypes(self, extension: ET.Element) -> None:
         """
@@ -260,7 +271,9 @@ class XMISequenceGenerator:
         # Tworzenie struktury XML
         root = self._stworz_korzen_dokumentu()
         model = self._stworz_model_uml(root)
-        self._stworz_pakiet_diagramu(model, nazwa_diagramu)
+        package_element, interaction = self._stworz_pakiet_diagramu(model, nazwa_diagramu)
+        self.dodaj_aktora(package_element, interaction, "Użytkownik")
+        self.dodaj_aktora(package_element, interaction, "System")
         self._stworz_rozszerzenia_ea(root, nazwa_diagramu)
         
         # Formatowanie i zapis
@@ -286,6 +299,45 @@ class XMISequenceGenerator:
             Aktualny autor
         """
         return self.autor
+    
+    def dodaj_aktora(self, package_element: ET.Element, interaction: ET.Element, nazwa: str) -> str:
+
+        """
+        Dodaje aktora do pakietu UML i jako lifeline do interakcji.
+
+        Args:
+            package_element: Element pakietu UML (z _stworz_pakiet_diagramu)
+            nazwa: Nazwa aktora
+
+        Returns:
+            ID lifeline'u
+        """
+        actor_id = self._generuj_ea_id("EAID")
+        lifeline_id = self._generuj_ea_id("EAID")
+
+        # Dodaj aktora do pakietu
+        actor = ET.SubElement(package_element, 'packagedElement', {
+            'xmi:type': 'uml:Actor',
+            'xmi:id': actor_id,
+            'name': nazwa,
+            'visibility': 'public'
+        })
+
+        # Znajdź interakcję (zakładamy, że jest tylko jedna)
+        ET.SubElement(interaction, 'lifeline', {
+            'xmi:type': 'uml:Lifeline',
+            'xmi:id': lifeline_id,
+            'name': nazwa,
+            'represents': actor_id
+        })
+
+        # Zapisz ID
+        self.id_map[f"actor_{nazwa}"] = actor_id
+        self.id_map[f"lifeline_{nazwa}"] = lifeline_id
+
+        return lifeline_id
+
+
 
 
 # --- Przykład użycia ---
