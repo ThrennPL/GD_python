@@ -255,6 +255,26 @@ class XMISequenceGenerator:
             'value': 'locked=false;matrixactive=false;swimlanesactive=true;kanbanactive=false;width=1;clrLine=0;'
         })
         ET.SubElement(diagram, 'extendedProperties')
+        
+        # Tworzenie obiektów w diagramie
+        diagram_objects = ET.SubElement(diagram, 'diagramObjects')
+        x = 100  # startowa pozycja
+
+        for key, actor_id in self.id_map.items():
+            if key.startswith("actor_"):
+                obj = ET.SubElement(diagram_objects, 'diagramObject')
+                ET.SubElement(obj, 'model', {
+                    'package': self.id_map['package_element'],
+                    'element': actor_id
+                })
+                # Ustawienie prostokąta (top, left, bottom, right)
+                ET.SubElement(obj, 'geometry', {
+                    'top': str(100),
+                    'left': str(x),
+                    'bottom': str(200),
+                    'right': str(x + 100)
+                })
+                x += 200  # przesuwaj kolejnego aktora w prawo
     
     def generuj_diagram(self, nazwa_diagramu: str, nazwa_pliku: str) -> None:
         """
