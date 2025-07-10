@@ -66,17 +66,12 @@ def test_db_connection():
             conn.close()
 
 if __name__ == "__main__":
-    
-    log_ai_interaction(
-                            request="Test_tekstu_pytania",
-                            response="Test_tekstu_odpowiedzi",
-                            model_name="Model_testowy",
-                            user_id=None,
-                            status_code=None,
-                            latency_ms=None
-                        )
-    print("Zapisano do bazy przeszedł")
-    test_db_connection()
+    import sys
+    request = sys.argv[1]
+    response = sys.argv[2]
+    model_name = sys.argv[3]
+    log_ai_interaction(request,response, model_name)
+    #test_db_connection()
 
 
 '''CREATE TABLE ai_logs (

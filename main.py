@@ -1,38 +1,43 @@
-from plantuml_to_ea import plantuml_to_xmi
-from extract_code_from_response import extract_xml, extract_plantuml, extract_plantuml_blocks, is_valid_xml
-from xml_highlighter import XMLHighlighter
-from input_validator import validate_input_text
-from api_thread import APICallThread
-from plantuml_utils import plantuml_encode, identify_plantuml_diagram_type, fetch_plantuml_svg_local, fetch_plantuml_svg_www
-#from prompt_templates import prompt_templates, get_diagram_specific_requirements
-from logger_utils import setup_logger, log_info, log_error, log_exception
-from mysql_connector import log_ai_interaction
+
+import subprocess
 import sys
 import re
 import requests
+import traceback
+import os
 from PyQt5.QtGui import QTextCharFormat, QColor, QFont
 from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QSplitter, QTextEdit, QPushButton, QWidget, QDialog, QLabel, QTabWidget, QComboBox, QCheckBox, QLabel, QGroupBox, QVBoxLayout, QHBoxLayout, QRadioButton, QButtonGroup, QMessageBox, QFileDialog  
+from PyQt5.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QSplitter, QTextEdit, QPushButton, QWidget, QDialog, QLabel, QTabWidget, QComboBox, QCheckBox, QLabel, QGroupBox, QVBoxLayout, QHBoxLayout, QRadioButton, QButtonGroup, QMessageBox, QFileDialog, QMenu
 from PyQt5.QtSvg import QSvgWidget
 from xml.etree.ElementTree import fromstring, ParseError
-#import plantuml_encoder
 from datetime import datetime
 from zlib import compress
-import traceback
-import threading
-import os
-from dotenv import load_dotenv
-from translations_pl import TRANSLATIONS as PL
-from translations_en import TRANSLATIONS as EN
 
-# Load environment variables
+from dotenv import load_dotenv
+
 load_dotenv()
 
-
+try:
+    from plantuml_to_ea import plantuml_to_xmi
+    from extract_code_from_response import extract_xml, extract_plantuml, extract_plantuml_blocks, is_valid_xml
+    from xml_highlighter import XMLHighlighter
+    from input_validator import validate_input_text
+    from api_thread import APICallThread
+    from plantuml_utils import plantuml_encode, identify_plantuml_diagram_type, fetch_plantuml_svg_local, fetch_plantuml_svg_www
+    from logger_utils import setup_logger, log_info, log_error, log_exception
+    from translations_pl import TRANSLATIONS as PL
+    from translations_en import TRANSLATIONS as EN
+except ImportError as e:
+    MODULES_LOADED = False
+    print(f"Error importing modules: {e}")
+    sys.exit(1)
 
 setup_logger("main_app.log")
+# Load environment variables
+
 plantuml_jar_path = os.getenv("PLANTUML_JAR_PATH", "plantuml.jar")
 plantuml_generator_type = os.getenv("PLANTUML_GENERATOR_TYPE", "local")
+DB_PROVIDER = os.getenv("DB_PROVIDER", "")
 CHAT_URL = os.getenv("CHAT_URL", "http://localhost:1234//v1/chat/completions")
 API_KEY = os.getenv("API_KEY", "")
 API_DEFAULT_MODEL = os.getenv("API_DEFAULT_MODEL", "models/gemini-2.0-flash")
@@ -337,6 +342,8 @@ class AIApp(QMainWindow):
             return None
 
     def start_api_thread(self, prompt, model_name=None):
+        self.prompt_text = prompt
+
         if model_name is None:
             model_name = self.model_selector.currentText()
         try:
@@ -352,13 +359,6 @@ class AIApp(QMainWindow):
             self.api_thread.response_received.connect(self.handle_api_response)
             self.api_thread.error_occurred.connect(self.handle_api_error)
             self.api_thread.start()
-            '''try:
-                threading.Thread(
-                        target=log_ai_interaction,
-                        args=("testowy", "testowy", "testowy", None, None, None)
-                    ).start()
-            except Exception as e:
-                log_error(f"Error logging AI interaction: {e}")'''
             log_info(f"Starting API thread for model {model_name} with prompt: {prompt[:5000]}...")
         except Exception as e:
             error_msg = tr("error_sending_request").format(model_name=model_name, error=e)
@@ -507,6 +507,20 @@ class AIApp(QMainWindow):
     
     def handle_api_response(self, model_name, response_content):
         """Obsługuje odpowiedź z API."""
+
+        try:
+            if DB_PROVIDER == "mysql":
+                from mysql_connector import log_ai_interaction
+                subprocess.Popen([ sys.executable, 'mysql_connector.py', self.prompt_text, response_content, model_name])    
+            elif DB_PROVIDER == "postgres":
+                from PostgreSQL_connector import log_ai_interaction
+                subprocess.Popen([ sys.executable, 'postgres_connector.py', self.prompt_text, response_content, model_name])
+
+            log_info(f"AI interaction logged in database successfully for model {model_name}")
+        except Exception as e:
+            tb = traceback.format_exc()
+            log_error(f"Error logging AI interaction: {e}\n{tb}\n")
+
         self.send_button.setEnabled(True)  # Ponownie aktywuj przycisk
         self.conversation_history.append({"role": "assistant", "content": response_content})
         self.append_to_chat(model_name, response_content)
@@ -827,11 +841,27 @@ class AIApp(QMainWindow):
             self.save_diagram_button.setEnabled(True)
             if err_msg is None:
                 self.verification_attempts = 0  # Reset liczby prób po sukcesie
+
+            tab.setContextMenuPolicy(Qt.CustomContextMenu)
+            def show_context_menu(point):
+                menu = QMenu(self)
+                action_plum=menu.addAction(tr("save_plantuml_button"))
+                action_svg=menu.addAction(tr("save_diagram_button"))
+                action_xmi=menu.addAction(tr("save_xmi_button"))
+                action=menu.exec_(svg_widget.mapToGlobal(point))
+                if action==action_plum:
+                    self.save_plantuml()
+                elif action==action_svg:
+                    self.save_active_diagram()
+                elif action==action_xmi:
+                    self.save_xmi()
+            tab.customContextMenuRequested.connect(show_context_menu)
         except Exception as e:
             error_msg = tr("msg_error_fetching_plantuml").format(error=e)
             log_exception(error_msg)
             self.append_to_chat("System", error_msg)
-        if err_msg is not None:
+        if err_msg != "":
+            print(f"Error message: {err_msg}, self.verification_attempts: {self.verification_attempts}, self.last_prompt_type: {self.last_prompt_type}")  
             try:
                 line_parts = err_msg.split(':', 1)
                 log_info(f"Extracted line parts from error message: {line_parts}")

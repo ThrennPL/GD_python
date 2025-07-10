@@ -35,6 +35,14 @@ def log_ai_interaction(request: str, response: str, model_name: str = None,
         if conn:
             conn.close()
 
+if __name__ == "__main__":
+    import sys
+    request = sys.argv[1]
+    response = sys.argv[2]
+    model_name = sys.argv[3]
+    log_ai_interaction(request, response, model_name)
+    #test_db_connection()
+
 '''CREATE TABLE ai_logs (
     id SERIAL PRIMARY KEY,
     timestamp TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,

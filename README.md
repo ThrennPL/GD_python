@@ -13,6 +13,7 @@ Aplikacja do generowania, wizualizacji i weryfikacji diagramów UML (PlantUML) o
   * Obsługa wielu modeli AI (lokalnych lub poprzez API, np. OpenAI, Gemini)
   * Pobieranie wygenerowanych diagramów w formatach: PlantUML, SVG, XMI
   * Specjalne opcje dla diagramów BPMN (poziom złożoności, reguła walidacji, format wyjściowy, domena)
+  * Zapis zapytań i odpowiedzi z modelu do bazy danych (mySQL, PostgreSQL)
   * **Dwie wersje językowe interfejsu i promptów (angielska i polska)**
   * Przykładowe prompty testowe dla branży bankowej
 
@@ -39,7 +40,7 @@ Diagramy SVG mogą być generowane na dwa sposoby, zależnie od ustawienia param
   * Java (dla lokalnego renderowania PlantUML)
   * `plantuml.jar` (do pobrania ze strony PlantUML)
   * PyQt5 (tylko dla wersji desktopowej)
-  * `requests`
+  * :exclamation: `.env` - plik konfiguracyjny w katalogu programu  
 
 ## Instalacja
 
@@ -73,9 +74,17 @@ API_KEY=
 MODEL_PROVIDER =gemini
 #MODEL_PROVIDER =local
 #MODEL_PROVIDER =openai
+DB_PROVIDER=
+#DB_PROVIDER=mysql
+#DB_PROVIDER=postgresql
+DB_HOST=
+DB_PORT=
+DB_NAME=
+DB_USER=
+DB_PASSWORD=
 ```
 
-Dla Gemini i OpenAI trzeba użyć własnych API_KEY
+:information_source: Dla Gemini i OpenAI trzeba użyć własnych API_KEY. W przypadku chęci zbierania zapytań i odpowiedzi od modelu w bazie danych trzeba też wybrać odpowiedni rodzaj bazy i ustawić parametry jej połączenia.
 
 ## Uruchomienie
 
