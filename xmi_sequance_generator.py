@@ -201,7 +201,15 @@ class XMISequenceGenerator:
                     'name': key.replace("actor_", ""),
                     'scope': 'public'
                 })
-    
+        for key, lifeline_id in self.id_map.items():
+            if key.startswith("lifeline_"):
+                ET.SubElement(elements, 'element', {
+                    'xmi:idref': lifeline_id,
+                    'xmi:type': 'uml:Lifeline',
+                    'name': key.replace("lifeline_", ""),
+                    'scope': 'public'
+                })
+            
     def _stworz_primitivetypes(self, extension: ET.Element) -> None:
         """
         Tworzy sekcję primitivetypes.
@@ -260,21 +268,21 @@ class XMISequenceGenerator:
         diagram_objects = ET.SubElement(diagram, 'diagramObjects')
         x = 100  # startowa pozycja
 
-        for key, actor_id in self.id_map.items():
-            if key.startswith("actor_"):
+        for key, lifeline_id in self.id_map.items():
+            if key.startswith("lifeline_"):
                 obj = ET.SubElement(diagram_objects, 'diagramObject')
                 ET.SubElement(obj, 'model', {
                     'package': self.id_map['package_element'],
-                    'element': actor_id
+                    'element': lifeline_id
                 })
-                # Ustawienie prostokąta (top, left, bottom, right)
                 ET.SubElement(obj, 'geometry', {
                     'top': str(100),
                     'left': str(x),
                     'bottom': str(200),
                     'right': str(x + 100)
                 })
-                x += 200  # przesuwaj kolejnego aktora w prawo
+                x += 200
+
     
     def generuj_diagram(self, nazwa_diagramu: str, nazwa_pliku: str) -> None:
         """
