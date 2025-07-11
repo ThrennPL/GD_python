@@ -20,6 +20,7 @@ class XMISequenceGenerator:
             'xmi': 'http://schema.omg.org/spec/XMI/2.1'
         }
         self._zarejestruj_przestrzenie_nazw()
+        self.komunikaty_dla_elements = [] 
     
     def _zarejestruj_przestrzenie_nazw(self):
         """Rejestruje przestrzenie nazw XML."""
@@ -202,6 +203,29 @@ class XMISequenceGenerator:
                     
                     ET.SubElement(elements, 'element', element_attrs)
                     break  # Przerwij po znalezieniu pierwszego pasującego prefiksu
+        
+        for komunikat in self.komunikaty_dla_elements:
+            # Tworzymy główny element dla konektora, odnosząc się do jego ID
+            element_konektora = ET.SubElement(elements, 'element', {
+                'xmi:idref': komunikat['id'],
+                'xmi:type': 'uml:Message',
+                'name': komunikat['name'],
+                'scope': 'public'
+            })
+            
+            # Styl linii: 1 = synchroniczna (ciągła), 2 = odpowiedź (przerywana)
+            # Można to dalej rozbudować dla innych typów.
+            style_value = '2' if komunikat['message_sort'] == 'reply' else '1'
+            
+            # Dodajemy kluczowy subelement <links> definiujący połączenie
+            ET.SubElement(element_konektora, 'links', {
+                'source': komunikat['source_id'],
+                'target': komunikat['target_id'],
+                'label': f"l={komunikat['name']};", # Etykieta widoczna na diagramie
+                'ea_type': 'Sequence', # Typ konektora w EA
+                'direction': 'Source -> Destination',
+                'style': style_value 
+            })
             
     def _stworz_primitivetypes(self, extension: ET.Element) -> None:
         """
@@ -346,16 +370,27 @@ class XMISequenceGenerator:
             '-->>': 'asynchCall',
             '-x': 'synchCall' # Można by stworzyć własny stereotyp dla błędu
         }
+        message_id = self._generuj_ea_id("EAID")
+        message_sort_type = message_sort_map.get(komunikat_data['arrow'], 'synchCall')
+
         
         ET.SubElement(interaction, 'message', {
             'xmi:type': 'uml:Message',
-            'xmi:id': self._generuj_ea_id("EAID"),
+            'xmi:id': message_id,
             'name': komunikat_data['text'],
-            'messageSort': message_sort_map.get(komunikat_data['arrow'], 'synchCall'),
-            'sendEvent': zrodlo_id, # Uproszczenie: wskazujemy na całą linię życia
-            'receiveEvent': cel_id # Uproszczenie: wskazujemy na całą linię życia
+            'messageSort': message_sort_type,
+            'sendEvent': zrodlo_id,
+            'receiveEvent': cel_id
         })
 
+
+        self.komunikaty_dla_elements.append({
+            'id': message_id,
+            'name': komunikat_data['text'],
+            'source_id': zrodlo_id,
+            'target_id': cel_id,
+            'message_sort': message_sort_type
+        })
 
 
     def generuj_diagram(self, nazwa_diagramu: str, nazwa_pliku: str, dane: dict):
@@ -378,11 +413,18 @@ class XMISequenceGenerator:
         # 2. Dynamiczne dodawanie uczestników na podstawie danych z parsera
         for alias, szczegoly in dane['participants'].items():
             self.dodaj_uczestnika(package_element, interaction, alias, szczegoly)
-            
+        
+        self.debug_uczestnicy()
+
         # 3. Dynamiczne dodawanie przepływu (komunikatów, etc.)
         for element_przeplywu in dane['flow']:
             if element_przeplywu['type'] == 'message':
-                self.dodaj_komunikat(interaction, element_przeplywu)
+                try:
+                    self.dodaj_komunikat(interaction, element_przeplywu)
+                    print(f" ✔ Dodano komunikatu: {element_przeplywu['text']}")
+                except KeyError as e:
+                    print(f" X Błąd dodawania komuniatu: {e}")
+                    
             # TODO: Tutaj w przyszłości można dodać obsługę innych elementów
             # elif element_przeplywu['type'] == 'note':
             #     self.dodaj_notatke(...)
@@ -397,7 +439,17 @@ class XMISequenceGenerator:
         tree.write(nazwa_pliku, encoding='windows-1252', xml_declaration=True)
         print(f"Plik '{nazwa_pliku}' został pomyślnie wygenerowany na podstawie danych z parsera.")
 
-    
+    def debug_uczestnicy(self):
+
+        print("\n=== Debug informacje o uczestnikach ===")
+        print("zarejestrowani uczestnicy w id_map:")
+        for key, value in self.id_map.items():
+            if key.startswith("lifeline_"):
+                print(f"  - {key}: {value}")
+        print("\nKlucze w id_map:")
+        for key in self.id_map.keys():
+            print(f"  - {key}")
+
     def ustaw_autora(self, autor: str) -> None:
         self.autor = autor
     
@@ -420,6 +472,9 @@ if __name__ == '__main__':
     parser = PlantUMLSequenceParser(plantuml_code)
     parsed_data = parser.parse()
     
+    print("\nDane z parsera:")
+    print("Uczestnicy:", parsed_data['participants'])
+    print("Przepływ:", parsed_data['flow'])
     # Można też zmienić autora i wygenerować kolejny diagram
     generator.ustaw_autora(autor)
     generator.generuj_diagram(
