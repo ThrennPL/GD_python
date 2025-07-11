@@ -122,7 +122,6 @@ class XMISequenceGenerator:
         self._stworz_sekcje_diagrams(extension, nazwa_diagramu, teraz)
     
     def _stworz_sekcje_elements(self, extension: ET.Element, nazwa_diagramu: str, teraz: str) -> None:
-
         """Tworzy sekcję elements w rozszerzeniach EA.
         Args:
             extension: Element rozszerzenia
@@ -171,23 +170,38 @@ class XMISequenceGenerator:
             'logxml': 'FALSE', 'packageFlags': 'isModel=1;VICON=3;'
         })
         
-        # Sekcja elements
-        for key, actor_id in self.id_map.items():
-            if key.startswith("actor_"):
-                ET.SubElement(elements, 'element', {
-                    'xmi:idref': actor_id,
-                    'xmi:type': 'uml:Actor',
-                    'name': key.replace("actor_", ""),
-                    'scope': 'public'
-                })
-        for key, lifeline_id in self.id_map.items():
-            if key.startswith("lifeline_"):
-                ET.SubElement(elements, 'element', {
-                    'xmi:idref': lifeline_id,
-                    'xmi:type': 'uml:Lifeline',
-                    'name': key.replace("lifeline_", ""),
-                    'scope': 'public'
-                })
+        # Mapa prefiksów na typy UML
+        element_type_mapping = {
+            'actor_': 'uml:Actor',
+            'lifeline_': 'uml:Lifeline',
+            'object_': 'uml:Object',
+            'class_': 'uml:Class',
+            'component_': 'uml:Component',
+            'boundary_': 'uml:Lifeline',  # Boundary to Lifeline ze stereotypem
+            'control_': 'uml:Lifeline',   # Control to Lifeline ze stereotypem
+            'entity_': 'uml:Lifeline',    # Entity to Lifeline ze stereotypem
+            'interface_': 'uml:Interface',
+            'node_': 'uml:Node'
+        }
+        
+        # Automatyczne dodawanie elementów
+        for key, element_id in self.id_map.items():
+            for prefix, uml_type in element_type_mapping.items():
+                if key.startswith(prefix):
+                    element_attrs = {
+                        'xmi:idref': element_id,
+                        'xmi:type': uml_type,
+                        'name': key.replace(prefix, ""),
+                        'scope': 'public'
+                    }
+                    
+                    # Dodaj stereotyp dla elementów boundary, control, entity
+                    if prefix in ['boundary_', 'control_', 'entity_']:
+                        stereotype = prefix.rstrip('_').capitalize()
+                        element_attrs['stereotype'] = stereotype
+                    
+                    ET.SubElement(elements, 'element', element_attrs)
+                    break  # Przerwij po znalezieniu pierwszego pasującego prefiksu
             
     def _stworz_primitivetypes(self, extension: ET.Element) -> None:
         """
@@ -302,8 +316,9 @@ class XMISequenceGenerator:
             'represents': element_id  # Łączy linię życia z elementem UML
         })
 
-        # Zapisz wygenerowane ID, aby móc się do nich odwoływać
-        self.id_map[f"element_{normalized_alias}"] = element_id
+        # Zapisz wygenerowane ID używając prefiksów zgodnych z innymi metodami
+        typ_lowercase = szczegoly['type'].lower()  # np. 'actor', 'participant', etc.
+        self.id_map[f"{typ_lowercase}_{normalized_alias}"] = element_id
         self.id_map[f"lifeline_{normalized_alias}"] = lifeline_id
         
     def dodaj_komunikat(self, interaction: ET.Element, komunikat_data: dict):
@@ -320,12 +335,9 @@ class XMISequenceGenerator:
             zrodlo_id = self.id_map[f"lifeline_{source_alias}"]
             cel_id = self.id_map[f"lifeline_{target_alias}"]
         except KeyError as e:
-            missing_participant = str(e).split("'").replace('lifeline_', '')
+            missing_participant = str(e).split("'")[1].replace('lifeline_', '')
             raise KeyError(f"Nie znaleziono uczestnika o aliasie {missing_participant}." 
-                           f"Dostępni uczestnicy: {[k.replace('lifeline_', '') for k in self.id_map.keys() if k.startswith('lifeline_' in k)]}")
-        
-        zrodlo_id = self.id_map[f"lifeline_{komunikat_data['source']}"]
-        cel_id = self.id_map[f"lifeline_{komunikat_data['target']}"]
+                        f"Dostępni uczestnicy: {[k.replace('lifeline_', '') for k in self.id_map.keys() if k.startswith('lifeline_')]}")
         
         # Mapowanie strzałek PlantUML na typy wiadomości UML
         message_sort_map = {

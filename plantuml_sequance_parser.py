@@ -79,7 +79,7 @@ class PlantUMLSequenceParser:
 
             activation_match = re.match(r'^(activate|deactivade)\s+([a-zA-Z0-9_]+)$', line)
             if activation_match:
-                action, participant = activation_match.group()
+                action, participant = activation_match.groups()
                 self.flow.append({
                     'type': 'activation',
                     'action': action,
@@ -97,7 +97,7 @@ class PlantUMLSequenceParser:
                 })
                 continue
             
-            if re.mutch(r'^(alt|opt|loop)\s*(.*)$', line):
+            if re.match(r'^(alt|opt|loop)\s*(.*)$', line):
                 match = re.match(r'^(alt|opt|loop)\s*(.*)$', line)
                 frag_type, condition = match.groups()
                 fragment = {
