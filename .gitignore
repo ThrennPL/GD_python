@@ -5,6 +5,7 @@ output*.*
 *.xmi
 *.log*
 *.puml
+*.json
 =======
 output*.*
 *.svg
@@ -14,5 +15,5 @@ output*.*
 *.puml
 .env
 app.log.*
-
+*.json
 >>>>>>> 46631394621d974d34f5f8bfea7e8b1784a2f083
