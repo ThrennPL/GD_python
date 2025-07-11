@@ -111,16 +111,14 @@ class XMISequenceGenerator:
             'extenderID': '6.5'
         })
         
-
+        self._stworz_sekcje_diagrams(extension, nazwa_diagramu, teraz)
         self._stworz_sekcje_elements(extension, nazwa_diagramu, teraz)
-        
-        # Puste sekcje
-        ET.SubElement(extension, 'connectors')
+        self._stworz_sekcje_connectors(extension)
         self._stworz_primitivetypes(extension)
         ET.SubElement(extension, 'profiles')
         
         # Sekcja diagrams
-        self._stworz_sekcje_diagrams(extension, nazwa_diagramu, teraz)
+        
     
     def _stworz_sekcje_elements(self, extension: ET.Element, nazwa_diagramu: str, teraz: str) -> None:
         """Tworzy sekcję elements w rozszerzeniach EA.
@@ -226,7 +224,117 @@ class XMISequenceGenerator:
                 'direction': 'Source -> Destination',
                 'style': style_value 
             })
+
+    def _stworz_sekcje_connectors(self, extension: ET.Element) -> None:
+        """
+        Tworzy sekcję connectors w rozszerzeniach EA.
+        
+        Args:
+            extension: Element rozszerzenia
+        """
+        connectors = ET.SubElement(extension, 'connectors')
+        
+        for komunikat in self.komunikaty_dla_elements:
+            connector = ET.SubElement(connectors, 'connector', {
+                'xmi:idref': komunikat['id']
+            })
             
+            # Dodaj element source (źródło komunikatu)
+            source = ET.SubElement(connector, 'source', {
+                'xmi:idref': komunikat['source_id']
+            })
+            ET.SubElement(source, 'model', {
+                'ea_localid': str(hash(komunikat['source_id']) % 100000),  # Generowanie unikalnego ID
+                'type': 'Sequence',
+                'name': komunikat['name']
+            })
+            ET.SubElement(source, 'role', {
+                'visibility': 'Public',
+                'targetScope': 'instance'
+            })
+            ET.SubElement(source, 'type', {
+                'containment': 'Unspecified'
+            })
+            ET.SubElement(source, 'constraints')
+            ET.SubElement(source, 'modifiers', {
+                'isOrdered': 'false',
+                'changeable': 'none',
+                'isNavigable': 'false'
+            })
+            ET.SubElement(source, 'style', {
+                'value': 'Union=0;Derived=0;AllowDuplicates=0;Owned=0;Navigable=Non-Navigable;'
+            })
+            ET.SubElement(source, 'documentation')
+            ET.SubElement(source, 'xrefs')
+            ET.SubElement(source, 'tags')
+            
+            # Dodaj element target (cel komunikatu)
+            target = ET.SubElement(connector, 'target', {
+                'xmi:idref': komunikat['target_id']
+            })
+            ET.SubElement(target, 'model', {
+                'ea_localid': str(hash(komunikat['target_id']) % 100000),
+                'type': 'Sequence',
+                'name': komunikat['name']
+            })
+            ET.SubElement(target, 'role', {
+                'visibility': 'Public',
+                'targetScope': 'instance'
+            })
+            ET.SubElement(target, 'type', {
+                'aggregation': 'none',
+                'containment': 'Unspecified'
+            })
+            ET.SubElement(target, 'constraints')
+            ET.SubElement(target, 'modifiers', {
+                'isOrdered': 'false',
+                'changeable': 'none',
+                'isNavigable': 'true'
+            })
+            ET.SubElement(target, 'style', {
+                'value': 'Union=0;Derived=0;AllowDuplicates=0;Owned=0;Navigable=Navigable;'
+            })
+            ET.SubElement(target, 'documentation')
+            ET.SubElement(target, 'xrefs')
+            ET.SubElement(target, 'tags')
+            
+            # Dodaj pozostałe elementy konektora
+            ET.SubElement(connector, 'model', {
+                'ea_localid': str(hash(komunikat['id']) % 100000)
+            })
+            ET.SubElement(connector, 'properties', {
+                'ea_type': 'Sequence',
+                'direction': 'Source -> Destination'
+            })
+            ET.SubElement(connector, 'documentation')
+            
+            # Określ styl linii na podstawie typu komunikatu
+            line_mode = '2' if komunikat['message_sort'] == 'reply' else '1'
+            ET.SubElement(connector, 'appearance', {
+                'linemode': line_mode,
+                'linecolor': '-1',
+                'linewidth': '0',
+                'seqno': str(self.komunikaty_dla_elements.index(komunikat) + 1),
+                'headStyle': '0',
+                'lineStyle': '0'
+            })
+            
+            ET.SubElement(connector, 'labels')
+            ET.SubElement(connector, 'extendedProperties', {
+                'stateflags': 'Activation=0;',
+                'virtualInheritance': '0',
+                'diagram': self.id_map['diagram'],
+                'privatedata1': 'Synchronous' if komunikat['message_sort'] == 'synchCall' else 'Asynchronous',
+                'privatedata2': 'retval=void;',
+                'privatedata3': 'Call',
+                'privatedata4': '0',
+                'privatedata5': 'SX=0;SY=-4;EX=0;EY=0;$LLB=;LLT=;LMT=;LMB=;LRT=;LRB=;IRHS=;ILHS=;',
+                'sequence_points': 'PtStartX=723;PtStartY=-174;PtEndX=587;PtEndY=-174;'
+            })
+            ET.SubElement(connector, 'style')
+            ET.SubElement(connector, 'xrefs')
+            ET.SubElement(connector, 'tags')
+
     def _stworz_primitivetypes(self, extension: ET.Element) -> None:
         """
         Tworzy sekcję primitivetypes.
@@ -393,7 +501,7 @@ class XMISequenceGenerator:
         })
 
 
-    def generuj_diagram(self, nazwa_diagramu: str, nazwa_pliku: str, dane: dict):
+    def generuj_diagram(self, nazwa_diagramu: str, dane: dict):
         """
         Generuje diagram w formacie XMI na podstawie danych z parsera.
         
@@ -434,10 +542,9 @@ class XMISequenceGenerator:
         # 4. Tworzenie rozszerzeń EA i zapis (tak jak wcześniej)
         self._stworz_rozszerzenia_ea(root, nazwa_diagramu)
         
-        ET.indent(root, space="  ")
-        tree = ET.ElementTree(root)
-        tree.write(nazwa_pliku, encoding='windows-1252', xml_declaration=True)
-        print(f"Plik '{nazwa_pliku}' został pomyślnie wygenerowany na podstawie danych z parsera.")
+        # Zwróć wygenerowany XML jako string
+        return ET.tostring(root, encoding='unicode', method='xml')
+
 
     def debug_uczestnicy(self):
 
@@ -477,8 +584,10 @@ if __name__ == '__main__':
     print("Przepływ:", parsed_data['flow'])
     # Można też zmienić autora i wygenerować kolejny diagram
     generator.ustaw_autora(autor)
-    generator.generuj_diagram(
+    tree = generator.generuj_diagram(
         nazwa_diagramu=diagram_name,
-        nazwa_pliku=nazwa_pliku,
         dane=parsed_data  
     )
+
+    tree.write(nazwa_pliku, encoding='windows-1252', xml_declaration=True)
+    print(f"Plik '{nazwa_pliku}' został pomyślnie wygenerowany na podstawie danych z parsera.")
