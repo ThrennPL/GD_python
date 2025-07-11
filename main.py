@@ -27,6 +27,8 @@ try:
     from logger_utils import setup_logger, log_info, log_error, log_exception
     from translations_pl import TRANSLATIONS as PL
     from translations_en import TRANSLATIONS as EN
+    from plantuml_sequance_parser import PlantUMLSequenceParser
+    from xmi_sequance_generator import XMISequenceGenerator
 except ImportError as e:
     MODULES_LOADED = False
     print(f"Error importing modules: {e}")
@@ -254,7 +256,7 @@ class AIApp(QMainWindow):
     def on_tab_changed(self, index):
         # Pobierz typ diagramu z aktualnej zakładki (np. z atrybutu lub tekstu)
         current_diagram_type = self.get_current_diagram_type(index)
-        if "klas" in current_diagram_type.lower():
+        if ("klas" or "sekwencji") in current_diagram_type.lower():
             self.save_xmi_button.setEnabled(True)
         else:
             self.save_xmi_button.setEnabled(False)
@@ -541,7 +543,7 @@ class AIApp(QMainWindow):
             # Sprawdź typ diagramu
             diagram_type = identify_plantuml_diagram_type(plantuml_blocks[-1], LANG)
             # print(f"Identified diagram type: {diagram_type}")
-            if "klas" in diagram_type.strip().lower():
+            if ("klas" or "sekwencji") in diagram_type.strip().lower():
                 self.save_xmi_button.setEnabled(True)
             else:
                 self.save_xmi_button.setEnabled(False)
@@ -656,16 +658,15 @@ class AIApp(QMainWindow):
         idx = self.diagram_tabs.currentIndex()
         if idx in self.plantuml_codes:
             plantuml_code = self.plantuml_codes[idx]
+            diagram_type = identify_plantuml_diagram_type(plantuml_code, LANG)
             try:
-                if identify_plantuml_diagram_type(plantuml_code, LANG) == ('Diagram klas' or 'Class diagram'):
+                if diagram_type == ('Diagram klas' or 'Class diagram'):
                     xmi_code = plantuml_to_xmi(plantuml_code)
-                elif identify_plantuml_diagram_type(plantuml_code, LANG) == ('Diagram sekwencji' or 'Sequence diagram'):
+                elif diagram_type == ('Diagram sekwencji' or 'Sequence diagram'):
                     parser = PlantUMLSequenceParser(plantuml_code)
                     parsed_data = parser.parse()
-                    generator.ustaw_autora(autor)
-                    xmi_code =generator.generuj_diagram(
-                        nazwa_diagramu=diagram_name,
-                        nazwa_pliku=nazwa_pliku,
+                    xmi_code =XMISequenceGenerator(autor = "195841").generuj_diagram(
+                        nazwa_diagramu=diagram_type,
                         dane=parsed_data  
                     )
                 timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -857,14 +858,22 @@ class AIApp(QMainWindow):
                 menu = QMenu(self)
                 action_plum=menu.addAction(tr("save_plantuml_button"))
                 action_svg=menu.addAction(tr("save_diagram_button"))
-                action_xmi=menu.addAction(tr("save_xmi_button"))
+                #action_test=menu.addAction("test")
+                current_diagram_type = self.get_current_diagram_type(idx)
+                if ("klas" in current_diagram_type.lower()) or ("sekwencji" in current_diagram_type.lower()):
+                    action_xmi=menu.addAction(tr("save_xmi_button"))
                 action=menu.exec_(svg_widget.mapToGlobal(point))
+                
                 if action==action_plum:
                     self.save_plantuml()
                 elif action==action_svg:
                     self.save_active_diagram()
-                elif action==action_xmi:
+                elif (("klas" in current_diagram_type.lower()) or ("sekwencji" in current_diagram_type.lower())) and (action==action_xmi):
                     self.save_xmi()
+                '''elif action==action_test:
+                    current_diagram_type = self.get_current_diagram_type(idx)
+                    print(f" {current_diagram_type}")'''
+
             tab.customContextMenuRequested.connect(show_context_menu)
         except Exception as e:
             error_msg = tr("msg_error_fetching_plantuml").format(error=e)
