@@ -240,7 +240,7 @@ class XMISequenceGenerator:
         
         ET.SubElement(diagram, 'model', {
             'package': self.id_map['package_element'],
-            'localID': '1142',
+            'localID': '1148',  # Zmienione z 1142 na 1148
             'owner': self.id_map['package_element']
         })
         
@@ -250,12 +250,16 @@ class XMISequenceGenerator:
             'created': teraz, 'modified': teraz
         })
         
-        # Długie ciągi stylów
+        # Styl 1 - bez zmian
         ET.SubElement(diagram, 'style1', {
             'value': 'ShowPrivate=1;ShowProtected=1;ShowPublic=1;HideRelationships=0;Locked=0;Border=1;HighlightForeign=1;PackageContents=1;SequenceNotes=0;ScalePrintImage=0;PPgs.cx=0;PPgs.cy=0;DocSize.cx=795;DocSize.cy=1134;ShowDetails=0;Orientation=P;Zoom=100;ShowTags=0;OpParams=1;VisibleAttributeDetail=0;ShowOpRetType=1;ShowIcons=1;CollabNums=0;HideProps=0;ShowReqs=0;ShowCons=0;PaperSize=9;HideParents=0;UseAlias=0;HideAtts=0;HideOps=0;HideStereo=0;HideElemStereo=0;ShowTests=0;ShowMaint=0;ConnectorNotation=UML 2.1;ExplicitNavigability=0;ShowShape=1;AllDockable=0;AdvancedElementProps=1;AdvancedFeatureProps=1;AdvancedConnectorProps=1;m_bElementClassifier=1;SPT=1;ShowNotes=0;SuppressBrackets=0;SuppConnectorLabels=0;PrintPageHeadFoot=0;ShowAsList=0;'
         })
         
-        ET.SubElement(diagram, 'style2')
+        # Styl 2 - rozszerzony
+        ET.SubElement(diagram, 'style2', {
+            'value': 'ExcludeRTF=0;DocAll=0;HideQuals=0;AttPkg=1;ShowTests=0;ShowMaint=0;SuppressFOC=0;INT_ARGS=;INT_RET=;INT_ATT=;SeqTopMargin=50;MatrixActive=0;SwimlanesActive=1;KanbanActive=0;MatrixLineWidth=1;MatrixLineClr=0;MatrixLocked=0;TConnectorNotation=UML 2.1;TExplicitNavigability=0;AdvancedElementProps=1;AdvancedFeatureProps=1;AdvancedConnectorProps=1;m_bElementClassifier=1;SPT=1;MDGDgm=;STBLDgm=;ShowNotes=0;VisibleAttributeDetail=0;ShowOpRetType=1;SuppressBrackets=0;SuppConnectorLabels=0;PrintPageHeadFoot=0;ShowAsList=0;SuppressedCompartments=;Theme=:119;SaveTag=8DC35F47;'
+        })
+        
         ET.SubElement(diagram, 'swimlanes', {
             'value': 'locked=false;orientation=0;width=0;inbar=false;names=false;color=-1;bold=false;fcol=0;tcol=-1;ofCol=-1;ufCol=-1;hl=1;ufh=0;hh=0;cls=0;bw=0;hli=0;bro=0;SwimlaneFont=lfh:-10,lfw:0,lfi:0,lfu:0,lfs:0,lfface:Calibri,lfe:0,lfo:0,lfchar:1,lfop:0,lfcp:0,lfq:0,lfpf=0,lfWidth=0;'
         })
@@ -264,24 +268,28 @@ class XMISequenceGenerator:
         })
         ET.SubElement(diagram, 'extendedProperties')
         
-        # Tworzenie obiektów w diagramie
-        diagram_objects = ET.SubElement(diagram, 'diagramObjects')
-        x = 100  # startowa pozycja
-
+        # Tworzenie elementów w diagramie (zamiast diagramObjects)
+        elements = ET.SubElement(diagram, 'elements')
+        
+        # Parametry pozycjonowania
+        left = 533
+        top = 50
+        width = 90
+        height = 340
+        seqno = 1
+        
         for key, lifeline_id in self.id_map.items():
             if key.startswith("lifeline_"):
-                obj = ET.SubElement(diagram_objects, 'diagramObject')
-                ET.SubElement(obj, 'model', {
-                    'package': self.id_map['package_element'],
-                    'element': lifeline_id
+                element = ET.SubElement(elements, 'element', {
+                    'geometry': f'Left={left};Top={top};Right={left + width};Bottom={top + height};',
+                    'subject': lifeline_id,
+                    'seqno': str(seqno),
+                    'style': 'DUID=C1202A12;NSL=0;BCol=-1;BFol=-1;LCol=-1;LWth=-1;fontsz=0;bold=0;black=0;italic=0;ul=0;charset=0;pitch=0;'
                 })
-                ET.SubElement(obj, 'geometry', {
-                    'top': str(100),
-                    'left': str(x),
-                    'bottom': str(200),
-                    'right': str(x + 100)
-                })
-                x += 200
+                
+                # Przesunięcie pozycji dla następnego elementu
+                left += 150  # Odstęp między elementami
+                seqno += 1
 
     
     def generuj_diagram(self, nazwa_diagramu: str, nazwa_pliku: str) -> None:
