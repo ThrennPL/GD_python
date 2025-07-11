@@ -136,7 +136,12 @@ class PlantUMLParser:
             # Dodaj relację dziedziczenia
             if extends_class:
                 self.relations.append(UMLRelation(
-                    name, extends_class, 'inheritance', None, None, None
+                    source=name, 
+                    target=extends_class, 
+                    relation_type='inheritance', 
+                    label=None, 
+                    source_multiplicity=None, 
+                    target_multiplicity=None
                 ))
                 print(f"DEBUG: Found inheritance: {name} extends {extends_class}")
             
@@ -145,7 +150,12 @@ class PlantUMLParser:
                 interfaces = [iface.strip() for iface in implements_interfaces.split(',')]
                 for interface in interfaces:
                     self.relations.append(UMLRelation(
-                        name, interface, 'realization', None, None, None
+                        source=name, 
+                        target=interface, 
+                        relation_type='realization', 
+                        label=None, 
+                        source_multiplicity=None, 
+                        target_multiplicity=None
                     ))
                     print(f"DEBUG: Found implementation: {name} implements {interface}")
             
@@ -184,7 +194,12 @@ class PlantUMLParser:
             # Dodaj relację dziedziczenia interfejsu
             if extends_interface:
                 self.relations.append(UMLRelation(
-                    name, extends_interface, 'inheritance', None, None, None
+                    source=name, 
+                    target=extends_interface, 
+                    relation_type='inheritance', 
+                    label=None, 
+                    source_multiplicity=None, 
+                    target_multiplicity=None
                 ))
                 print(f"DEBUG: Found interface inheritance: {name} extends {extends_interface}")
             
@@ -333,7 +348,12 @@ class PlantUMLParser:
                     
                     print(f"DEBUG: Found complex relation: {source} --{actual_rel_type}--> {target} (label: {label}) (source_mult: {source_mult}, target_mult: {target_mult})")
                     self.relations.append(UMLRelation(
-                        source, target, actual_rel_type, label, source_mult, target_mult
+                        source=source, 
+                        target=target, 
+                        relation_type=actual_rel_type, 
+                        label=label, 
+                        source_multiplicity=source_mult, 
+                        target_multiplicity=target_mult
                     ))
                     return True
 
@@ -346,14 +366,24 @@ class PlantUMLParser:
                     
                     print(f"DEBUG: Found complex relation: {source} --{actual_rel_type}--> {target} (label: {label}) (source_mult: {source_mult}, target_mult: {target_mult})")
                     self.relations.append(UMLRelation(
-                        source, target, actual_rel_type, label, source_mult, target_mult
+                        source=source, 
+                        target=target, 
+                        relation_type=actual_rel_type, 
+                        label=label, 
+                        source_multiplicity=source_mult, 
+                        target_multiplicity=target_mult
                     ))
                     return True
 
                 # Standardowa obsługa
                 print(f"DEBUG: Found relation: {source} --{rel_type}--> {target} (label: {label}) (source_mult: {source_mult}, target_mult: {target_mult})")
                 self.relations.append(UMLRelation(
-                    source, target, rel_type, label, source_mult, target_mult
+                    source=source, 
+                    target=target, 
+                    relation_type=rel_type, 
+                    label=label, 
+                    source_multiplicity=source_mult, 
+                    target_multiplicity=target_mult
                 ))
                 return True
         
@@ -407,7 +437,7 @@ class PlantUMLParser:
             'relations': [{
                 'source': rel.source,
                 'target': rel.target,
-                'relation_type': getattr(rel, 'relation_type', getattr(rel, 'type', 'unknown')),
+                'relation_type': rel.relation_type,
                 'label': rel.label,
                 'source_multiplicity': rel.source_multiplicity,
                 'target_multiplicity': rel.target_multiplicity
