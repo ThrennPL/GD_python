@@ -36,26 +36,92 @@ class PlantUMLSequenceParser:
             if not line or line.startswith("'") or line in ["@startuml", "@enduml"]:
                 continue # Pomiń puste linie, komentarze i znaczniki start/end
 
-            # Sprawdzanie dopasowań w określonej kolejności
-            if self._parse_title(line):
-                continue
-            if self._parse_participant(line):
-                continue
-            if self._parse_message(line):
-                continue
-            if self._parse_activation(line, 'activate'):
-                continue
-            if self._parse_activation(line, 'deactivate'):
-                continue
-            if self._parse_note(line):
+            if line.startswith('title'):
+                match = re.match(r'^title\s+(.*)$', line)
+                if match:
+                    self.title = match.group(1).strip()
+                    continue
+            
+            participant_paterns = [
+                (r'^actor\s+"([^"]+)"\s+as\s+(\w+)', 'actor'),
+                (r'^participant\s+"([^"]+)"\s+as\s+(\w+)', 'participant'),
+                (r'^boundary\s+"([^"]+)"\s+as\s+(\w+)', 'boundary'),
+                (r'^control\s+"([^"]+)"\s+as\s+(\w+)', 'control'),
+                (r'^entity\s+"([^"]+)"\s+as\s+(\w+)', 'entity'),
+                (r'^database\s+"([^"]+)"\s+as\s+(\w+)', 'database'),
+            ]
+
+            participant_found = False
+            for pattern, p_type in participant_paterns:
+                match = re.match(pattern, line)
+                if match:
+                    name, alias = match.groups()
+                    self.participants[alias] = {
+                        'name': name, 
+                        'type': p_type
+                    }
+                    participant_found = True
+                    break
+            if participant_found:
                 continue
             
-            # Obsługa fragmentów (alt, else, end)
-            if self._parse_fragment_start(line, fragment_stack):
+            message_match = re.match(r'^([a-zA-Z0-9_]+)\s*(-{1,2}>>?|-[xX])\s*([a-zA-Z0-9_]+)\s*:\s*(.*)$', line)
+            if message_match:
+                source, arrow, target, message = message_match.groups()
+                self.flow.append({
+                    'type': 'message',
+                    'source': source.strip(),
+                    'target': target.strip(),
+                    'arrow': arrow.strip(),
+                    'text': message.strip()
+                })
                 continue
-            if self._parse_fragment_else(line, fragment_stack):
+
+            activation_match = re.match(r'^(activate|deactivade)\s+([a-zA-Z0-9_]+)$', line)
+            if activation_match:
+                action, participant = activation_match.group()
+                self.flow.append({
+                    'type': 'activation',
+                    'action': action,
+                    'participant': participant
+                })
                 continue
-            if self._parse_fragment_end(line, fragment_stack):
+
+            note_match = re.match(r'^note\s+(left|right|over\s+\S+)\s*:\s*(.*)$', line)
+            if note_match:
+                participant, note = note_match.groups()
+                self.flow.append({
+                    'type': 'note',
+                    'participant': participant.strip(),
+                    'text': note.strip()
+                })
+                continue
+            
+            if re.mutch(r'^(alt|opt|loop)\s*(.*)$', line):
+                match = re.match(r'^(alt|opt|loop)\s*(.*)$', line)
+                frag_type, condition = match.groups()
+                fragment = {
+                    'type': 'fragment_start',
+                    'kind': frag_type,
+                    'condition': condition.strip()
+                }
+                self.flow.append(fragment)
+                fragment_stack.append(fragment)
+                continue
+            
+            if line.startswith('else'):
+                match = re.match(r'^else\s*(.*)$', line)
+                if match and fragment_stack:
+                    condition = match.group(1).strip()
+                    self.flow.append({
+                        'type': 'fragment_else',
+                        'condition': condition
+                    })
+                    continue
+
+            if line == 'end' and fragment_stack:
+                fragment_stack.pop()
+                self.flow.append({'type': 'fragment_end'})
                 continue
 
         return {

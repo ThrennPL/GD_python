@@ -282,7 +282,7 @@ class XMISequenceGenerator:
         """
         typ_uml = szczegoly['type'].capitalize() # Np. 'actor' -> 'Actor'
         nazwa = szczegoly['name']
-        
+        normalized_alias = alias.lower().replace(' ', '_').replace('-', '_')
         element_id = self._generuj_ea_id("EAID")
         lifeline_id = self._generuj_ea_id("EAID")
 
@@ -303,8 +303,8 @@ class XMISequenceGenerator:
         })
 
         # Zapisz wygenerowane ID, aby móc się do nich odwoływać
-        self.id_map[f"element_{alias}"] = element_id
-        self.id_map[f"lifeline_{alias}"] = lifeline_id
+        self.id_map[f"element_{normalized_alias}"] = element_id
+        self.id_map[f"lifeline_{normalized_alias}"] = lifeline_id
         
     def dodaj_komunikat(self, interaction: ET.Element, komunikat_data: dict):
         """
@@ -314,6 +314,16 @@ class XMISequenceGenerator:
             interaction (ET.Element): Rodzic, czyli element <interaction>.
             komunikat_data (dict): Słownik z danymi o komunikacie z parsera.
         """
+        source_alias = komunikat_data['source'].lower().replace(' ', '_').replace('-', '_')
+        target_alias = komunikat_data['target'].lower().replace(' ', '_').replace('-', '_') 
+        try:
+            zrodlo_id = self.id_map[f"lifeline_{source_alias}"]
+            cel_id = self.id_map[f"lifeline_{target_alias}"]
+        except KeyError as e:
+            missing_participant = str(e).split("'").replace('lifeline_', '')
+            raise KeyError(f"Nie znaleziono uczestnika o aliasie {missing_participant}." 
+                           f"Dostępni uczestnicy: {[k.replace('lifeline_', '') for k in self.id_map.keys() if k.startswith('lifeline_' in k)]}")
+        
         zrodlo_id = self.id_map[f"lifeline_{komunikat_data['source']}"]
         cel_id = self.id_map[f"lifeline_{komunikat_data['target']}"]
         

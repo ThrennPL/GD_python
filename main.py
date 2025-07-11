@@ -657,7 +657,17 @@ class AIApp(QMainWindow):
         if idx in self.plantuml_codes:
             plantuml_code = self.plantuml_codes[idx]
             try:
-                xmi_code = plantuml_to_xmi(plantuml_code)
+                if identify_plantuml_diagram_type(plantuml_code, LANG) == ('Diagram klas' or 'Class diagram'):
+                    xmi_code = plantuml_to_xmi(plantuml_code)
+                elif identify_plantuml_diagram_type(plantuml_code, LANG) == ('Diagram sekwencji' or 'Sequence diagram'):
+                    parser = PlantUMLSequenceParser(plantuml_code)
+                    parsed_data = parser.parse()
+                    generator.ustaw_autora(autor)
+                    xmi_code =generator.generuj_diagram(
+                        nazwa_diagramu=diagram_name,
+                        nazwa_pliku=nazwa_pliku,
+                        dane=parsed_data  
+                    )
                 timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
                 default_filename = f"output_{timestamp}.xmi"
                 
