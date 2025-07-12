@@ -8,7 +8,7 @@ class TestPlantUMLToXMI(unittest.TestCase):
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         
         #input_file = 'Proces bankowy.puml'
-        input_file = 'Proces e-commerce.puml'
+        input_file = 'diagram_klas_PlantUML.puml'
         #input_file = 'Proces szkoleniowy.puml'
         output_file = f'test_output_{timestamp}.xmi'
         

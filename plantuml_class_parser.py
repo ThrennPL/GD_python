@@ -2,7 +2,7 @@ from plantuml_model import UMLClass, UMLRelation, UMLEnum, UMLNote
 import re
 
 class PlantUMLParser:
-    """Parser dla kodu PlantUML - poprawiona wersja"""
+    """Parser dla kodu PlantUML - poprawiona wersja z eliminacją duplikatów"""
     
     def __init__(self):
         self.classes = {}
@@ -19,6 +19,12 @@ class PlantUMLParser:
     def parse(self, plantuml_code: str):
         """Główna metoda parsowania"""
         lines = plantuml_code.strip().split('\n')
+        
+        # Wyczyść dane przed parsowaniem
+        self.classes.clear()
+        self.relations.clear()
+        self.enums.clear()
+        self.notes.clear()
         
         for line in lines:
             line = line.strip()
@@ -61,6 +67,32 @@ class PlantUMLParser:
             
             # Jeśli nic nie dopasowano, może to być błąd lub nieobsługiwany element
             print(f"DEBUG: Unrecognized line: {line}")
+        
+        # Po zakończeniu parsowania wypisz statystyki relacji
+        self._print_relation_stats()
+
+    def _add_relation_if_not_exists(self, new_relation: UMLRelation) -> bool:
+        """
+        Dodaje relację tylko jeśli nie istnieje już taka sama.
+        Zwraca True jeśli relacja została dodana, False jeśli już istniała.
+        """
+        for rel in self.relations:
+            # Sprawdź czy relacja tego samego typu łącząca te same klasy już istnieje
+            if (rel.source == new_relation.source and 
+                rel.target == new_relation.target and 
+                rel.relation_type == new_relation.relation_type):
+                
+                # Dla dziedziczenia i realizacji nie potrzebujemy duplikatów
+                if rel.relation_type in ['inheritance', 'realization']:
+                    return False
+                
+                # Dla innych typów relacji sprawdź etykietę
+                if rel.label == new_relation.label:
+                    return False
+        
+        # Jeśli nie znaleziono duplikatu, dodaj relację
+        self.relations.append(new_relation)
+        return True
 
     def _parse_package(self, line: str) -> bool:
         """Parsuje pakiety"""
@@ -135,29 +167,31 @@ class PlantUMLParser:
             
             # Dodaj relację dziedziczenia
             if extends_class:
-                self.relations.append(UMLRelation(
+                new_relation = UMLRelation(
                     source=name, 
                     target=extends_class, 
                     relation_type='inheritance', 
                     label=None, 
                     source_multiplicity=None, 
                     target_multiplicity=None
-                ))
-                print(f"DEBUG: Found inheritance: {name} extends {extends_class}")
+                )
+                if self._add_relation_if_not_exists(new_relation):
+                    print(f"DEBUG: Found inheritance: {name} extends {extends_class}")
             
             # Dodaj relacje implementacji
             if implements_interfaces:
                 interfaces = [iface.strip() for iface in implements_interfaces.split(',')]
                 for interface in interfaces:
-                    self.relations.append(UMLRelation(
+                    new_relation = UMLRelation(
                         source=name, 
                         target=interface, 
                         relation_type='realization', 
                         label=None, 
                         source_multiplicity=None, 
                         target_multiplicity=None
-                    ))
-                    print(f"DEBUG: Found implementation: {name} implements {interface}")
+                    )
+                    if self._add_relation_if_not_exists(new_relation):
+                        print(f"DEBUG: Found implementation: {name} implements {interface}")
             
             return True
         
@@ -193,15 +227,16 @@ class PlantUMLParser:
             
             # Dodaj relację dziedziczenia interfejsu
             if extends_interface:
-                self.relations.append(UMLRelation(
+                new_relation = UMLRelation(
                     source=name, 
                     target=extends_interface, 
                     relation_type='inheritance', 
                     label=None, 
                     source_multiplicity=None, 
                     target_multiplicity=None
-                ))
-                print(f"DEBUG: Found interface inheritance: {name} extends {extends_interface}")
+                )
+                if self._add_relation_if_not_exists(new_relation):
+                    print(f"DEBUG: Found interface inheritance: {name} extends {extends_interface}")
             
             return True
         
@@ -279,7 +314,6 @@ class PlantUMLParser:
         print(f"DEBUG: Parsowanie linii relacji: {line}")
 
         # Rozpoznaj dziedziczenie (<|-- lub --|>)
-        # Rozpoznaj dziedziczenie (<|-- lub --|>)
         inheritance_pattern = r'(\w+)\s*<\|--\s*(\w+)|(\w+)\s*--\|>\s*(\w+)'
         inheritance_match = re.search(inheritance_pattern, line)
 
@@ -288,19 +322,25 @@ class PlantUMLParser:
                 # A <|-- B (B dziedziczy po A)
                 parent, child = inheritance_match.group(1), inheritance_match.group(2)
             else:
-                # A --|> B (B dziedziczy po A)
-                parent, child = inheritance_match.group(3), inheritance_match.group(4)
+                # A --|> B (A dziedziczy po B)
+                child, parent = inheritance_match.group(3), inheritance_match.group(4)
                     
-            print(f"Znaleziono dziedziczenie: {child} dziedziczy po {parent}")
-            
             # Wyciągnij etykietę, jeśli istnieje
             multiplicities, label = self._extract_multiplicity_and_label(line)
             
-            # UMLRelation(source, target, relation_type, source_multiplicity, target_multiplicity, label)
-            # W tym przypadku source=child, target=parent (dziecko dziedziczy po rodzicu)
-            self.relations.append(
-                UMLRelation(child, parent, 'inheritance', None, None, label)
+            # UMLRelation(source, target, relation_type, label, source_multiplicity, target_multiplicity)
+            new_relation = UMLRelation(
+                source=child,
+                target=parent,
+                relation_type='inheritance',
+                label=label,
+                source_multiplicity=None,
+                target_multiplicity=None
             )
+            
+            # Dodaj tylko jeśli nie istnieje już taka relacja
+            if self._add_relation_if_not_exists(new_relation):
+                print(f"Znaleziono dziedziczenie: {child} dziedziczy po {parent}")
             return True
 
         # Sprawdź czy linia zawiera symbol relacji
@@ -373,15 +413,17 @@ class PlantUMLParser:
                     if not raw_multiplicities or len(raw_multiplicities) < 2:
                          target_mult = "0..*"
                     
-                    print(f"DEBUG: Found complex relation: {source} --{actual_rel_type}--> {target} (label: {label}) (source_mult: {source_mult}, target_mult: {target_mult})")
-                    self.relations.append(UMLRelation(
+                    new_relation = UMLRelation(
                         source=source, 
                         target=target, 
                         relation_type=actual_rel_type, 
                         label=label, 
                         source_multiplicity=source_mult, 
                         target_multiplicity=target_mult
-                    ))
+                    )
+                    
+                    if self._add_relation_if_not_exists(new_relation):
+                        print(f"DEBUG: Found complex relation: {source} --{actual_rel_type}--> {target} (label: {label}) (source_mult: {source_mult}, target_mult: {target_mult})")
                     return True
 
                 elif rel_type == 'aggregation_composition_left':
@@ -391,31 +433,56 @@ class PlantUMLParser:
                     if not raw_multiplicities or len(raw_multiplicities) < 2:
                          target_mult = "1"
                     
-                    print(f"DEBUG: Found complex relation: {source} --{actual_rel_type}--> {target} (label: {label}) (source_mult: {source_mult}, target_mult: {target_mult})")
-                    self.relations.append(UMLRelation(
+                    new_relation = UMLRelation(
                         source=source, 
                         target=target, 
                         relation_type=actual_rel_type, 
                         label=label, 
                         source_multiplicity=source_mult, 
                         target_multiplicity=target_mult
-                    ))
+                    )
+                    
+                    if self._add_relation_if_not_exists(new_relation):
+                        print(f"DEBUG: Found complex relation: {source} --{actual_rel_type}--> {target} (label: {label}) (source_mult: {source_mult}, target_mult: {target_mult})")
                     return True
 
                 # Standardowa obsługa
-                print(f"DEBUG: Found relation: {source} --{rel_type}--> {target} (label: {label}) (source_mult: {source_mult}, target_mult: {target_mult})")
-                self.relations.append(UMLRelation(
+                new_relation = UMLRelation(
                     source=source, 
                     target=target, 
                     relation_type=rel_type, 
                     label=label, 
                     source_multiplicity=source_mult, 
                     target_multiplicity=target_mult
-                ))
+                )
+                
+                if self._add_relation_if_not_exists(new_relation):
+                    print(f"DEBUG: Found relation: {source} --{rel_type}--> {target} (label: {label}) (source_mult: {source_mult}, target_mult: {target_mult})")
                 return True
         
         print(f"DEBUG: Relation not found: {line_clean!r}")
         return False
+
+    def _print_relation_stats(self):
+        """Wypisuje statystyki zidentyfikowanych relacji"""
+        type_counts = {}
+        inheritance_relations = []
+        
+        for rel in self.relations:
+            rel_type = rel.relation_type
+            type_counts[rel_type] = type_counts.get(rel_type, 0) + 1
+            
+            if rel_type == 'inheritance':
+                inheritance_relations.append(f"{rel.source} -> {rel.target}")
+        
+        print("\nSTATYSTYKI RELACJI:")
+        print(f"Całkowita liczba unikalnych relacji: {len(self.relations)}")
+        for rel_type, count in type_counts.items():
+            print(f"- {rel_type}: {count}")
+        
+        print("\nRELACJE DZIEDZICZENIA:")
+        for rel in inheritance_relations:
+            print(f"- {rel}")
 
     @staticmethod
     def parse_multiplicity(multiplicity: str) -> tuple[str, str]:
