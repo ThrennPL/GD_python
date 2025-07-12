@@ -138,4 +138,10 @@ TRANSLATIONS = {
     "diagram_type_deployment_diagram": "Diagram wdrożenia",
     "diagram_type_flow_diagram": "Diagram przepływu danych",
     "diagram_type_general": "Diagram ogólny (typ nieokreślony)",
+    "diagram_type_timing_diagram": "Diagram czasowy",
+    "diagram_type_erd_diagram": "Diagram ERD",
+    "diagram_type_mindmap_diagram": "Mapa myśli",
+    "diagram_type_gantt_chart": "Diagram Gantta",
+    "diagram_type_work_breakdown": "Struktura podziału pracy (WBS)",
+    "diagram_type_flow_diagram": "Diagram przepływu danych",
 }

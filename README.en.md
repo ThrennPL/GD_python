@@ -18,7 +18,7 @@ This application generates, visualizes, and verifies UML (PlantUML) and BPMN (XM
 
 ## XMI Export
 
-XMI export is currently available **only for Class Diagrams**. The "Save XMI" button is active only when the active tab contains a Class Diagram. XMI export is not yet supported for other diagram types (e.g., sequence, activity). Please note that only elements, not the diagram itself, may appear when loaded into Enterprise Architect.
+XMI export is currently available **only for Class Diagrams and Sequance Diagram**. The "Save XMI" button is active only when the active tab contains a Class Diagram or Sequance Diagram. XMI export is not yet supported for other diagram types (e.g., sequence, activity). Please note that only elements, not the diagram itself, may appear when loaded into Enterprise Architect.
 
 ## Tab Support (for Desktop Version)
 

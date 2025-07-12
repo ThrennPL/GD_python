@@ -1,896 +1,886 @@
-import re
-import xml.etree.ElementTree as ET
 import xml.dom.minidom
-import uuid
+import xml.etree.ElementTree as ET
 from datetime import datetime
+import uuid
+import os
+import re
 from typing import Dict, List, Optional, Tuple
 from plantuml_model import UMLClass, UMLRelation, UMLEnum, UMLNote
-from plantuml_class_parser import PlantUMLParser
-from logger_utils import setup_logger, log_info, log_error, log_exception
+from plantuml_class_parser import PlantUMLClassParser
+from logger_utils import log_info, log_error, log_exception, log_debug, setup_logger
 
-setup_logger("xmi_generator.log")
 
-class XMIGenerator:
+setup_logger()
+class XMIClassGenerator:
     """Generator plików XMI dla diagramów klas Enterprise Architect"""
     
-    def __init__(self, autor: str = "195841"):
+    def __init__(self, autor: str = "GD Generator"):
         """
         Inicjalizuje generator XMI.
         
         Args:
-            autor: Autor diagramu (domyślnie "195841")
+            autor: Autor diagramu
         """
         self.autor = autor
         self.id_map = {}
-        self.ea_localid_counter = 1
-        self.ns = {
-            'xmi': 'http://www.omg.org/XMI',
-            'xsi': 'http://www.w3.org/2001/XMLSchema-instance',
-            'uml': 'http://www.eclipse.org/uml2/5.0.0/UML',
-            'eaProfile': 'http://www.sparxsystems.com/profiles/eaProfile/1.0'
+        self.namespaces = {
+            'xmi': 'http://schema.omg.org/spec/XMI/2.1',
+            'uml': 'http://schema.omg.org/spec/UML/2.1',
+            'StandardProfileL2': 'http://www.omg.org/spec/UML/20110701/StandardProfileL2.xmi'
         }
-    
-    def _zarejestruj_przestrzenie_nazw(self):
-        """Rejestruje przestrzenie nazw XML."""
-        ET.register_namespace('xmi', 'http://www.omg.org/XMI')
-        ET.register_namespace('uml', 'http://www.eclipse.org/uml2/5.0.0/UML')
-        ET.register_namespace('xsi', 'http://www.w3.org/2001/XMLSchema-instance')
-        ET.register_namespace('eaProfile', 'http://www.sparxsystems.com/profiles/eaProfile/1.0')
-    
-    def _generuj_ea_id(self, prefix: str = "EAID") -> str:
-        """Generuje unikalny identyfikator zgodny z EA"""
-        return f"{prefix}_{uuid.uuid4()}"
+        self.ea_package_id = "EAPK_CB7224AD_95A4_4e31_9549_415EAEE5D3E4"
         
-    def _stworz_korzen_dokumentu(self) -> ET.Element:
-        """
-        Tworzy główny element XMI z deklaracjami przestrzeni nazw.
-        """
-        self._zarejestruj_przestrzenie_nazw()
-        xmi_root = ET.Element(
-            'xmi:XMI',
-            {
-                'xmi:version': '2.1',
-                'xmlns:xmi': 'http://www.omg.org/XMI',
-                'xmlns:uml': 'http://www.eclipse.org/uml2/5.0.0/UML',
-                'xmlns:xsi': 'http://www.w3.org/2001/XMLSchema-instance',
-                'xmlns:eaProfile': 'http://www.sparxsystems.com/profiles/eaProfile/1.0'
-            }
-        )
-        doc = ET.SubElement(xmi_root, 'xmi:Documentation')
-        doc.set('exporter', 'Enterprise Architect')
-        doc.set('exporterVersion', '15.2')
-        return xmi_root
+    def _generate_uuid(self, prefix="EAID_"):
+        """Generuje unikalny identyfikator w formacie EA."""
+        return f"{prefix}{str(uuid.uuid4()).replace('-', '_')}"
     
-    def _stworz_model_uml(self, root: ET.Element, nazwa_diagramu: str) -> ET.Element:
+    def _get_current_timestamp(self):
+        """Zwraca aktualny timestamp w formacie używanym przez EA."""
+        return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        
+    def generate_skeleton(self, diagram_name="Classes", package_name="DiagramKlas"):
         """
-        Tworzy główny model UML.
+        Generuje podstawowy szkielet pliku XMI.
+        
         Args:
-            root: Element główny dokumentu
-            nazwa_diagramu: Nazwa diagramu
+            diagram_name: Nazwa diagramu
+            package_name: Nazwa pakietu
+            
         Returns:
-            Element modelu UML
+            tuple: (dokument DOM, element główny, ID pakietu, ID diagramu)
         """
-        model_id = self._generuj_ea_id()
-        self.id_map['model'] = model_id
+        # Tworzymy pusty dokument bez określania root element z prefixem
+        doc = xml.dom.minidom.getDOMImplementation().createDocument(None, "XMI", None)
+        root = doc.documentElement
         
-        model = ET.SubElement(root, 'uml:Model')
-        model.set('xmi:id', model_id)
-        model.set('name', nazwa_diagramu)
-        model.set('visibility', 'public')
+        # Zmieniamy nazwę na xmi:XMI - najpierw usuwamy stary element root
+        root_new = doc.createElement("XMI")
+        # Dodajemy atrybuty i przestrzenie nazw
+        root_new.setAttribute("xmi:version", "2.1")
         
-        return model
-    
-    def _stworz_pakiet_diagramu(self, model: ET.Element, nazwa_pakietu: str) -> ET.Element:
-        """
-        Tworzy pakiet dla diagramu klas.
-        Args:
-            model: Element modelu UML
-            nazwa_pakietu: Nazwa pakietu
-        Returns:
-            Element pakietu
-        """
-        package_id = self._generuj_ea_id("EAPK")
-        self.id_map['package_element'] = package_id
+        # Ustawiamy przestrzenie nazw
+        for prefix, uri in self.namespaces.items():
+            root_new.setAttribute(f"xmlns:{prefix}", uri)
+            
+        # Zamieniamy stary root na nowy
+        doc.replaceChild(root_new, root)
+        root = root_new
         
-        package_element = ET.SubElement(model, 'packagedElement')
-        package_element.set('xmi:type', 'uml:Package')
-        package_element.set('xmi:id', package_id)
-        package_element.set('name', nazwa_pakietu)
-        package_element.set('visibility', 'public')
+        # Dokumentacja XMI
+        documentation = doc.createElement("Documentation")
+        documentation.setAttribute("exporter", "Enterprise Architect")
+        documentation.setAttribute("exporterVersion", "6.5")
+        documentation.setAttribute("exporterID", "1560")
+        root.appendChild(documentation)
         
-        # Dodaj referencję diagramu do pakietu - NOWA SEKCJA
-        diagram_id = self._generuj_ea_id("EADIAG")
+        # Model UML
+        model = doc.createElement("Model")
+        model.setAttribute("xmi:type", "uml:Model")
+        model.setAttribute("name", "EA_Model")
+        model.setAttribute("visibility", "public")
+        model.setAttribute("ea_package_id", self.ea_package_id)
+        model.setAttribute("ea_version", "2.0")
+        root.appendChild(model)
+        
+        # Pakiet główny
+        package_id = self._generate_uuid()
+        self.id_map['package'] = package_id
+        
+        package = doc.createElement("packagedElement")
+        package.setAttribute("xmi:type", "uml:Package")
+        package.setAttribute("xmi:id", package_id)
+        package.setAttribute("name", package_name)
+        package.setAttribute("visibility", "public")
+        model.appendChild(package)
+        
+        # Rozszerzenie XMI (EA-specific)
+        extension = doc.createElement("Extension")
+        extension.setAttribute("extender", "Enterprise Architect")
+        extension.setAttribute("extenderID", "6.5")
+        root.appendChild(extension)
+        
+        # Sekcje rozszerzenia
+        elements = doc.createElement("elements")
+        extension.appendChild(elements)
+        
+        # Element pakietu
+        pkg_element = doc.createElement("element")
+        pkg_element.setAttribute("xmi:idref", package_id)
+        pkg_element.setAttribute("xmi:type", "uml:Package")
+        pkg_element.setAttribute("name", package_name)
+        pkg_element.setAttribute("scope", "public")
+        elements.appendChild(pkg_element)
+        
+        # Właściwości pakietu
+        model_elem = doc.createElement("model")
+        model_elem.setAttribute("package2", package_id)
+        model_elem.setAttribute("package", self.ea_package_id)
+        model_elem.setAttribute("tpos", "0")
+        model_elem.setAttribute("ea_localid", "976")
+        model_elem.setAttribute("ea_eleType", "package")
+        pkg_element.appendChild(model_elem)
+        
+        properties = doc.createElement("properties")
+        properties.setAttribute("isSpecification", "false")
+        properties.setAttribute("sType", "Package")
+        properties.setAttribute("nType", "0")
+        properties.setAttribute("scope", "public")
+        pkg_element.appendChild(properties)
+        
+        project = doc.createElement("project")
+        project.setAttribute("author", self.autor)
+        project.setAttribute("version", "1.0")
+        project.setAttribute("phase", "1.0")
+        project.setAttribute("created", self._get_current_timestamp())
+        project.setAttribute("modified", self._get_current_timestamp())
+        project.setAttribute("complexity", "1")
+        project.setAttribute("status", "Proposed")
+        pkg_element.appendChild(project)
+        
+        code = doc.createElement("code")
+        code.setAttribute("gentype", "Java")
+        pkg_element.appendChild(code)
+        
+        style = doc.createElement("style")
+        style.setAttribute("appearance", "BackColor=-1;BorderColor=-1;BorderWidth=-1;FontColor=-1;VSwimLanes=1;HSwimLanes=1;BorderStyle=0;")
+        pkg_element.appendChild(style)
+        
+        tags = doc.createElement("tags")
+        pkg_element.appendChild(tags)
+        
+        xrefs = doc.createElement("xrefs")
+        pkg_element.appendChild(xrefs)
+        
+        extendedProperties = doc.createElement("extendedProperties")
+        extendedProperties.setAttribute("tagged", "0")
+        extendedProperties.setAttribute("package_name", package_name)
+        pkg_element.appendChild(extendedProperties)
+        
+        packageproperties = doc.createElement("packageproperties")
+        packageproperties.setAttribute("version", "1.0")
+        pkg_element.appendChild(packageproperties)
+        
+        paths = doc.createElement("paths")
+        pkg_element.appendChild(paths)
+        
+        times = doc.createElement("times")
+        times.setAttribute("created", self._get_current_timestamp().split(" ")[0] + " 00:00:00")
+        times.setAttribute("modified", self._get_current_timestamp())
+        pkg_element.appendChild(times)
+        
+        flags = doc.createElement("flags")
+        flags.setAttribute("iscontrolled", "FALSE")
+        flags.setAttribute("isprotected", "FALSE")
+        flags.setAttribute("usedtd", "FALSE")
+        flags.setAttribute("logxml", "FALSE")
+        pkg_element.appendChild(flags)
+        
+        # Sekcja connectors
+        connectors = doc.createElement("connectors")
+        extension.appendChild(connectors)
+        
+        # Sekcja diagrams
+        diagrams = doc.createElement("diagrams")
+        extension.appendChild(diagrams)
+        
+        # Diagram
+        diagram_id = self._generate_uuid()
         self.id_map['diagram'] = diagram_id
         
-        # Dodaj element diagramu bezpośrednio do pakietu
-        diagram_ref = ET.SubElement(package_element, 'packagedElement')
-        diagram_ref.set('xmi:type', 'uml:Diagram')
-        diagram_ref.set('xmi:id', diagram_id)
-        diagram_ref.set('name', 'Class Diagram')
+        diagram = doc.createElement("diagram")
+        diagram.setAttribute("xmi:id", diagram_id)
+        diagrams.appendChild(diagram)
         
-        return package_element
-    
-    def _dodaj_klase(self, package: ET.Element, uml_class: UMLClass) -> str:
+        model_diag = doc.createElement("model")
+        model_diag.setAttribute("package", package_id)
+        model_diag.setAttribute("localID", "1102")
+        model_diag.setAttribute("owner", package_id)
+        diagram.appendChild(model_diag)
+        
+        properties_diag = doc.createElement("properties")
+        properties_diag.setAttribute("name", diagram_name)
+        properties_diag.setAttribute("type", "Logical")
+        diagram.appendChild(properties_diag)
+        
+        project_diag = doc.createElement("project")
+        project_diag.setAttribute("author", self.autor)
+        project_diag.setAttribute("version", "1.0")
+        project_diag.setAttribute("created", self._get_current_timestamp())
+        project_diag.setAttribute("modified", self._get_current_timestamp())
+        diagram.appendChild(project_diag)
+        
+        style_diag = doc.createElement("style1")
+        style_diag.setAttribute("value", "ShowPrivate=1;ShowProtected=1;ShowPublic=1;HideRelationships=0;Locked=0;Border=1;HighlightForeign=1;PackageContents=1;SequenceNotes=0;ScalePrintImage=0;PPgs.cx=0;PPgs.cy=0;DocSize.cx=795;DocSize.cy=1134;ShowDetails=0;Orientation=P;Zoom=100;ShowTags=0;OpParams=1;VisibleAttributeDetail=0;ShowOpRetType=1;ShowIcons=1;CollabNums=0;HideProps=0;ShowReqs=0;ShowCons=0;PaperSize=9;HideParents=0;UseAlias=0;HideAtts=0;HideOps=0;HideStereo=0;HideElemStereo=0;ShowTests=0;ShowMaint=0;ConnectorNotation=UML 2.1;ExplicitNavigability=0;ShowShape=1;AllDockable=0;AdvancedElementProps=1;AdvancedFeatureProps=1;AdvancedConnectorProps=1;m_bElementClassifier=1;SPT=1;ShowNotes=0;SuppressBrackets=0;SuppConnectorLabels=0;PrintPageHeadFoot=0;ShowAsList=0;")
+        diagram.appendChild(style_diag)
+        
+        style_diag2 = doc.createElement("style2")
+        style_diag2.setAttribute("value", "ExcludeRTF=0;DocAll=0;HideQuals=0;AttPkg=1;ShowTests=0;ShowMaint=0;SuppressFOC=1;MatrixActive=0;SwimlanesActive=1;KanbanActive=0;MatrixLineWidth=1;MatrixLineClr=0;MatrixLocked=0;TConnectorNotation=UML 2.1;TExplicitNavigability=0;AdvancedElementProps=1;AdvancedFeatureProps=1;AdvancedConnectorProps=1;m_bElementClassifier=1;SPT=1;MDGDgm=;STBLDgm=;ShowNotes=0;VisibleAttributeDetail=0;ShowOpRetType=1;SuppressBrackets=0;SuppConnectorLabels=0;PrintPageHeadFoot=0;ShowAsList=0;SuppressedCompartments=;Theme=:119;SaveTag=4C19637D;")
+        diagram.appendChild(style_diag2)
+        
+        swimlanes = doc.createElement("swimlanes")
+        swimlanes.setAttribute("value", "locked=false;orientation=0;width=0;inbar=false;names=false;color=-1;bold=false;fcol=0;tcol=-1;ofCol=-1;ufCol=-1;hl=1;ufh=0;hh=0;cls=0;bw=0;hli=0;bro=0;")
+        diagram.appendChild(swimlanes)
+        
+        # Elements w diagramie
+        elements_diag = doc.createElement("elements")
+        diagram.appendChild(elements_diag)
+        
+        # Sekcja primitivetypes
+        primitivetypes = doc.createElement("primitivetypes")
+        extension.appendChild(primitivetypes)
+
+        # Sekcja profiles
+        profiles = doc.createElement("profiles")
+        extension.appendChild(profiles)
+
+        return doc, root, package, extension
+
+    def _map_type_to_id(self, type_name):
         """
-        Dodaje klasę do pakietu.
+        Mapuje nazwę typu na ID typu.
+        
         Args:
-            package: Element pakietu
-            uml_class: Obiekt klasy UML do dodania
+            type_name: Nazwa typu
+            
         Returns:
-            ID wygenerowanej klasy
+            str: ID typu lub None jeśli nie znaleziono
         """
-        class_id = self._generuj_ea_id()
+        # Normalizacja nazwy typu (małe litery dla lepszego dopasowania)
+        normalized_name = type_name.lower()
+        
+        # Obsługa aliasów dla typów podstawowych
+        if normalized_name in ["string", "str", "text"]:
+            return self.id_map.get('type_string')
+        elif normalized_name in ["int", "integer", "number"]:
+            return self.id_map.get('type_int')
+        elif normalized_name in ["double", "float", "decimal", "real"]:
+            return self.id_map.get('type_double')
+        elif normalized_name in ["bool", "boolean"]:
+            return self.id_map.get('type_boolean')
+
+        # Sprawdź, czy to typ pierwotny
+        type_id = self.id_map.get(f'type_{type_name}')
+        if type_id:
+            return type_id
+        
+        # Sprawdź, czy to klasa
+        class_id = self.id_map.get(f'class_{type_name}')
+        if class_id:
+            return class_id
+        
+        # Sprawdź, czy to enum
+        enum_id = self.id_map.get(f'enum_{type_name}')
+        if enum_id:
+            return enum_id
+        
+        # Nie znaleziono typu - użyj string jako domyślny
+        return self.id_map.get('type_string')
+
+    def add_class(self, doc, package_element, uml_class: UMLClass):
+        """
+        Dodaje klasę do dokumentu XMI.
+        
+        Args:
+            doc: Dokument XML DOM
+            package_element: Element pakietu, do którego dodajemy klasę
+            uml_class: Obiekt klasy UML
+        
+        Returns:
+            tuple: (Element klasy, ID klasy)
+        """
+        class_id = self._generate_uuid()
         self.id_map[f"class_{uml_class.name}"] = class_id
+        
+        # Tworzymy element klasy w modelu UML
+        class_element = doc.createElement("packagedElement")
         
         # Obsługa interfejsów vs klas
         if uml_class.stereotype == 'interface':
-            class_elem = ET.SubElement(package, 'packagedElement')
-            class_elem.set('xmi:type', 'uml:Interface')
+            class_element.setAttribute("xmi:type", "uml:Interface")
         else:
-            class_elem = ET.SubElement(package, 'packagedElement')
-            class_elem.set('xmi:type', 'uml:Class')
-        
-        class_elem.set('xmi:id', class_id)
-        class_elem.set('name', uml_class.name)
-        class_elem.set('visibility', 'public')
+            class_element.setAttribute("xmi:type", "uml:Class")
+            
+        class_element.setAttribute("xmi:id", class_id)
+        class_element.setAttribute("name", uml_class.name)
+        class_element.setAttribute("visibility", "public")
         
         if uml_class.is_abstract:
-            class_elem.set('isAbstract', 'true')
+            class_element.setAttribute("isAbstract", "true")
         
-        # Dodaj atrybuty
+        package_element.appendChild(class_element)
+        
+        # Dodawanie atrybutów
         for attr in uml_class.attributes:
-            attr_id = self._generuj_ea_id()
+            attr_id = self._generate_uuid()
             attr_decl = attr["declaration"]
             attr_name, attr_type = self._split_attribute(attr_decl)
             modifiers = attr.get("modifiers", [])
             
-            attr_elem = ET.SubElement(class_elem, 'ownedAttribute')
-            attr_elem.set('xmi:id', attr_id)
-            attr_elem.set('xmi:type', 'uml:Property')
-            attr_elem.set('name', attr_name)
-            attr_elem.set('visibility', self._get_visibility(attr_decl))
-            attr_elem.set('isStatic', 'true' if "static" in modifiers else 'false')
-            attr_elem.set('isReadOnly', 'true' if "readonly" in modifiers else 'false')
-            attr_elem.set('isDerived', 'false')
-            attr_elem.set('isOrdered', 'false')
-            attr_elem.set('isUnique', 'true')
-            attr_elem.set('isDerivedUnion', 'false')
+            attr_elem = doc.createElement("ownedAttribute")
+            attr_elem.setAttribute("xmi:id", attr_id)
+            attr_elem.setAttribute("name", attr_name)
+            attr_elem.setAttribute("visibility", self._get_visibility(attr_decl))
             
-            # Typ atrybutu - EA wymaga referencji
+            # Powiąż z typem - użyj ID typu zamiast nazwy
             if attr_type:
-                type_elem = ET.SubElement(attr_elem, 'type')
-                type_elem.set('xmi:type', 'uml:PrimitiveType')
-                type_elem.set('href', f'pathmap://UML_LIBRARIES/EcorePrimitiveTypes.library.uml#{attr_type}')
+                type_id = self._map_type_to_id(attr_type)
+                if type_id:
+                    if attr_type:
+                        type_id = self._map_type_to_id(attr_type)
+                        if type_id:
+                            type_elem = doc.createElement("type")
+                            type_elem.setAttribute("xmi:idref", type_id)
+                            attr_elem.appendChild(type_elem)
+                    
+                    # Dodaj jawną krotność - zapobiega oznaczaniu {bag}
+                    lower_value = doc.createElement("lowerValue")
+                    lower_value.setAttribute("xmi:type", "uml:LiteralInteger")
+                    lower_value.setAttribute("xmi:id", self._generate_uuid())
+                    lower_value.setAttribute("value", "1")
+                    attr_elem.appendChild(lower_value)
+                    
+                    upper_value = doc.createElement("upperValue")
+                    upper_value.setAttribute("xmi:type", "uml:LiteralInteger")
+                    upper_value.setAttribute("xmi:id", self._generate_uuid())
+                    upper_value.setAttribute("value", "1")
+                    attr_elem.appendChild(upper_value)
             
-            ET.SubElement(attr_elem, 'lowerValue', {
-                'xmi:type': 'uml:LiteralInteger',
-                'xmi:id': f'{self._generuj_ea_id("EAID_LI")}',
-                'value': '1'
-            })
-            ET.SubElement(attr_elem, 'upperValue', {
-                'xmi:type': 'uml:LiteralInteger',
-                'xmi:id': f'{self._generuj_ea_id("EAID_LI")}',
-                'value': '1'
-            })
-            
-            # Zapisz ID atrybutu w mapie
+            if "static" in modifiers:
+                attr_elem.setAttribute("isStatic", "true")
+                
+            class_element.appendChild(attr_elem)
             self.id_map[f"attr_{uml_class.name}_{attr_name}"] = attr_id
         
-        # Dodaj metody
+        # Dodawanie metod
         for method in uml_class.methods:
-            method_id = self._generuj_ea_id()
+            method_id = self._generate_uuid()
             method_sig = method["signature"]
             method_name = self._clean_method_name(method_sig)
             modifiers = method.get("modifiers", [])
             
-            op_elem = ET.SubElement(class_elem, 'ownedOperation')
-            op_elem.set('xmi:id', method_id)
-            op_elem.set('name', method_name)
-            op_elem.set('visibility', self._get_visibility(method_sig))
+            op_elem = doc.createElement("ownedOperation")
+            op_elem.setAttribute("xmi:id", method_id)
+            op_elem.setAttribute("name", method_name)
+            op_elem.setAttribute("visibility", self._get_visibility(method_sig))
             
-            # Obsługa static/abstract
             if "static" in modifiers:
-                op_elem.set('isStatic', 'true')
+                op_elem.setAttribute("isStatic", "true")
             if "abstract" in modifiers:
-                op_elem.set('isAbstract', 'true')
+                op_elem.setAttribute("isAbstract", "true")
                 
-            # Zapisz ID metody w mapie
+            class_element.appendChild(op_elem)
             self.id_map[f"method_{uml_class.name}_{method_name}"] = method_id
         
-        return class_id
+        # Dodanie stereotypu (zgodne z formatem EA)
+        if uml_class.stereotype and uml_class.stereotype != 'interface':
+            self._dodaj_stereotyp_do_elementu_EA(doc, class_id, uml_class.stereotype)
+        
+        return class_element, class_id
     
-    def _dodaj_enum(self, package: ET.Element, uml_enum: UMLEnum) -> str:
+    def _dodaj_stereotyp_do_elementu_EA(self, doc, element_id, stereotype):
         """
-        Dodaje enumerator do pakietu.
+        Dodaje stereotyp do elementu w rozszerzeniu EA.
+        
         Args:
-            package: Element pakietu
-            uml_enum: Obiekt enumeratora UML do dodania
-        Returns:
-            ID wygenerowanego enumeratora
+            doc: Dokument XML DOM
+            element_id: ID elementu
+            stereotype: Nazwa stereotypu
         """
-        enum_id = self._generuj_ea_id()
+        # Znajdź element w rozszerzeniu EA
+        elements = doc.getElementsByTagName("element")
+        for elem in elements:
+            if elem.getAttribute("xmi:idref") == element_id:
+                # Sprawdź czy element ma już sekcję stereotypes
+                stereotypes_elem = None
+                for node in elem.childNodes:
+                    if node.nodeType == node.ELEMENT_NODE and node.nodeName == "stereotypes":
+                        stereotypes_elem = node
+                        break
+                
+                # Jeśli nie ma, utwórz
+                if not stereotypes_elem:
+                    stereotypes_elem = doc.createElement("stereotypes")
+                    elem.appendChild(stereotypes_elem)
+                
+                # Dodaj stereotyp
+                stereotype_elem = doc.createElement("stereotype")
+                stereotype_elem.setAttribute("stereotype", stereotype)
+                stereotype_elem.setAttribute("ea_type", "element")
+                stereotypes_elem.appendChild(stereotype_elem)
+                
+                # Dodaj odpowiednie style dla stereotypu
+                style_elem = None
+                for node in elem.childNodes:
+                    if node.nodeType == node.ELEMENT_NODE and node.nodeName == "style":
+                        style_elem = node
+                        break
+                        
+                if style_elem:
+                    curr_style = style_elem.getAttribute("appearance") or ""
+                    # Dodaj informacje o stereotypie do stylu
+                    if "StereotypeFont=" not in curr_style:
+                        curr_style += f";StereotypeFont=-1;StereotypeVisible=1;"
+                    style_elem.setAttribute("appearance", curr_style)
+                    
+                break
+
+    def add_enum(self, doc, package_element, uml_enum: UMLEnum):
+        """
+        Dodaje enumerator do dokumentu XMI.
+        
+        Args:
+            doc: Dokument XML DOM
+            package_element: Element pakietu
+            uml_enum: Obiekt enumeratora UML
+        
+        Returns:
+            tuple: (Element enumeratora, ID enumeratora)
+        """
+        enum_id = self._generate_uuid()
         self.id_map[f"enum_{uml_enum.name}"] = enum_id
         
-        enum_elem = ET.SubElement(package, 'packagedElement')
-        enum_elem.set('xmi:type', 'uml:Enumeration')
-        enum_elem.set('xmi:id', enum_id)
-        enum_elem.set('name', uml_enum.name)
-        enum_elem.set('visibility', 'public')
+        enum_element = doc.createElement("packagedElement")
+        enum_element.setAttribute("xmi:type", "uml:Enumeration")
+        enum_element.setAttribute("xmi:id", enum_id)
+        enum_element.setAttribute("name", uml_enum.name)
+        enum_element.setAttribute("visibility", "public")
+        
+        package_element.appendChild(enum_element)
         
         # Dodaj wartości enumeratora
         for value in uml_enum.values:
-            literal_id = self._generuj_ea_id()
-            literal_elem = ET.SubElement(enum_elem, 'ownedLiteral')
-            literal_elem.set('xmi:id', literal_id)
-            literal_elem.set('name', value)
+            literal_id = self._generate_uuid()
             
+            literal_elem = doc.createElement("ownedLiteral")
+            literal_elem.setAttribute("xmi:id", literal_id)
+            literal_elem.setAttribute("name", value)
+            
+            enum_element.appendChild(literal_elem)
             self.id_map[f"literal_{uml_enum.name}_{value}"] = literal_id
         
-        return enum_id
-    
-    def _dodaj_dziedziczenie(self, package: ET.Element, relation: UMLRelation, 
-                        source_id: str, target_id: str) -> str:
+        return enum_element, enum_id
+
+    def dodaj_wszystkie_relacje(self, doc, package_element, relations, extension_element):
         """
-        Dodaje relację dziedziczenia.
+        Centralna metoda do dodawania wszystkich relacji do modelu i konektorów do rozszerzenia EA.
+        
         Args:
-            package: Element pakietu
-            relation: Relacja UML (dziedziczenie)
-            source_id: ID klasy dziedziczącej (podklasa)
-            target_id: ID klasy bazowej (nadklasa)
-        Returns:
-            ID utworzonej relacji dziedziczenia
-        """
-        generalization_id = self._generuj_ea_id()
-        
-        # Znajdź element klasy źródłowej (podklasy)
-        source_elem = None
-        for elem in package.findall('.//packagedElement'):
-            if elem.get('xmi:id') == source_id:
-                source_elem = elem
-                break
-        
-        if source_elem is not None:
-            # Dodaj element generalization bezpośrednio do podklasy
-            gen_elem = ET.SubElement(source_elem, 'generalization')
-            gen_elem.set('xmi:id', generalization_id)
-            gen_elem.set('xmi:type', 'uml:Generalization')
-            gen_elem.set('general', target_id)
-        
-        return generalization_id
-    
-    def _dodaj_asocjacje(self, package: ET.Element, relation: UMLRelation, 
-                        source_id: str, target_id: str) -> str:
-        """
-        Dodaje relację asocjacji, agregacji, kompozycji lub zależności.
-        Args:
-            package: Element pakietu
-            relation: Relacja UML
-            source_id: ID klasy źródłowej
-            target_id: ID klasy docelowej
-        Returns:
-            ID utworzonej relacji
-        """
-        association_id = self._generuj_ea_id()
-        
-        # Określ typ relacji w standardzie UML
-        if relation.relation_type == 'composition':
-            aggregation_type = 'composite'
-        elif relation.relation_type == 'aggregation':
-            aggregation_type = 'shared'
-        else:
-            aggregation_type = 'none'
-        
-        # Utwórz relację
-        assoc_elem = ET.SubElement(package, 'packagedElement')
-        assoc_elem.set('xmi:type', 'uml:Association')
-        assoc_elem.set('xmi:id', association_id)
-        if relation.label:
-            assoc_elem.set('name', relation.label)
-        
-        # Generuj ID dla końców asocjacji
-        source_end_id = self._generuj_ea_id()
-        target_end_id = self._generuj_ea_id()
-        
-        # Dodaj memberEnds (referencje)
-        assoc_elem.set('memberEnd', f"{source_end_id} {target_end_id}")
-        
-        # Multiplicity
-        src_lower, src_upper = PlantUMLParser.parse_multiplicity(relation.source_multiplicity)
-        tgt_lower, tgt_upper = PlantUMLParser.parse_multiplicity(relation.target_multiplicity)
-        
-        # Source end
-        owned_end_source = ET.SubElement(assoc_elem, 'ownedEnd')
-        owned_end_source.set('xmi:id', source_end_id)
-        owned_end_source.set('visibility', 'public')
-        owned_end_source.set('type', source_id)
-        owned_end_source.set('association', association_id)
-        
-        ET.SubElement(owned_end_source, 'lowerValue', {
-            'xmi:type': 'uml:LiteralInteger', 
-            'xmi:id': self._generuj_ea_id(), 
-            'value': src_lower
-        })
-        
-        ET.SubElement(owned_end_source, 'upperValue', {
-            'xmi:type': 'uml:LiteralUnlimitedNatural', 
-            'xmi:id': self._generuj_ea_id(), 
-            'value': src_upper
-        })
-        
-        # Target end
-        owned_end_target = ET.SubElement(assoc_elem, 'ownedEnd')
-        owned_end_target.set('xmi:id', target_end_id)
-        owned_end_target.set('visibility', 'public')
-        owned_end_target.set('type', target_id)
-        owned_end_target.set('association', association_id)
-        
-        # Ustaw aggregation na końcu docelowym dla kompozycji i agregacji
-        if aggregation_type != 'none':
-            owned_end_target.set('aggregation', aggregation_type)
-        
-        ET.SubElement(owned_end_target, 'lowerValue', {
-            'xmi:type': 'uml:LiteralInteger', 
-            'xmi:id': self._generuj_ea_id(), 
-            'value': tgt_lower
-        })
-        
-        ET.SubElement(owned_end_target, 'upperValue', {
-            'xmi:type': 'uml:LiteralUnlimitedNatural', 
-            'xmi:id': self._generuj_ea_id(), 
-            'value': tgt_upper
-        })
-        
-        return association_id
-    
-    def _dodaj_relacje(self, package: ET.Element, relations: List[UMLRelation], 
-                 class_ids: Dict[str, str], enum_ids: Dict[str, str]) -> Dict[Tuple, str]:
-        """
-        Dodaje relacje do pakietu.
-        Args:
-            package: Element pakietu
+            doc: Dokument XML DOM
+            package_element: Element pakietu
             relations: Lista relacji UML
-            class_ids: Słownik mapujący nazwy klas na ich ID
-            enum_ids: Słownik mapujący nazwy enumeratorów na ich ID
-        Returns:
-            Słownik mapujący klucze relacji na ich ID
-        """
-        connector_ids_map = {}
+            extension_element: Element rozszerzenia EA
         
+        Returns:
+            dict: Mapa ID relacji
+        """
+        # Mapa ID relacji
+        relation_ids = {}
+        
+        # Dodaj relacje do modelu UML
         for relation in relations:
-            print(f"DEBUG: Przetwarzam relację: {relation.source} -> {relation.target} typu {relation.relation_type}, label: {relation.label}")
-            
-            # Pobierz ID źródła i celu
             source_id = self.id_map.get(f"class_{relation.source}") or self.id_map.get(f"enum_{relation.source}")
             target_id = self.id_map.get(f"class_{relation.target}") or self.id_map.get(f"enum_{relation.target}")
             
             if not source_id or not target_id:
                 print(f"WARN: Nie znaleziono ID dla {relation.source} lub {relation.target}, pomijam relację")
                 continue
-            
-            # Relacja dziedziczenia wymaga specjalnej obsługi
+                
+            # Obsługa różnych typów relacji
+            rel_elem, rel_id = None, None
             if relation.relation_type == 'inheritance':
-                generalization_id = self._dodaj_dziedziczenie(package, relation, source_id, target_id)
-                connector_ids_map[(relation.source, relation.target, relation.label)] = generalization_id
-                print(f"SUCCESS: Dodano dziedziczenie: {relation.source} -> {relation.target}, ID: {generalization_id}")
+                rel_elem, rel_id = self._add_inheritance(doc, package_element, relation, source_id, target_id)
+            elif relation.relation_type == 'realization':
+                rel_elem, rel_id = self._add_realization(doc, package_element, relation, source_id, target_id)
             else:
-                # Dodaj standardową relację (asocjacja, agregacja, kompozycja, zależność)
-                association_id = self._dodaj_asocjacje(package, relation, source_id, target_id)
-                connector_ids_map[(relation.source, relation.target, relation.label)] = association_id
+                rel_elem, rel_id = self._add_association(doc, package_element, relation, source_id, target_id)
+                
+            if rel_elem and rel_id:
+                # Zapisz ID relacji w mapie
+                key = f"{relation.relation_type}_{relation.source}_{relation.target}"
+                if relation.label:
+                    key += f"_{relation.label}"
+                relation_ids[key] = rel_id
         
-        return connector_ids_map
+        # Dodaj konektory do rozszerzenia EA
+        self.add_diagram_connectors(doc, extension_element, relations)
+        
+        # Dodaj relacje do diagramu
+        self._dodaj_relacje_do_diagramu(doc, extension_element, relations)
+        
+        return relation_ids
     
-    def _dodaj_diagram(self, extension: ET.Element, classes: List[UMLClass], 
-                    relations: List[UMLRelation], connector_ids_map: Dict) -> None:
+    def _dodaj_relacje_do_diagramu(self, doc, extension_element, relations):
         """
-        Dodaje diagram do rozszerzeń EA.
+        Dodaje relacje do diagramu w rozszerzeniu EA.
+        
         Args:
-            extension: Element rozszerzenia
-            classes: Lista klas UML
+            doc: Dokument XML DOM
+            extension_element: Element rozszerzenia EA
             relations: Lista relacji UML
-            connector_ids_map: Mapa ID konektorów
         """
-        # Używamy już wygenerowanego ID diagramu
-        diagram_id = self.id_map['diagram']
-        
-        # Teraz dodaj diagram w sekcji rozszerzeń EA
-        diagrams = ET.SubElement(extension, 'diagrams')
-        
-        diagram = ET.SubElement(diagrams, 'diagram')
-        diagram.set('xmi:id', diagram_id)
-        diagram.set('name', 'Class Diagram')
-        diagram.set('diagramType', 'ClassDiagram')
-        
-        # <model> z przypisaniem pakietu
-        ET.SubElement(diagram, 'model', {
-            'package': self.id_map['package_element'],
-            'localID': str(self.ea_localid_counter),
-            'owner': self.id_map['package_element'],
-            'type': 'Logical' 
-        })
-        self.ea_localid_counter += 1
-        
-        # <properties>
-        ET.SubElement(diagram, 'properties', {'name': 'Classes', 'type': 'Logical'})
-        
-        # <project> - metadane
-        ET.SubElement(diagram, 'project', {
-            'author': self.autor,
-            'version': '1.0',
-            'created': self._get_current_time(),
-            'modified': self._get_current_time()
-        })
-        
-        # <style1> i <style2>
-        ET.SubElement(diagram, 'style1', {
-            'value': (
-                'ShowPrivate=1;ShowProtected=1;ShowPublic=1;HideRelationships=0;Locked=0;Border=1;HighlightForeign=1;'
-                'PackageContents=1;SequenceNotes=0;ScalePrintImage=0;PPgs.cx=0;PPgs.cy=0;DocSize.cx=795;DocSize.cy=1134;'
-                'ShowDetails=0;Orientation=P;Zoom=100;ShowTags=0;OpParams=1;VisibleAttributeDetail=0;ShowOpRetType=1;'
-                'ShowIcons=1;CollabNums=0;HideProps=0;ShowReqs=0;ShowCons=0;PaperSize=9;HideParents=0;UseAlias=0;'
-                'HideAtts=0;HideOps=0;HideStereo=0;HideElemStereo=0;ShowTests=0;ShowMaint=0;ConnectorNotation=UML 2.1;'
-                'ExplicitNavigability=0;ShowShape=1;AllDockable=0;AdvancedElementProps=1;AdvancedFeatureProps=1;'
-                'AdvancedConnectorProps=1;m_bElementClassifier=1;SPT=1;ShowNotes=0;SuppressBrackets=0;SuppConnectorLabels=0;'
-                'PrintPageHeadFoot=0;ShowAsList=0;'
-            )
-        })
-        
-        ET.SubElement(diagram, 'style2', {
-            'value': (
-                'ExcludeRTF=0;DocAll=0;HideQuals=0;AttPkg=1;ShowTests=0;ShowMaint=0;SuppressFOC=1;MatrixActive=0;'
-                'SwimlanesActive=1;KanbanActive=0;MatrixLineWidth=1;MatrixLineClr=0;MatrixLocked=0;'
-                'TConnectorNotation=UML 2.1;TExplicitNavigability=0;AdvancedElementProps=1;AdvancedFeatureProps=1;'
-                'AdvancedConnectorProps=1;m_bElementClassifier=1;SPT=1;MDGDgm=;STBLDgm=;ShowNotes=0;'
-                'VisibleAttributeDetail=0;ShowOpRetType=1;SuppressBrackets=0;SuppConnectorLabels=0;PrintPageHeadFoot=0;'
-                'ShowAsList=0;SuppressedCompartments=;Theme=:119;SaveTag=4C19637D;'
-            )
-        })
-        
-        # Dodaj styl diagramu
-        ET.SubElement(diagram, 'diagramstyle', {
-            'version': '1.0',
-            'description': 'Diagram wygenerowany automatycznie',
-            'properties': 'wireframe=false;'
-        })
-        
-        ET.SubElement(diagram, 'swimlanes', {
-            'value': (
-                'locked=false;orientation=0;width=0;inbar=false;names=false;color=-1;bold=false;fcol=0;tcol=-1;ofCol=-1;'
-                'ufCol=-1;hl=1;ufh=0;hh=0;cls=0;bw=0;hli=0;bro=0;'
-                'SwimlaneFont=lfh:-10,lfw:0,lfi:0,lfu:0,lfs:0,lfface:Calibri,lfe:0,lfo:0,lfchar:1,lfop:0,lfcp:0,lfq:0,'
-                'lfpf=0,lfWidth=0;'
-            )
-        })
-        
-        ET.SubElement(diagram, 'matrixitems', {
-            'value': 'locked=false;matrixactive=false;swimlanesactive=true;kanbanactive=false;width=1;clrLine=0;'
-        })
-        
-        ET.SubElement(diagram, 'extendedProperties')
-        
-        # Dodajemy obiekty diagramu - kluczowa część dla EA
-        diagobjects = ET.SubElement(diagram, 'diagobjects')
-        x, y = 100, 100
-        
-        # Dodaj każdą klasę jako obiekt diagramu
-        for i, uml_class in enumerate(classes):
-            class_name = uml_class.name
-            class_id = self.id_map.get(f"class_{class_name}")
-            if not class_id:
-                continue
-                
-            # Unikalny identyfikator obiektu na diagramie
-            diag_obj_id = f"DCOBJ_{uuid.uuid4().hex[:8].upper()}"
+        # Znajdź diagram
+        diagram_id = self.id_map.get('diagram')
+        if not diagram_id:
+            print("WARN: Nie znaleziono ID diagramu")
+            return
             
-            # Dodaj obiekt diagramu
-            diagobj = ET.SubElement(diagobjects, 'diagobj')
-            diagobj.set('objectID', class_id)  # ID klasy z głównej części XMI
-            diagobj.set('rectID', diag_obj_id)  # Unikalny ID dla pozycjonowania
-            
-            # Dodaj pozycję i wymiary
-            ET.SubElement(diagobj, 'bounds', {
-                'x': str(x),
-                'y': str(y),
-                'width': '150',
-                'height': '100'
-            })
-            
-            # Przesuń dla następnego elementu
-            x += 200
-            if x > 700:
-                x = 100
-                y += 180
+        diagrams = doc.getElementsByTagName("diagram")
+        diagram = None
+        for diag in diagrams:
+            if diag.getAttribute("xmi:id") == diagram_id:
+                diagram = diag
+                break
         
-        # Dodaj sekcję diagramlinks dla połączeń
-        diagramlinks = ET.SubElement(diagram, 'diagramlinks')
+        if not diagram:
+            print("WARN: Nie znaleziono elementu diagramu")
+            return
         
-        # Dodaj każdą relację jako link diagramu
+        # Znajdź lub utwórz sekcję diagramlinks
+        diagramlinks = None
+        for node in diagram.childNodes:
+            if node.nodeType == node.ELEMENT_NODE and node.nodeName == "diagramlinks":
+                diagramlinks = node
+                break
+        
+        if not diagramlinks:
+            diagramlinks = doc.createElement("diagramlinks")
+            diagram.appendChild(diagramlinks)
+        
+        # Stwórz słownik do śledzenia już dodanych linków
+        added_links = {}
+        # Dodaj linki dla wszystkich relacji
         for relation in relations:
-            rel_key = (relation.source, relation.target, relation.label)
-            conn_id = connector_ids_map.get(rel_key)
-            if not conn_id:
+            # Pobierz ID źródła i celu
+            source_id = self.id_map.get(f"class_{relation.source}") or self.id_map.get(f"enum_{relation.source}")
+            target_id = self.id_map.get(f"class_{relation.target}") or self.id_map.get(f"enum_{relation.target}")
+            
+            if not source_id or not target_id:
                 continue
                 
-            diag_link_id = f"DCLINK_{uuid.uuid4().hex[:8].upper()}"
+            # Znajdź ID konektora
+            connector_id = None
+            if relation.relation_type == 'inheritance':
+                connector_id = self.id_map.get(f'inheritance_{relation.source}_{relation.target}')
+            elif relation.relation_type == 'realization':
+                connector_id = self.id_map.get(f'realization_{relation.source}_{relation.target}')
+            else:
+                assoc_key = f'association_{relation.source}_{relation.target}'
+                if relation.label:
+                    assoc_key += f'_{relation.label}'
+                connector_id = self.id_map.get(assoc_key)
             
-            # Dodaj link diagramu
-            diaglink = ET.SubElement(diagramlinks, 'diagramlink')
-            diaglink.set('connectorID', conn_id)  # ID konektora z głównej części XMI
-            diaglink.set('linkID', diag_link_id)  # Unikalny ID dla linii
+            if connector_id:
+                link_key = f"{source_id}_{target_id}_{connector_id}"
         
-        # Dodaj elementy diagramu (pozycje klas)
-        elements_node = ET.SubElement(diagram, 'elements')
-        x, y = 100, 100
-        
-        # Dodaj elementy klas na diagramie
-        for i, uml_class in enumerate(classes):
-            class_id = self.id_map.get(f"class_{uml_class.name}")
-            if not class_id:
-                continue
-                
-            duid = uuid.uuid4().hex[:8].upper()
-            
-            element = ET.SubElement(elements_node, 'element')
-            element.set('geometry', f'Left={x};Top={y};Right={x+150};Bottom={y+120};')
-            element.set('subject', class_id)
-            element.set('seqno', str(i + 1))
-            element.set('style', f'DUID={duid};NSL=0;BCol=-1;BFol=-1;LCol=-1;LWth=-1;'
-                        f'fontsz=0;bold=0;black=0;italic=0;ul=0;charset=0;pitch=0;')
-            
-            # Przesunięcie pozycji dla następnego elementu
-            x += 200
-            if x > 700:
-                x = 100
-                y += 180
-        
-        # Dodaj konektory (połączenia) na diagramie
-        for relation in relations:
-            rel_key = (relation.source, relation.target, relation.label)
-            conn_id = connector_ids_map.get(rel_key)
-            if not conn_id:
-                continue
-                
-            eoid = uuid.uuid4().hex[:8].upper()
-            soid = uuid.uuid4().hex[:8].upper()
-            
-            element = ET.SubElement(elements_node, 'element')
-            element.set('geometry', 'SX=0;SY=0;EX=0;EY=0;EDGE=3;')
-            element.set('subject', conn_id)
-            element.set('style', f'Mode=3;EOID={eoid};SOID={soid};Color=-1;LWidth=0;Hidden=0;')
+                # Sprawdź czy link już istnieje
+                if link_key in added_links:
+                    continue
+                # Dodaj link diagramu
+                diagramlink = doc.createElement("diagramlink")
+                diagramlink.setAttribute("connectorID", connector_id)
+                diagramlink.setAttribute("start", source_id)
+                diagramlink.setAttribute("end", target_id)
+                diagramlink.setAttribute("linkID", f"DCLINK_{uuid.uuid4().hex[:8].upper()}")
+                diagramlink.setAttribute("hidden", "0")
+                diagramlink.setAttribute("geometry", "EDGE=1;$LLB=;LLT=;LMT=;LMB=;LRT=;LRB=;IRHS=;ILHS=;Path=;")
+                if relation.source_multiplicity or relation.target_multiplicity or relation.label:
+                    lb_value = relation.source_multiplicity if relation.source_multiplicity else ""
+                    mt_value = relation.label if relation.label else ""
+                    rb_value = relation.target_multiplicity if relation.target_multiplicity else ""
+                    
+                    diagramlink.setAttribute("labels", f"lb={lb_value};mt={mt_value};rb={rb_value};")
 
-    def _stworz_rozszerzenia_ea(self, root: ET.Element, classes: Dict[str, UMLClass], 
-                               relations: List[UMLRelation], connector_ids_map: Dict) -> None:
+                diagramlinks.appendChild(diagramlink)
+
+                added_links[link_key] = True
+
+    def add_relation(self, doc, package_element, relation: UMLRelation):
         """
-        Tworzy rozszerzenia specyficzne dla Enterprise Architect.
+        Dodaje relację między klasami.
+        
         Args:
-            root: Element główny dokumentu
-            classes: Słownik klas UML
-            relations: Lista relacji UML
-            connector_ids_map: Mapa ID konektorów
+            doc: Dokument XML DOM
+            package_element: Element pakietu
+            relation: Obiekt relacji UML
+        
+        Returns:
+            tuple: (Element relacji, ID relacji)
         """
-        extension = ET.SubElement(root, 'xmi:Extension')
-        extension.set('extender', 'Enterprise Architect')
-        extension.set('extenderID', '6.5')
+        source_id = self.id_map.get(f"class_{relation.source}") or self.id_map.get(f"enum_{relation.source}")
+        target_id = self.id_map.get(f"class_{relation.target}") or self.id_map.get(f"enum_{relation.target}")
         
-        # Elements section
-        elements_node = ET.SubElement(extension, 'elements')
+        if not source_id or not target_id:
+            print(f"WARN: Nie znaleziono ID dla {relation.source} lub {relation.target}, pomijam relację")
+            return None, None
         
-        # Dodaj pakiet do elements
-        package_element = ET.SubElement(elements_node, 'element')
-        package_element.set('xmi:idref', self.id_map['package_element'])
-        package_element.set('xmi:type', 'uml:Package')
-        package_element.set('name', 'Classes')
-        package_element.set('scope', 'public')
+        # Obsługa dziedziczenia jako specjalny przypadek
+        if relation.relation_type == 'inheritance':
+            return self._add_inheritance(doc, package_element, relation, source_id, target_id)
+        elif relation.relation_type == 'realization':
+            return self._add_realization(doc, package_element, relation, source_id, target_id)
+        else:
+            # Standardowa asocjacja, agregacja, kompozycja
+            return self._add_association(doc, package_element, relation, source_id, target_id)
+
+    def _add_inheritance(self, doc, package_element, relation: UMLRelation, source_id: str, target_id: str):
+        """
+        Dodaje relację dziedziczenia do dokumentu XMI zgodnie ze standardem EA.
         
-        # Dodaj model package2
-        ET.SubElement(package_element, 'model', {
-            'package2': self.id_map['package_element'],
-            'package': self.id_map['model'],
-            'tpos': '0',
-            'ea_localid': str(self.ea_localid_counter),
-            'ea_eleType': 'package'
-        })
-        self.ea_localid_counter += 1
+        Args:
+            doc: Dokument XML
+            package_element: Element pakietu, w którym dodać relację
+            relation: Obiekt relacji UML
+            source_id: ID źródłowego elementu (dziecko)
+            target_id: ID docelowego elementu (rodzic)
+            
+        Returns:
+            tuple: (element relacji, ID relacji)
+        """
+        # Generuj ID dla generalizacji
+        generalization_id = self._generate_uuid()
         
-        # Dodaj properties
-        ET.SubElement(package_element, 'properties', {
-            'isSpecification': 'false', 'sType': 'Package', 'nType': '0', 'scope': 'public'
-        })
+        # Utwórz element generalizacji
+        gen_elem = doc.createElement("packagedElement")
+        gen_elem.setAttribute("xmi:type", "uml:Generalization")
+        gen_elem.setAttribute("xmi:id", generalization_id)
+        gen_elem.setAttribute("general", target_id)
         
-        # Dodaj project
-        ET.SubElement(package_element, 'project', {
-            'author': self.autor, 'version': '1.0', 'phase': '1.0',
-            'created': self._get_current_time(), 'modified': self._get_current_time(),
-            'complexity': '1', 'status': 'Proposed'
-        })
+        # Dodaj atrybut client/subtype (źródło - klasa dziedzicząca)
+        client_elem = doc.createElement("client")
+        client_elem.setAttribute("xmi:idref", source_id)
+        gen_elem.appendChild(client_elem)
         
-        # Dodaj inne elementy pakietu
-        ET.SubElement(package_element, 'code', {'gentype': 'Java'})
-        ET.SubElement(package_element, 'style', {
-            'appearance': 'BackColor=-1;BorderColor=-1;BorderWidth=-1;FontColor=-1;VSwimLanes=1;HSwimLanes=1;BorderStyle=0;'
-        })
-        ET.SubElement(package_element, 'tags')
-        ET.SubElement(package_element, 'xrefs')
-        ET.SubElement(package_element, 'extendedProperties', {'tagged': '0', 'package_name': 'Example Model'})
-        ET.SubElement(package_element, 'packageproperties', {'version': '1.0'})
-        ET.SubElement(package_element, 'paths')
-        ET.SubElement(package_element, 'times', {'created': self._get_current_time(), 'modified': self._get_current_time()})
-        ET.SubElement(package_element, 'flags', {
-            'iscontrolled': 'FALSE', 'isprotected': 'FALSE', 'usedtd': 'FALSE', 
-            'logxml': 'FALSE', 'packageFlags': 'isModel=1;VICON=3;'
-        })
+        # Dodaj atrybut supplier/supertype (cel - klasa bazowa)
+        supplier_elem = doc.createElement("supplier")
+        supplier_elem.setAttribute("xmi:idref", target_id)
+        gen_elem.appendChild(supplier_elem)
         
-        # Dodaj elementy dla klas
-        class_id_to_local_id = {}
+        # Zapisz ID do mapy identyfikatorów
+        self.id_map[f'inheritance_{relation.source}_{relation.target}'] = generalization_id
         
+        # Dodaj generalizację do pakietu
+        package_element.appendChild(gen_elem)
+        
+        self.id_map[f'inheritance_{relation.source}_{relation.target}'] = generalization_id
+    
+        return gen_elem, generalization_id
+
+    def _add_realization(self, doc, package_element, relation: UMLRelation, source_id: str, target_id: str):
+        """
+        Dodaje relację realizacji interfejsu.
+        
+        Args:
+            doc: Dokument XML DOM
+            package_element: Element pakietu
+            relation: Obiekt relacji UML
+            source_id: ID klasy implementującej
+            target_id: ID interfejsu
+        
+        Returns:
+            tuple: (Element relacji, ID relacji)
+        """
+        realization_id = self._generate_uuid()
+        
+        # Znajdź element klasy implementującej
+        source_elem = None
+        for node in package_element.childNodes:
+            if node.nodeType == node.ELEMENT_NODE and node.getAttribute("xmi:id") == source_id:
+                source_elem = node
+                break
+        
+        if source_elem:
+            # Dodaj interfaceRealization do klasy implementującej
+            real_elem = doc.createElement("interfaceRealization")
+            real_elem.setAttribute("xmi:id", realization_id)
+            real_elem.setAttribute("client", source_id)
+            real_elem.setAttribute("supplier", target_id)
+            real_elem.setAttribute("contract", target_id)
+            
+            source_elem.appendChild(real_elem)
+            
+            return real_elem, realization_id
+        else:
+            print(f"WARN: Nie znaleziono elementu klasy {relation.source} dla relacji realizacji")
+            return None, None
+
+
+
+    def _add_multiplicity(self, doc, end_element, lower: str, upper: str):
+        """
+        Dodaje informacje o liczności do końca asocjacji.
+        
+        Args:
+            doc: Dokument XML DOM
+            end_element: Element końca asocjacji
+            lower: Dolna granica liczności
+            upper: Górna granica liczności
+        """
+        # Dolna granica
+        lower_value = doc.createElement("lowerValue")
+        lower_value.setAttribute("xmi:type", "uml:LiteralInteger")
+        lower_value.setAttribute("xmi:id", self._generate_uuid())
+        lower_value.setAttribute("value", lower)
+        end_element.appendChild(lower_value)
+        
+        # Górna granica
+        upper_value = doc.createElement("upperValue")
+        if upper == "*":
+            upper_value.setAttribute("xmi:type", "uml:LiteralUnlimitedNatural")
+            upper_value.setAttribute("value", "-1")  # '*' jest reprezentowane jako '-1' w EA
+        else:
+            upper_value.setAttribute("xmi:type", "uml:LiteralInteger")
+            upper_value.setAttribute("value", upper)
+        upper_value.setAttribute("xmi:id", self._generate_uuid())
+        end_element.appendChild(upper_value)
+
+    def add_diagram_elements(self, doc, extension_element, classes, enums, relations):
+        """
+        Dodaje elementy diagramu do rozszerzenia EA.
+        
+        Args:
+            doc: Dokument XML DOM
+            extension_element: Element rozszerzenia EA
+            classes: Klasy UML
+            enums: Enumy UML
+            relations: Relacje UML
+        """
+        # Znajdź element diagramu
+        diagram_id = self.id_map['diagram']
+        package_id = self.id_map['package']
+        
+        # Znajdź element diagrams
+        diagrams_elem = None
+        for node in extension_element.childNodes:
+            if node.nodeType == node.ELEMENT_NODE and node.nodeName == "diagrams":
+                diagrams_elem = node
+                break
+        
+        if not diagrams_elem:
+            print("WARN: Nie znaleziono sekcji diagrams w rozszerzeniu")
+            return
+        
+        # Znajdź element diagram
+        diagram_elem = None
+        for node in diagrams_elem.childNodes:
+            if node.nodeType == node.ELEMENT_NODE and node.nodeName == "diagram" and node.getAttribute("xmi:id") == diagram_id:
+                diagram_elem = node
+                break
+        
+        if not diagram_elem:
+            print("WARN: Nie znaleziono elementu diagram w sekcji diagrams")
+            return
+        
+        # Znajdź lub utwórz elements w diagramie
+        elements_diag = None
+        for node in diagram_elem.childNodes:
+            if node.nodeType == node.ELEMENT_NODE and node.nodeName == "elements":
+                elements_diag = node
+                break
+        
+        if not elements_diag:
+            elements_diag = doc.createElement("elements")
+            diagram_elem.appendChild(elements_diag)
+        
+        # Dodaj elementy klas do diagramu
+        x, y = 100, 100
+        i = 0
+        
+        # Dodawanie klas
         for class_name, uml_class in classes.items():
             class_id = self.id_map.get(f"class_{class_name}")
             if not class_id:
                 continue
                 
-            element = ET.SubElement(elements_node, 'element')
-            element.set('xmi:idref', class_id)
-            element.set('xmi:type', 'uml:Interface' if uml_class.stereotype == 'interface' else 'uml:Class')
-            element.set('name', class_name)
-            element.set('scope', 'public')
+            # Dodaj element diagramu dla klasy
+            element = doc.createElement("element")
+            element.setAttribute("geometry", f"Left={x};Top={y};Right={x+150};Bottom={y+120};")
+            element.setAttribute("subject", class_id)
+            element.setAttribute("seqno", str(i))
+            element.setAttribute("style", "DUID=unique_id;")
             
-            # <model> - zawiera ID lokalne i GUID
-            local_id = str(self.ea_localid_counter)
-            class_id_to_local_id[class_id] = local_id
-            ET.SubElement(element, 'model', {
-                'package': self.id_map['package_element'],
-                'tpos': '0',
-                'ea_localid': local_id,
-                'ea_eleType': 'element',
-                'ea_guid': f'{{{uuid.uuid4()}}}'
-            })
-            self.ea_localid_counter += 1
+            elements_diag.appendChild(element)
+            i += 1
             
-            # <properties> - zawiera właściwości UML
-            ET.SubElement(element, 'properties', {
-                'isSpecification': 'false',
-                'sType': 'Interface' if uml_class.stereotype == 'interface' else 'Class',
-                'nType': '0',
-                'scope': 'public',
-                'isRoot': 'false',
-                'isLeaf': 'false',
-                'isAbstract': 'true' if uml_class.is_abstract else 'false',
-                'isActive': 'false'
-            })
-            
-            # <project> - metadane projektu
-            ET.SubElement(element, 'project', {
-                'author': self.autor, 'version': '1.0', 'phase': '1.0',
-                'created': self._get_current_time(), 'modified': self._get_current_time(),
-                'complexity': '1', 'status': 'Proposed'
-            })
-            
-            ET.SubElement(element, 'code', {'gentype': 'Java'})
-            ET.SubElement(element, 'style', {'appearance': 'BackColor=-1;BorderColor=-1;BorderWidth=-1;FontColor=-1;VSwimLanes=1;HSwimLanes=1;BorderStyle=0;'})
-            ET.SubElement(element, 'tags')
-            ET.SubElement(element, 'xrefs')
-            ET.SubElement(element, 'extendedProperties', {'tagged': '0', 'package_name': 'Classes'})
-            
-            # Dodaj sekcję atrybutów
-            if uml_class.attributes:
-                attributes_section = ET.SubElement(element, 'attributes')
-                for i, attr_data in enumerate(uml_class.attributes):
-                    attr_name, _ = self._split_attribute(attr_data["declaration"])
-                    attr_id = self.id_map.get(f"attr_{class_name}_{attr_name}")
-                    if not attr_id:
-                        continue
-                        
-                    attribute = ET.SubElement(attributes_section, 'attribute')
-                    attribute.set('xmi:idref', attr_id)
-                    attribute.set('name', attr_name)
-                    attribute.set('scope', self._get_visibility(attr_data["declaration"]))
-                    
-                    ET.SubElement(attribute, 'initial')
-                    ET.SubElement(attribute, 'documentation')
-                    ET.SubElement(attribute, 'model', {'ea_localid': str(self.ea_localid_counter), 'ea_guid': f'{{{uuid.uuid4()}}}'})
-                    self.ea_localid_counter += 1
-                    
-                    is_static = '1' if 'static' in attr_data.get('modifiers', []) else '0'
-                    ET.SubElement(attribute, 'properties', {
-                        'derived': '0', 'collection': 'false', 
-                        'static': is_static, 'duplicates': '0', 
-                        'changeability': 'changeable'
-                    })
-                    
-                    ET.SubElement(attribute, 'coords', {'ordered': '0'})
-                    ET.SubElement(attribute, 'containment', {'position': str(i)})
-                    ET.SubElement(attribute, 'stereotype')
-                    ET.SubElement(attribute, 'bounds', {'lower': '1', 'upper': '1'})
-                    ET.SubElement(attribute, 'options')
-                    ET.SubElement(attribute, 'style')
-                    ET.SubElement(attribute, 'styleex', {'value': 'IsLiteral=0;'})
-                    ET.SubElement(attribute, 'tags')
-                    ET.SubElement(attribute, 'xrefs')
-            
-            # Dodaj sekcję metod
-            if uml_class.methods:
-                operations_section = ET.SubElement(element, 'operations')
-                for i, method_data in enumerate(uml_class.methods):
-                    method_name = self._clean_method_name(method_data["signature"])
-                    method_id = self.id_map.get(f"method_{class_name}_{method_name}")
-                    if not method_id:
-                        continue
-                        
-                    operation = ET.SubElement(operations_section, 'operation')
-                    operation.set('xmi:idref', method_id)
-                    operation.set('name', method_name)
-                    operation.set('scope', self._get_visibility(method_data["signature"]))
-                    
-                    ET.SubElement(operation, 'properties', {'position': str(i)})
-                    ET.SubElement(operation, 'stereotype')
-                    ET.SubElement(operation, 'model', {'ea_guid': f'{{{uuid.uuid4()}}}', 'ea_localid': str(self.ea_localid_counter)})
-                    self.ea_localid_counter += 1
-                    
-                    is_static = '1' if 'static' in method_data.get('modifiers', []) else '0'
-                    is_abstract = '1' if 'abstract' in method_data.get('modifiers', []) else '0'
-                    ET.SubElement(operation, 'type', {
-                        'const': 'false', 'static': is_static, 
-                        'isAbstract': is_abstract, 'synchronised': '0', 
-                        'pure': '0', 'isQuery': 'false'
-                    })
-                    
-                    ET.SubElement(operation, 'behaviour')
-                    ET.SubElement(operation, 'code')
-                    ET.SubElement(operation, 'style')
-                    ET.SubElement(operation, 'styleex')
-                    ET.SubElement(operation, 'documentation')
-                    ET.SubElement(operation, 'tags')
-                    ET.SubElement(operation, 'xrefs')
+            # Przesuń pozycję dla następnego elementu
+            x += 200
+            if x > 700:  # Jeśli przekroczy szerokość diagramu, przejdź do nowej linii
+                x = 100
+                y += 150
         
-        # Connectors section
-        connectors = ET.SubElement(extension, 'connectors')
-        
-        for relation in relations:
-            rel_key = (relation.source, relation.target, relation.label)
-            conn_id = connector_ids_map.get(rel_key)
-            if not conn_id:
+        # Dodawanie enumów
+        for enum_name, uml_enum in enums.items():
+            enum_id = self.id_map.get(f"enum_{enum_name}")
+            if not enum_id:
                 continue
                 
-            connector = ET.SubElement(connectors, 'connector')
-            connector.set('xmi:idref', conn_id)
+            # Dodaj element diagramu dla enuma
+            element = doc.createElement("element")
+            element.setAttribute("geometry", f"Left={x};Top={y};Right={x+150};Bottom={y+100};")
+            element.setAttribute("subject", enum_id)
+            element.setAttribute("seqno", str(i))
+            element.setAttribute("style", "DUID=unique_id;")
             
-            # Source
-            source_id = self.id_map.get(f"class_{relation.source}") or self.id_map.get(f"enum_{relation.source}")
-            if not source_id:
-                continue
-                
-            source_elem = ET.SubElement(connector, 'source')
-            source_elem.set('xmi:idref', source_id)
+            elements_diag.appendChild(element)
+            i += 1
             
-            ET.SubElement(source_elem, 'model', {
-                'ea_localid': str(self.ea_localid_counter),
-                'type': 'Class',
-                'name': relation.source
-            })
-            self.ea_localid_counter += 1
-            
-            ET.SubElement(source_elem, 'role', {'visibility': 'Public', 'targetScope': 'instance'})
-            ET.SubElement(source_elem, 'type', {'aggregation': 'none', 'containment': 'Unspecified'})
-            ET.SubElement(source_elem, 'constraints')
-            ET.SubElement(source_elem, 'modifiers', {'isOrdered': 'false', 'changeable': 'none', 'isNavigable': 'false'})
-            ET.SubElement(source_elem, 'style', {'value': 'Union=0;Derived=0;AllowDuplicates=0;Owned=0;Navigable=Non-Navigable;'})
-            ET.SubElement(source_elem, 'documentation')
-            ET.SubElement(source_elem, 'xrefs')
-            ET.SubElement(source_elem, 'tags')
-            
-            # Target
-            target_id = self.id_map.get(f"class_{relation.target}") or self.id_map.get(f"enum_{relation.target}")
-            if not target_id:
-                continue
-                
-            target_elem = ET.SubElement(connector, 'target')
-            target_elem.set('xmi:idref', target_id)
-            
-            ET.SubElement(target_elem, 'model', {
-                'ea_localid': str(self.ea_localid_counter),
-                'type': 'Class',
-                'name': relation.target
-            })
-            self.ea_localid_counter += 1
-            
-            ET.SubElement(target_elem, 'role', {'visibility': 'Public', 'targetScope': 'instance'})
-            ET.SubElement(target_elem, 'type', {'aggregation': 'none', 'containment': 'Unspecified'})
-            ET.SubElement(target_elem, 'constraints')
-            ET.SubElement(target_elem, 'modifiers', {'isOrdered': 'false', 'changeable': 'none', 'isNavigable': 'true'})
-            ET.SubElement(target_elem, 'style', {'value': 'Union=0;Derived=0;AllowDuplicates=0;Owned=0;Navigable=Navigable;'})
-            ET.SubElement(target_elem, 'documentation')
-            ET.SubElement(target_elem, 'xrefs')
-            ET.SubElement(target_elem, 'tags')
-            
-            # Pozostałe sekcje konektora
-            ET.SubElement(connector, 'model', {'ea_localid': str(self.ea_localid_counter)})
-            self.ea_localid_counter += 1
-            
-            ET.SubElement(connector, 'properties', {
-                'ea_type': self._map_relation_type_to_ea(relation.relation_type), 
-                'direction': 'Source -> Destination'
-            })
-            
-            ET.SubElement(connector, 'modifiers', {'isRoot': 'false', 'isLeaf': 'false'})
-            ET.SubElement(connector, 'documentation')
-            ET.SubElement(connector, 'appearance', {
-                'linemode': '3', 'linecolor': '-1', 'linewidth': '0', 
-                'seqno': '0', 'headStyle': '0', 'lineStyle': '0'
-            })
-            
-            ET.SubElement(connector, 'labels', {'mb': f'«{relation.relation_type}»'})
-            ET.SubElement(connector, 'extendedProperties', {'virtualInheritance': '0'})
-            ET.SubElement(connector, 'style')
-            ET.SubElement(connector, 'xrefs')
-            ET.SubElement(connector, 'tags')
+            # Przesuń pozycję dla następnego elementu
+            x += 200
+            if x > 700:
+                x = 100
+                y += 150
         
-        # Dodaj diagramy
-        self._dodaj_diagram(extension, classes.values(), relations, connector_ids_map)
+        # Znajdź lub utwórz diagramlinks w diagramie
+        diagramlinks = None
+        for node in diagram_elem.childNodes:
+            if node.nodeType == node.ELEMENT_NODE and node.nodeName == "diagramlinks":
+                diagramlinks = node
+                break
         
-        # Primitive types section
-        primitivetypes = ET.SubElement(extension, 'primitivetypes')
-        basic_types = ['int', 'String', 'double', 'boolean', 'float', 'long', 'char', 'byte']
-        
-        for type_name in basic_types:
-            ptype = ET.SubElement(primitivetypes, 'primitivetype')
-            ptype.set('xmi:id', self._generuj_ea_id("eaxmiid"))
-            ptype.set('name', type_name)
-        
-        # Profiles section
-        profiles = ET.SubElement(extension, 'profiles')
-        uml_profile = ET.SubElement(profiles, 'umlprofile')
-        uml_profile.set('profiletype', 'uml2')
-    
-    def _map_relation_type_to_ea(self, relation_type: str) -> str:
-        """
-        Mapuje typy relacji PlantUML na typy EA.
-        Args:
-            relation_type: Typ relacji w PlantUML
-        Returns:
-            Odpowiadający typ relacji w EA
-        """
-        mapping = {
-            'inheritance': 'Generalization',
-            'composition': 'Aggregation',
-            'aggregation': 'Aggregation', 
-            'association': 'Association',
-            'dependency': 'Dependency',
-            'realization': 'Realization',
-            'usage': 'Usage'
-        }
-        return mapping.get(relation_type, 'Association')
-    
+        if not diagramlinks:
+            diagramlinks = doc.createElement("diagramlinks")
+            diagram_elem.appendChild(diagramlinks)
+            
+        # Dodanie relacji do diagramu (pomijamy na razie dla uproszczenia)
+        # TODO: Dodać kod dla rysowania relacji na diagramie
+
     def _split_attribute(self, attr: str) -> Tuple[str, Optional[str]]:
         """
         Rozdziela nazwę i typ atrybutu.
+        
         Args:
             attr: Deklaracja atrybutu
+        
         Returns:
-            (nazwa, typ) - tupla z nazwą i typem atrybutu
+            tuple: (nazwa, typ) - nazwa i typ atrybutu
         """
-        cleaned = re.sub(r'^[+\-#~]\s*', '', attr)
+        cleaned = re.sub(r'^[+\-#~]\s*', '', attr)  # Usuń modyfikator dostępu
         parts = cleaned.split(':')
         name = parts[0].strip()
         attr_type = parts[1].strip() if len(parts) > 1 else None
         return name, attr_type
-    
+
     def _clean_method_name(self, method: str) -> str:
         """
         Wyczyść nazwę metody.
+        
         Args:
             method: Sygnatura metody
+        
         Returns:
-            Czysta nazwa metody
+            str: Czysta nazwa metody
         """
-        cleaned = re.sub(r'^[+\-#~]\s*', '', method)
+        cleaned = re.sub(r'^[+\-#~]\s*', '', method)  # Usuń modyfikator dostępu
         return cleaned.split('(')[0].strip()
-    
+
     def _get_visibility(self, member: str) -> str:
         """
         Określ widoczność na podstawie prefiksu PlantUML.
+        
         Args:
             member: Deklaracja składnika
+        
         Returns:
-            Nazwa widoczności (public, private, protected, package)
+            str: Nazwa widoczności (public, private, protected, package)
         """
         if member.startswith('+'):
             return 'public'
@@ -901,21 +891,31 @@ class XMIGenerator:
         elif member.startswith('~'):
             return 'package'
         return 'public'  # domyślnie
-    
-    def _get_current_time(self) -> str:
-        """Zwraca aktualny czas w formacie EA."""
-        return datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-    
-    def _analizuj_wynikowe_xmi(self, xmi_content: str):
-        """Analizuje wygenerowany XMI pod kątem liczby elementów"""
-        root = ET.fromstring(xmi_content)
+
+    def _analizuj_wynikowe_xmi(self, doc):
+        """
+        Analizuje wygenerowany XMI pod kątem liczby elementów.
         
+        Args:
+            doc: Dokument XML DOM
+        """
         # Liczniki
-        classes = len(root.findall('.//packagedElement[@xmi:type="uml:Class"]', self.ns))
-        interfaces = len(root.findall('.//packagedElement[@xmi:type="uml:Interface"]', self.ns))
-        generalizations = len(root.findall('.//generalization', self.ns))
-        associations = len(root.findall('.//packagedElement[@xmi:type="uml:Association"]', self.ns))
-        dependencies = len(root.findall('.//packagedElement[@xmi:type="uml:Dependency"]', self.ns))
+        classes = len(doc.getElementsByTagName("packagedElement")) # To uproszczenie - trzeba by filtrować po @xmi:type
+        interfaces = 0  # Trzeba by przeszukać po atrybutach xmi:type="uml:Interface"
+        generalizations = len(doc.getElementsByTagName("generalization"))
+        associations = 0  # Trzeba by przeszukać po atrybutach xmi:type="uml:Association"
+        dependencies = 0  # Trzeba by przeszukać po atrybutach xmi:type="uml:Dependency"
+        
+        # Dokładniejsze liczenie klas i interfejsów
+        for elem in doc.getElementsByTagName("packagedElement"):
+            if elem.getAttribute("xmi:type") == "uml:Class":
+                classes += 1
+            elif elem.getAttribute("xmi:type") == "uml:Interface":
+                interfaces += 1
+            elif elem.getAttribute("xmi:type") == "uml:Association":
+                associations += 1
+            elif elem.getAttribute("xmi:type") == "uml:Dependency":
+                dependencies += 1
         
         print(f"\nANALIZA WYGENEROWANEGO XMI:")
         print(f"- Klasy: {classes}")
@@ -923,170 +923,580 @@ class XMIGenerator:
         print(f"- Generalizacje (dziedziczenie): {generalizations}")
         print(f"- Asocjacje: {associations}")
         print(f"- Zależności: {dependencies}")
-    
-    def _debug_xml(self, element: ET.Element, prefix: str = ""):
-        """Debuguje strukturę XML, wypisując wszystkie tagi i atrybuty"""
-        print(f"{prefix}<{element.tag} {' '.join([f'{k}=\"{v}\"' for k, v in element.attrib.items()])}>")
-        for child in element:
-            self._debug_xml(child, prefix + "  ")
-        print(f"{prefix}</{element.tag}>")
-            
 
-    def _format_xml(self, xml_string: str) -> str:
+    
+    def _map_relation_to_connector_id(self, relation):
         """
-        Formatuje dokument XML dodając wcięcia i nowe linie.
-        """
-        try:
-            import xml.dom.minidom as minidom
-            dom = minidom.parseString(xml_string)
-            pretty_xml = dom.toprettyxml(indent="  ", encoding="UTF-8")
-            # Usuwa puste linie
-            lines = [line for line in pretty_xml.decode('utf-8').split('\n') if line.strip()]
-            return '\n'.join(lines)
-        except Exception as e:
-            print(f"Nie udało się sformatować XML: {e}")
-            return xml_string
-        
-    def generuj_xmi(self, classes: Dict[str, UMLClass], relations: List[UMLRelation], 
-                   enums: Dict[str, UMLEnum], notes: List[UMLNote], nazwa_diagramu: str = "DiagramKlas") -> str:
-        """
-        Generuje plik XMI dla EA na podstawie modelu PlantUML.
+        Mapuje relację na identyfikator konektora w XMI.
         
         Args:
-            classes: Słownik z klasami UML
-            relations: Lista relacji UML
-            enums: Słownik z enumeratorami UML
-            notes: Lista notatek UML
-            nazwa_diagramu: Nazwa diagramu
+            relation: Obiekt relacji UML
             
         Returns:
-            Zawartość pliku XMI jako string
+            str: Identyfikator konektora w XMI
         """
-        # Najpierw rejestrujemy przestrzenie nazw
-        ET.register_namespace('xmi', 'http://www.omg.org/XMI')
-        ET.register_namespace('uml', 'http://www.eclipse.org/uml2/5.0.0/UML')
-        ET.register_namespace('xsi', 'http://www.w3.org/2001/XMLSchema-instance')
-        ET.register_namespace('eaProfile', 'http://www.sparxsystems.com/profiles/eaProfile/1.0')
+        # Dla relacji dziedziczenia, identyfikator to ID generalizacji
+        if relation.relation_type == 'inheritance':
+            # Tu trzeba przeszukać wszystkie generalizacje w modelu
+            return self.id_map.get(f'inheritance_{relation.source}_{relation.target}')
         
-        # Reszta kodu pozostaje bez zmian...
-        root = self._stworz_korzen_dokumentu()
-        model = self._stworz_model_uml(root, nazwa_diagramu)
-        package = self._stworz_pakiet_diagramu(model, "Classes")
+        # Dla innych relacji, identyfikator to ID asocjacji
+        return self.id_map.get(f'association_{relation.source}_{relation.target}_{relation.label}')
+
+
+    def _fix_xml_prefixes(self, xml_str):
+        """
+        Poprawia prefixy XML w wyjściowym dokumencie.
+        
+        Args:
+            xml_str: String XML do poprawienia
             
-        # 2. Dodaj klasy
-        class_ids = {}
-        for class_name, uml_class in classes.items():
-            class_id = self._dodaj_klase(package, uml_class)
-            class_ids[class_name] = class_id
-            log_info(f"Dodano klasę: {class_name} z ID: {class_id}")
+        Returns:
+            str: Poprawiony XML
+        """
+        # Poprawne prefixy dla głównych elementów
+        xml_str = re.sub(r'<XMI ', r'<xmi:XMI ', xml_str)
+        xml_str = re.sub(r'</XMI>', r'</xmi:XMI>', xml_str)
+        xml_str = re.sub(r'<Documentation ', r'<xmi:Documentation ', xml_str)
+        xml_str = re.sub(r'</Documentation>', r'</xmi:Documentation>', xml_str)
+        xml_str = re.sub(r'<Model ', r'<uml:Model ', xml_str)
+        xml_str = re.sub(r'</Model>', r'</uml:Model>', xml_str)
+        xml_str = re.sub(r'<Extension ', r'<xmi:Extension ', xml_str)
+        xml_str = re.sub(r'</Extension>', r'</xmi:Extension>', xml_str)
+    
+        return xml_str
+    
+    def _add_association(self, doc, package_element, relation: UMLRelation, source_id: str, target_id: str):
+        """
+        Dodaje relację asocjacji, agregacji lub kompozycji.
         
-        # 3. Dodaj enumeratory
-        enum_ids = {}
+        Args:
+            doc: Dokument XML DOM
+            package_element: Element pakietu
+            relation: Obiekt relacji UML
+            source_id: ID klasy źródłowej
+            target_id: ID klasy docelowej
+        
+        Returns:
+            tuple: (Element relacji, ID relacji)
+        """
+        # Generowanie ID asocjacji
+        association_id = self._generate_uuid('EAID_')
+        source_end_id = self._generate_uuid('EAID_src')  # Prefiks dla źródła
+        target_end_id = self._generate_uuid('EAID_dst') 
+        
+        # Tworzenie elementu asocjacji
+        assoc_elem = doc.createElement("packagedElement")
+        assoc_elem.setAttribute("xmi:type", "uml:Association")
+        assoc_elem.setAttribute("xmi:id", association_id)
+        if relation.label:
+            assoc_elem.setAttribute("name", relation.label)
+        
+        package_element.appendChild(assoc_elem)
+        
+        # Utworzenie końców asocjacji
+        source_end_id = self._generate_uuid()
+        target_end_id = self._generate_uuid()
+        
+        # Koniec źródłowy
+        source_end = doc.createElement("ownedEnd")
+        source_end.setAttribute("xmi:id", source_end_id)
+        type_elem = doc.createElement("type")
+        type_elem.setAttribute("xmi:idref", source_id)
+        source_end.appendChild(type_elem)
+        source_end.setAttribute("association", association_id)
+        
+        # Dodaj krotność dla źródła
+        source_lower, source_upper = "1", "1"  # domyślnie 1
+        if relation.source_multiplicity:
+            source_lower, source_upper = PlantUMLClassParser.parse_multiplicity(relation.source_multiplicity)
+        self._add_multiplicity(doc, source_end, source_lower, source_upper)
+        
+        assoc_elem.appendChild(source_end)
+        
+        # Koniec docelowy
+        target_end = doc.createElement("ownedEnd")
+        target_end.setAttribute("xmi:id", target_end_id)
+        # Zamiast type="ID" używamy elementu <type>
+        type_elem = doc.createElement("type")
+        type_elem.setAttribute("xmi:idref", target_id)
+        target_end.appendChild(type_elem)
+        target_end.setAttribute("association", association_id)
+
+        
+        # Określ typ agregacji dla odpowiednich relacji
+        if relation.relation_type == 'composition':
+            target_end.setAttribute("aggregation", "composite")
+        elif relation.relation_type == 'aggregation':
+            target_end.setAttribute("aggregation", "shared")
+            
+        # Dodaj krotność dla celu
+        target_lower, target_upper = "1", "1"  # domyślnie 1
+        if relation.target_multiplicity:
+            target_lower, target_upper = PlantUMLClassParser.parse_multiplicity(relation.target_multiplicity)
+        self._add_multiplicity(doc, target_end, target_lower, target_upper)
+            
+        assoc_elem.appendChild(target_end)
+        
+        # Dodaj oba końce do memberEnd
+        assoc_elem.setAttribute("memberEnd", f"{source_end_id} {target_end_id}")
+        
+        # Zapisz ID asocjacji w mapie ID - kluczowe dla konektorów w diagramie!
+        key = f'association_{relation.source}_{relation.target}'
+        if relation.label:
+            key += f'_{relation.label}'
+        self.id_map[key] = association_id
+        
+        return assoc_elem, association_id
+
+    def add_diagram_connectors(self, doc, extension_element, relations):
+        """
+        Dodaje konektory do diagramu w rozszerzeniu EA.
+        
+        Args:
+            doc: Dokument XML DOM
+            extension_element: Element rozszerzenia EA
+            relations: Lista relacji UML
+        """
+        # Znajdź sekcję connectors w rozszerzeniu
+        connectors_elem = None
+        for node in extension_element.childNodes:
+            if node.nodeType == node.ELEMENT_NODE and node.nodeName == "connectors":
+                connectors_elem = node
+                break
+        
+        if not connectors_elem:
+            print("WARN: Nie znaleziono sekcji connectors w rozszerzeniu")
+            connectors_elem = doc.createElement("connectors")
+            extension_element.appendChild(connectors_elem)
+        
+        # Dodaj konektory dla każdej relacji
+        for relation in relations:
+            # Unikalne ID dla każdej relacji
+            relation_key = f'{relation.source}_{relation.target}_{relation.relation_type}'
+            if relation.label:
+                relation_key += f'_{relation.label}'
+            
+            # Pobierz ID źródła i celu
+            source_id = self.id_map.get(f"class_{relation.source}") or self.id_map.get(f"enum_{relation.source}")
+            target_id = self.id_map.get(f"class_{relation.target}") or self.id_map.get(f"enum_{relation.target}")
+            
+            if not source_id or not target_id:
+                print(f"WARN: Nie znaleziono ID dla {relation.source} lub {relation.target}, pomijam relację")
+                continue
+                
+            # Znajdź ID konektora w zależności od typu relacji
+            connector_id = None
+            if relation.relation_type == 'inheritance':
+                # Dla dziedziczenia znajdź ID generalizacji
+                connector_id = self.id_map.get(f'inheritance_{relation.source}_{relation.target}')
+            else:
+                # Dla innych relacji znajdź ID asocjacji
+                assoc_key = f'association_{relation.source}_{relation.target}'
+                if relation.label:
+                    assoc_key += f'_{relation.label}'
+                connector_id = self.id_map.get(assoc_key)
+                
+            if not connector_id:
+                # Jeśli nie znaleziono ID, wygeneruj nowy
+                connector_id = self._generate_uuid()
+                print(f"DEBUG: Wygenerowano nowe ID konektora: {connector_id}")
+                
+            # Utwórz element konektora
+            connector = doc.createElement("connector")
+            connector.setAttribute("xmi:idref", connector_id)
+            connectors_elem.appendChild(connector)
+                
+            # Źródło konektora
+            source = doc.createElement("source")
+            source.setAttribute("xmi:idref", source_id)
+            connector.appendChild(source)
+            
+            # Model źródła
+            source_model = doc.createElement("model")
+            source_model.setAttribute("ea_localid", str(hash(relation.source) % 10000))
+            source_model.setAttribute("type", "Class")
+            source_model.setAttribute("name", relation.source)
+            source.appendChild(source_model)
+            
+            # Rola źródła
+            source_role = doc.createElement("role")
+            source_role.setAttribute("visibility", "Public")
+            source_role.setAttribute("targetScope", "instance")
+            source.appendChild(source_role)
+            
+            # Typ źródła
+            source_type = doc.createElement("type")
+            if relation.source_multiplicity:
+                source_type.setAttribute("multiplicity", relation.source_multiplicity)
+            source_type.setAttribute("aggregation", "none")
+            source_type.setAttribute("containment", "Unspecified")
+            source.appendChild(source_type)
+            
+            # Cel konektora
+            target = doc.createElement("target")
+            target.setAttribute("xmi:idref", target_id)
+            connector.appendChild(target)
+            
+            # Model celu
+            target_model = doc.createElement("model")
+            target_model.setAttribute("ea_localid", str(hash(relation.target) % 10000))
+            target_model.setAttribute("type", "Class") 
+            target_model.setAttribute("name", relation.target)
+            target.appendChild(target_model)
+            
+            # Rola celu
+            target_role = doc.createElement("role")
+            target_role.setAttribute("visibility", "Public")
+            target_role.setAttribute("targetScope", "instance")
+            target.appendChild(target_role)
+            
+            # Typ celu
+            target_type = doc.createElement("type")
+            if relation.target_multiplicity:
+                target_type.setAttribute("multiplicity", relation.target_multiplicity)
+            target_type.setAttribute("aggregation", "none") 
+            target_type.setAttribute("containment", "Unspecified")
+            target.appendChild(target_type)
+            
+            # Model konektora
+            model = doc.createElement("model")
+            model.setAttribute("ea_localid", str(abs(hash(relation.source + relation.target)) % 10000))
+            connector.appendChild(model)
+            
+            # Właściwości konektora
+            properties = doc.createElement("properties")
+            properties.setAttribute("ea_type", self._get_connector_type(relation.relation_type))
+            if relation.label:
+                properties.setAttribute("name", relation.label)
+            # Krotnośći jako atrybuty
+            if relation.source_multiplicity:
+                properties.setAttribute("sourcecard", relation.source_multiplicity)
+            if relation.target_multiplicity:
+                properties.setAttribute("targetcard", relation.target_multiplicity)
+            properties.setAttribute("direction", "Source -> Destination")
+            connector.appendChild(properties)
+            
+            # Modyfikatory
+            modifiers = doc.createElement("modifiers")
+            modifiers.setAttribute("isRoot", "false")
+            modifiers.setAttribute("isLeaf", "false")
+            connector.appendChild(modifiers)
+            
+            # Dokumentacja
+            documentation = doc.createElement("documentation")
+            connector.appendChild(documentation)
+            
+            # Wygląd
+            appearance = doc.createElement("appearance")
+            appearance.setAttribute("linemode", "3")
+            appearance.setAttribute("linecolor", "-1")
+            appearance.setAttribute("linewidth", "0")
+            appearance.setAttribute("seqno", "0")
+            appearance.setAttribute("headStyle", "0")
+            appearance.setAttribute("lineStyle", "0")
+            connector.appendChild(appearance)
+            
+            # Style konektora
+            style = doc.createElement("style")
+            if relation.relation_type == "inheritance":
+                style.setAttribute("value", "Mode=3;EOID=5123C2D9;SOID=DCE:FB48;Color=-1;LWidth=0;TREE=OS;") 
+            elif relation.relation_type == "aggregation":
+                style.setAttribute("value", "Mode=3;EOID=5123C2D9;SOID=DCE:FB48;Color=-1;LWidth=0;TREE=OA;")
+            elif relation.relation_type == "composition":
+                style.setAttribute("value", "Mode=3;EOID=5123C2D9;SOID=DCE:FB48;Color=-1;LWidth=0;TREE=OC;")
+            else:
+                style.setAttribute("value", "Mode=3;EOID=5123C2D9;SOID=DCE:FB48;Color=-1;LWidth=0;")
+            connector.appendChild(style)
+            
+            # Etykiety - kluczowe dla krotnośći!
+            labels = doc.createElement("labels")
+            
+            # Nazwa relacji (środek)
+            if relation.label:
+                mt = doc.createElement("mt")
+                mt.setAttribute("value", relation.label)
+                labels.appendChild(mt)
+            
+            # Krotność źródła (początek)
+            if relation.source_multiplicity:
+                lb = doc.createElement("lb")
+                lb.setAttribute("value", relation.source_multiplicity)
+                labels.appendChild(lb)
+            
+            # Krotność celu (koniec)
+            if relation.target_multiplicity:
+                rb = doc.createElement("rb")
+                rb.setAttribute("value", relation.target_multiplicity)
+                labels.appendChild(rb)
+                
+            connector.appendChild(labels)
+            
+            # Dodaj konektory do diagramu
+            self._add_connector_to_diagram(doc, connector_id, relation, source_id, target_id)
+
+    def _add_connector_to_diagram(self, doc, connector_id, relation, source_id, target_id):
+        """
+        Dodaje konektor do diagramu.
+        
+        Args:
+            doc: Dokument XML DOM
+            connector_id: ID konektora
+            relation: Relacja UML
+            source_id: ID elementu źródłowego 
+            target_id: ID elementu docelowego
+        """
+        # Znajdź diagram
+        diagram_id = self.id_map.get('diagram')
+        if not diagram_id:
+            print("WARN: Nie znaleziono ID diagramu")
+            return
+            
+        diagrams = doc.getElementsByTagName("diagram")
+        diagram = None
+        for diag in diagrams:
+            if diag.getAttribute("xmi:id") == diagram_id:
+                diagram = diag
+                break
+        
+        if not diagram:
+            print("WARN: Nie znaleziono elementu diagramu")
+            return
+        
+        # Znajdź lub utwórz sekcję diagramlinks
+        diagramlinks = None
+        for node in diagram.childNodes:
+            if node.nodeType == node.ELEMENT_NODE and node.nodeName == "diagramlinks":
+                diagramlinks = node
+                break
+        
+        if not diagramlinks:
+            diagramlinks = doc.createElement("diagramlinks")
+            diagram.appendChild(diagramlinks)
+        
+        # Dodaj link diagramu z pełnymi atrybutami jak w starym generatorze
+        diagramlink = doc.createElement("diagramlink")
+        diagramlink.setAttribute("connectorID", connector_id)
+        
+        # Kluczowe atrybuty - referencje do elementów źródłowych i docelowych
+        diagramlink.setAttribute("start", source_id)
+        diagramlink.setAttribute("end", target_id)
+        
+        # Identyfikator linku
+        link_id = f"DCLINK_{uuid.uuid4().hex[:8].upper()}"
+        diagramlink.setAttribute("linkID", link_id)
+        
+        # Dodatkowe atrybuty
+        diagramlink.setAttribute("hidden", "0")
+        diagramlink.setAttribute("geometry", "EDGE=1;$LLB=;LLT=;LMT=;LMB=;LRT=;LRB=;IRHS=;ILHS=;Path=;")
+        
+        diagramlinks.appendChild(diagramlink)
+
+    def _get_connector_type(self, relation_type):
+        """
+        Konwertuje typ relacji UML do typu konektora EA.
+        
+        Args:
+            relation_type: Typ relacji UML
+        
+        Returns:
+            str: Typ konektora EA
+        """
+        type_map = {
+            'inheritance': 'Generalization',
+            'realization': 'Realisation',
+            'association': 'Association',
+            'aggregation': 'Aggregation',
+            'composition': 'Composition',
+            'dependency': 'Dependency'
+        }
+        return type_map.get(relation_type, 'Association')
+
+
+    def generate_xmi(self, classes: Dict[str, UMLClass], relations: List[UMLRelation], 
+                    enums: Dict[str, UMLEnum], notes: List[UMLNote], 
+                    primitive_types: set = None, diagram_name: str = "DiagramKlas"):
+        """
+        Generuje pełny XMI na podstawie modelu UML z prawidłową obsługą typów.
+        
+        Args:
+            classes: Słownik klas UML
+            relations: Lista relacji UML
+            enums: Słownik enumeratorów UML
+            notes: Lista notatek UML
+            primitive_types: Zbiór typów pierwotnych
+            diagram_name: Nazwa diagramu
+        
+        Returns:
+            str: Zawartość pliku XMI jako string
+        """
+        # Generuj szkielet XMI z typami pierwotnymi w odpowiedniej sekcji
+        doc, root, package, extension = self.generate_skeleton(diagram_name, "DiagramKlas")
+        
+        self._dodaj_typy_pierwotne(doc, None, primitive_types)
+
         for enum_name, uml_enum in enums.items():
-            enum_id = self._dodaj_enum(package, uml_enum)
-            enum_ids[enum_name] = enum_id
-            log_info(f"Dodano enum: {enum_name} z ID: {enum_id}")
+            self.add_enum(doc, package, uml_enum)
         
-        # 4. Dodaj relacje
-        connector_ids = self._dodaj_relacje(package, relations, class_ids, enum_ids)
-        log_info(f"Dodano {len(connector_ids)} relacji")
+        # Dodaj klasy
+        for class_name, uml_class in classes.items():
+            self.add_class(doc, package, uml_class)
         
-        # 5. Dodaj rozszerzenia EA
-        self._stworz_rozszerzenia_ea(root, classes, relations, connector_ids)
+        # Dodaj wszystkie relacje - scentralizowana obsługa
+        relation_ids = self.dodaj_wszystkie_relacje(doc, package, relations, extension)
         
-        '''try:
-            # 6. Wygeneruj dokument XML
-            rough_string = ET.tostring(root, encoding='utf-8')
-            parsed = xml.dom.minidom.parseString(rough_string)
-            pretty_xml = parsed.toprettyxml(indent="  ", encoding="utf-8")
-            
-            # Popraw header XML
-            xml_string = pretty_xml.decode('utf-8')
-            xml_string = xml_string.replace('<?xml version="1.0" encoding="utf-8"?>', 
-                                      '<?xml version="1.0" encoding="UTF-8"?>')
-            
-            self._analizuj_wynikowe_xmi(xml_string)
-            return xml_string
-            
-        except Exception as e:
-            print(f"Błąd podczas generowania XML: {e}")
-            
-            # Spróbuj dokładniej zdiagnozować problem
-            print("\nDiagnostyka problemu:")
-            try:
-                print(f"Root tag: {root.tag}")
-                print("Pierwsze poziomy drzewa XML:")
-                for child in root:
-                    print(f"  - {child.tag} (atrybuty: {child.attrib})")
-                    for grandchild in child:
-                        print(f"    - {grandchild.tag}")
-            except Exception as inner_e:
-                print(f"Błąd podczas diagnostyki: {inner_e}")
-            
-            raise e'''
+        # Dodaj elementy diagramu
+        self.add_diagram_elements(doc, extension, classes, enums, relations)
         
-        try:
-            # Generowanie XML bez formatowania
-            xml_bytes = ET.tostring(root, encoding="utf-8", xml_declaration=True)
-            xml_string = xml_bytes.decode('utf-8')
+        # Analizuj wynikowe XMI
+        self._analizuj_wynikowe_xmi(doc)
+        
+        # Używamy metody do poprawy prefixów XML
+        xml_str = doc.toprettyxml(indent="  ", encoding="UTF-8").decode('utf-8')
+        xml_str = self._fix_xml_prefixes(xml_str)
+        
+        return xml_str
+    
+    def _dodaj_typy_pierwotne(self, doc, model_element, primitive_types=None):
+        """
+        Dodaje definicje typów pierwotnych do sekcji primitivetypes w rozszerzeniu EA
+        w strukturze zagnieżdżonych pakietów zgodnej z formatem EA.
+        
+        Args:
+            doc: Dokument XML DOM
+            model_element: Element modelu UML
+            primitive_types: Lista typów pierwotnych do dodania (opcjonalnie)
+        
+        Returns:
+            dict: Słownik z ID typów pierwotnych
+        """
+        # Jeśli nie podano listy typów, użyj domyślnych
+        if not primitive_types:
+            primitive_types = [
+                'string', 'int', 'double', 'boolean', 'float', 'long', 
+                'char', 'byte', 'Date', 'Time', 'DateTime'
+            ]
+        
+        # Słownik typów pierwotnych z ich ID
+        type_ids = {}
+        for type_name in primitive_types:
+            type_ids[type_name] = f"EAJava_{type_name}"
+        
+        # Zapisz ID typów w mapie
+        for type_name, type_id in type_ids.items():
+            self.id_map[f'type_{type_name}'] = type_id
+        
+        # Znajdź sekcję primitivetypes w rozszerzeniu
+        extension = None
+        for node in doc.getElementsByTagName("Extension"):
+            extension = node
+            break
+        
+        if not extension:
+            print("WARN: Nie znaleziono sekcji Extension")
+            return type_ids
+        
+        # Znajdź lub utwórz sekcję primitivetypes
+        primitivetypes_elem = None
+        for node in extension.childNodes:
+            if node.nodeType == node.ELEMENT_NODE and node.nodeName == "primitivetypes":
+                primitivetypes_elem = node
+                break
+        
+        if not primitivetypes_elem:
+            primitivetypes_elem = doc.createElement("primitivetypes")
+            extension.appendChild(primitivetypes_elem)
+        
+        # Utwórz główny pakiet typów pierwotnych
+        prim_types_pkg = doc.createElement("packagedElement")
+        prim_types_pkg.setAttribute("xmi:type", "uml:Package")
+        prim_types_pkg.setAttribute("xmi:id", "EAPrimitiveTypesPackage")
+        prim_types_pkg.setAttribute("name", "EA_PrimitiveTypes_Package")
+        prim_types_pkg.setAttribute("visibility", "public")
+        primitivetypes_elem.appendChild(prim_types_pkg)
+        
+        # Utwórz podpakiet typów Java
+        java_types_pkg = doc.createElement("packagedElement")
+        java_types_pkg.setAttribute("xmi:type", "uml:Package")
+        java_types_pkg.setAttribute("xmi:id", "EAJavaTypesPackage")
+        java_types_pkg.setAttribute("name", "EA_Java_Types_Package")
+        java_types_pkg.setAttribute("visibility", "public")
+        prim_types_pkg.appendChild(java_types_pkg)
+        
+        # Dodaj poszczególne typy pierwotne do podpakietu Java
+        for type_name, type_id in type_ids.items():
+            prim_type = doc.createElement("packagedElement")
+            prim_type.setAttribute("xmi:type", "uml:PrimitiveType")
+            prim_type.setAttribute("xmi:id", type_id)
+            prim_type.setAttribute("name", type_name)
+            prim_type.setAttribute("visibility", "public")
+            
+            # Dodanie generalizacji dla int
+            if type_name == 'int':
+                generalization = doc.createElement("generalization")
+                generalization.setAttribute("xmi:type", "uml:Generalization")
+                generalization.setAttribute("xmi:id", f"{type_id}_General")
+                
+                general = doc.createElement("general")
+                general.setAttribute("href", "http://schema.omg.org/spec/UML/2.1/uml.xml#Integer")
+                generalization.appendChild(general)
+                prim_type.appendChild(generalization)
+                
+            java_types_pkg.appendChild(prim_type)
+        
+        return type_ids
 
-            # Dodaj ładne formatowanie
-            formatted_xml = self._format_xml(xml_string)
-            self._analizuj_wynikowe_xmi(formatted_xml)
-            return formatted_xml
-        except Exception as e:
-            print(f"Błąd podczas generowania XML: {e}")
-            try:
-                return ET.tostring(root, encoding="utf-8").decode('utf-8')
-            except Exception as e2:
-                print(f"Drugi błąd: {e2}")
-                raise e
-
-
-# Przykład użycia
-if __name__ == '__main__':
-    import sys
+    def save_xmi(self, classes, relations, enums, notes, primitive_types=None, diagram_name="Classes"):
+        """
+        Generuje i zapisuje plik XMI.
+        
+        Args:
+            classes: Klasy UML
+            relations: Relacje UML
+            enums: Enumeratory UML
+            notes: Notatki UML
+            primitive_types: Zbiór typów pierwotnych
+            diagram_name: Nazwa diagramu
+        
+        Returns:
+            xmi_content: Zawartość pliku XMI jako string
+        """
+        xmi_content = self.generate_xmi(classes, relations, enums, notes, primitive_types, diagram_name)
+    
+        return xmi_content
+        
+if __name__ == "__main__":
+    # Przykład użycia
+    from plantuml_class_parser import PlantUMLClassParser
     from datetime import datetime
     
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    
-    if len(sys.argv) > 1:
-        input_file = sys.argv[1]
-    else:
-        input_file = 'diagram_klas_PlantUML.puml'
-        
-    output_file = f'diagram_klas_{timestamp}.xmi'
+    input_file = 'diagram_klas_PlantUML.puml'
+    output_file = f"diagram_klas_{timestamp}.xmi"
     
     try:
+        # Wczytaj plik PlantUML
         with open(input_file, 'r', encoding='utf-8') as f:
             plantuml_code = f.read()
         
         # Parsuj kod PlantUML
-        parser = PlantUMLParser()
+        parser = PlantUMLClassParser()
         parser.parse(plantuml_code)
         
-        # Pobierz dane
-        classes = {}
-        for name, data in parser.classes.items():
-            classes[name] = data
+        # Generuj XMI z dynamicznie odczytanymi typami pierwotnymi
+        generator = XMIClassGenerator()
+        xmi_content=generator.save_xmi( parser.classes, parser.relations, parser.enums, 
+                          parser.notes, parser.primitive_types, "DiagramKlas")
         
-        # Generuj XMI
-        generator = XMIGenerator()
-        xmi_content = generator.generuj_xmi(
-            classes=parser.classes, 
-            relations=parser.relations, 
-            enums=parser.enums, 
-            notes=parser.notes
-        )
-        
-        # Zapisz do pliku
         with open(output_file, 'w', encoding='utf-8') as f:
             f.write(xmi_content)
-        
-        print(f"Wygenerowano plik: {output_file}")
+            
+        print(f"Wygenerowano plik XMI: {output_file}")
         
     except FileNotFoundError:
         print(f"Nie znaleziono pliku: {input_file}")
+        print("Utwórz przykładowy plik PlantUML lub zmień nazwę pliku w kodzie.")
     except Exception as e:
-        log_exception(f"Błąd podczas generowania XMI: {e}")
-        print(f"Błąd: {e}")
+        print(f"Wystąpił błąd: {e}")
+        import traceback
+        traceback.print_exc()

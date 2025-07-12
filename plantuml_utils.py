@@ -33,25 +33,88 @@ def plantuml_encode(plantuml_text):
     return base64.b64encode(compressed_string).translate(b64_to_plantuml).decode('utf-8')
 
 def identify_plantuml_diagram_type(plantuml_code: str, LANG="pl") -> str:
-    code = plantuml_code.lower()
-    if 'state' in code or '-->' in code and 'state' in code:
-        return tr("diagram_type_state_diagram", LANG=LANG)
-    if 'actor' in code and ('->' in code or '->>' in code or '->|' in code) and ('component' not in code or 'deployment' not in code):
-        return tr("diagram_type_sequence_diagram", LANG=LANG)
-    if 'class' in code or 'interface' in code or '--|' in code or '<|--' in code:
-        return tr("diagram_type_class_diagram", LANG=LANG)
-    if ('usecase' in code or 'use case' in code) and ('actor' in code or '->' in code or '->>' in code):
-        return tr("diagram_type_usecase_diagram", LANG=LANG)
-    if 'component' in code or 'node' in code or 'package' in code or 'container' in code:
+    """
+    Rozpoznaje typ diagramu PlantUML na podstawie kodu źródłowego.
+    
+    Args:
+        plantuml_code: Kod PlantUML do analizy
+        LANG: Kod języka dla tłumaczeń
+        
+    Returns:
+        str: Przetłumaczona nazwa typu diagramu
+    """
+    # Usuń komentarze i znormalizuj kod do małych liter
+    code = re.sub(r"'.*$", "", plantuml_code, flags=re.MULTILINE).lower()
+    
+    # Sprawdź czy to diagram C4 - ma najwyższy priorytet
+    c4_indicators = ['!include <c4/', 'component(', 'person(', 'system(', 'container(', 
+                    'enterprise(', 'componentdb(', 'systemdb(', 'containerdb(']
+    if any(indicator in code for indicator in c4_indicators):
         return tr("diagram_type_component_diagram", LANG=LANG)
-    if 'activity' in code or 'start' in code or 'end' in code:
+    
+    # Sprawdź jawne deklaracje typu diagramu
+    if re.search(r'@startsalt', code):
+        return tr("diagram_type_wireframe", LANG=LANG)
+    if re.search(r'@startmindmap', code):
+        return tr("diagram_type_mindmap_diagram", LANG=LANG)
+    if re.search(r'@startgantt', code):
+        return tr("diagram_type_gantt_chart", LANG=LANG)
+    if re.search(r'@startwbs', code):
+        return tr("diagram_type_work_breakdown", LANG=LANG)
+    if re.search(r'@starterdiagram', code):
+        return tr("diagram_type_erd_diagram", LANG=LANG)
+    if re.search(r'@startstate', code):
+        return tr("diagram_type_state_diagram", LANG=LANG)
+    if re.search(r'@startactivity', code):
         return tr("diagram_type_activity_diagram", LANG=LANG)
-    if 'object' in code or 'note' in code:
-        return tr("diagram_type_object_diagram", LANG=LANG)  
-    if 'deployment' in code or 'artifact' in code:
-        return tr("diagram_type_deployment_diagram", LANG=LANG)
-    if 'flow' in code or 'data' in code or 'process' in code:
-        return tr("diagram_type_flow_diagram", LANG=LANG)     
+    if re.search(r'@startcomponent', code):
+        return tr("diagram_type_component_diagram", LANG=LANG)
+    if re.search(r'@startclass', code):
+        return tr("diagram_type_class_diagram", LANG=LANG)
+    if re.search(r'@startobject', code):
+        return tr("diagram_type_object_diagram", LANG=LANG)
+    if re.search(r'@startsequence', code):
+        return tr("diagram_type_sequence_diagram", LANG=LANG)
+    if re.search(r'@startuse\s*case', code):
+        return tr("diagram_type_usecase_diagram", LANG=LANG)
+    
+    # Standardowy diagram komponentów (bez C4)
+    component_indicators = ['component ', '[component]', '()<>']
+    if any(indicator in code for indicator in component_indicators):
+        return tr("diagram_type_component_diagram", LANG=LANG)
+    
+    # Wykrywanie na podstawie zawartości - w kolejności od najbardziej specyficznych
+    
+    # Diagram klas - wyższy priorytet niż diagram sekwencji!
+    class_indicators = ['class ', 'interface ', 'enum ', 'abstract class', 'extends', 'implements']
+    if any(indicator in code for indicator in class_indicators):
+        return tr("diagram_type_class_diagram", LANG=LANG)
+    
+    # Sprawdź symbole relacji typowe dla diagramów klas
+    class_relationships = ['<|--', '--|>', '*--', '--*', 'o--', '--o', '<--*', '*-->']
+    if any(rel in code for rel in class_relationships):
+        return tr("diagram_type_class_diagram", LANG=LANG)
+    
+    # Diagram sekwencji
+    if (('actor' in code or 'participant' in code) and 
+        any(arrow in code for arrow in ['->>', '->x', '-->', '->', '<-', '<--'])):
+        return tr("diagram_type_sequence_diagram", LANG=LANG)
+    
+    # Diagram stanu
+    state_indicators = ['state', '[*]', '-down->', '-up->', '-left->', '-right->']
+    if any(indicator in code for indicator in state_indicators):
+        return tr("diagram_type_state_diagram", LANG=LANG)
+    
+    # Diagram przypadków użycia
+    if ('usecase' in code or 'use case' in code) or ('actor' in code and not '->' in code):
+        return tr("diagram_type_usecase_diagram", LANG=LANG)
+    
+    # Jeśli mamy @startuml ale nie dopasowaliśmy do innych typów,
+    # sprawdź jeszcze raz zawartość aby rozróżnić diagram klas od sekwencji
+    if '{' in code and '}' in code and '--' in code:
+        return tr("diagram_type_class_diagram", LANG=LANG)
+    
+    # Domyślny typ
     return tr("diagram_type_general", LANG=LANG)
 
 def fetch_plantuml_svg_www(plantuml_code: str, LANG="pl") -> bytes:

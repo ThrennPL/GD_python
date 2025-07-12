@@ -137,4 +137,10 @@ TRANSLATIONS = {
     "diagram_type_deployment_diagram": "Deployment diagram",
     "diagram_type_flow_diagram": "Flow diagram",
     "diagram_type_general": "General diagram (type not specified)",
+    "diagram_type_timing_diagram": "Timing Diagram",
+    "diagram_type_erd_diagram": "Entity-Relationship Diagram",
+    "diagram_type_mindmap_diagram": "Mind Map",
+    "diagram_type_gantt_chart": "Gantt Chart",
+    "diagram_type_work_breakdown": "Work Breakdown Structure",
+    "diagram_type_flow_diagram": "Data Flow Diagram",
 }

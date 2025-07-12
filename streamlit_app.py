@@ -29,10 +29,12 @@ try:
         from prompt_templates_en import prompt_templates, get_diagram_specific_requirements
     else:
         from prompt_templates_pl import prompt_templates, get_diagram_specific_requirements
-    from logger_utils import setup_logger, log_info, log_error, log_exception
-    from plantuml_to_ea import plantuml_to_xmi
+    from logger_utils import setup_logger, log_info, log_error, log_exception, log_debug
+    #from plantuml_to_ea import plantuml_to_xmi
     from plantuml_sequance_parser import PlantUMLSequenceParser
     from xmi_sequance_generator import XMISequenceGenerator
+    from plantuml_class_parser import PlantUMLClassParser
+    from xmi_class_generator import XMIClassGenerator
     MODULES_LOADED = True
 except ImportError as e:
     MODULES_LOADED = False
@@ -389,7 +391,7 @@ col1, col2 = st.columns([1, 1])
 with col1:
     st.header(tr("input_box"))
     process_description = st.text_area(
-        "Wprowadź opis procesu:",
+        "",
         height=150,
         placeholder=tr("input_box.setToolTip"),
     )
@@ -621,7 +623,10 @@ if st.session_state.plantuml_diagrams:
                     
                     if ("klas" in diagram_type_identified.lower()) or ("class" in diagram_type_identified.lower()):
                         try:
-                            xmi_content = plantuml_to_xmi(plantuml_code)
+                            parser = PlantUMLClassParser()
+                            parser.parse(plantuml_code)
+                            xmi_content = XMIClassGenerator(autor = "195841").save_xmi(parser.classes, parser.relations, parser.enums, 
+                                                            parser.notes, parser.primitive_types, diagram_name = diagram_type)
                             if st.download_button(
                                 label=tr("download_xmi_button"),
                                 data=xmi_content,
@@ -643,11 +648,11 @@ if st.session_state.plantuml_diagrams:
                                 nazwa_diagramu=diagram_type,
                                 dane=parsed_data
                             )
-                            xmi_content = plantuml_to_xmi(plantuml_code)
+                            #xmi_content = plantuml_to_xmi(plantuml_code)
                             if st.download_button(
                                 label=tr("download_xmi_button"),
                                 data=xmi_content,
-                                file_name=f"diagram_{i+1}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xmi",
+                                file_name=f"{diagram_type}_{i+1}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xmi",
                                 mime="application/xml"
                             ):
                                 st.success(tr("msg_success_ready_for_downloading_XMI"))
@@ -726,7 +731,10 @@ if st.session_state.plantuml_diagrams:
         with col4:
             if ("klas" in diagram_type_identified.lower()) or ("class" in diagram_type_identified.lower()):
                 try:
-                    xmi_content = plantuml_to_xmi(plantuml_code)
+                    parser = PlantUMLClassParser()
+                    parser.parse(plantuml_code)
+                    xmi_content = XMIClassGenerator(autor = "195841").save_xmi(parser.classes, parser.relations, parser.enums, 
+                                                    parser.notes, parser.primitive_types, diagram_name = diagram_type)
                     if st.download_button(
                         label=tr("download_xmi_button"),
                         data=xmi_content,
@@ -744,11 +752,11 @@ if st.session_state.plantuml_diagrams:
                         nazwa_diagramu=diagram_type,
                         dane=parsed_data
                     )
-                    xmi_content = plantuml_to_xmi(plantuml_code)
+                    #xmi_content = plantuml_to_xmi(plantuml_code)
                     if st.download_button(
                         label=tr("download_xmi_button"),
                         data=xmi_content,
-                        file_name=f"diagram_{i+1}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xmi",
+                        file_name=f"{diagram_type}_{i+1}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xmi",
                         mime="application/xml"
                     ):
                         st.success(tr("msg_success_ready_for_downloading_XMI"))

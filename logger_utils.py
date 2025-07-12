@@ -35,3 +35,6 @@ def log_error(message):
 
 def log_exception(message):
     logging.exception(message)
+
+def log_debug(message):
+    logging.debug(message)

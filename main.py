@@ -18,7 +18,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 try:
-    from plantuml_to_ea import plantuml_to_xmi
+    #from plantuml_to_ea import plantuml_to_xmi
     from extract_code_from_response import extract_xml, extract_plantuml, extract_plantuml_blocks, is_valid_xml
     from xml_highlighter import XMLHighlighter
     from input_validator import validate_input_text
@@ -29,6 +29,8 @@ try:
     from translations_en import TRANSLATIONS as EN
     from plantuml_sequance_parser import PlantUMLSequenceParser
     from xmi_sequance_generator import XMISequenceGenerator
+    from plantuml_class_parser import PlantUMLClassParser
+    from xmi_class_generator import XMIClassGenerator
 except ImportError as e:
     MODULES_LOADED = False
     print(f"Error importing modules: {e}")
@@ -661,7 +663,11 @@ class AIApp(QMainWindow):
             diagram_type = identify_plantuml_diagram_type(plantuml_code, LANG)
             try:
                 if diagram_type == ('Diagram klas' or 'Class diagram'):
-                    xmi_code = plantuml_to_xmi(plantuml_code)
+                    #xmi_code = plantuml_to_xmi(plantuml_code)
+                    parser = PlantUMLClassParser()
+                    parser.parse(plantuml_code)
+                    xmi_code = XMIClassGenerator(autor = "195841").save_xmi(parser.classes, parser.relations, parser.enums, 
+                                    parser.notes, parser.primitive_types, diagram_name = diagram_type)
                 elif diagram_type == ('Diagram sekwencji' or 'Sequence diagram'):
                     parser = PlantUMLSequenceParser(plantuml_code)
                     parsed_data = parser.parse()
@@ -670,7 +676,7 @@ class AIApp(QMainWindow):
                         dane=parsed_data  
                     )
                 timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-                default_filename = f"output_{timestamp}.xmi"
+                default_filename = f"{diagram_type}_{timestamp}.xmi"
                 
                 # Otwórz okno dialogowe do wyboru pliku
                 filename, _ = QFileDialog.getSaveFileName(
@@ -870,9 +876,6 @@ class AIApp(QMainWindow):
                     self.save_active_diagram()
                 elif (("klas" in current_diagram_type.lower()) or ("sekwencji" in current_diagram_type.lower())) and (action==action_xmi):
                     self.save_xmi()
-                '''elif action==action_test:
-                    current_diagram_type = self.get_current_diagram_type(idx)
-                    print(f" {current_diagram_type}")'''
 
             tab.customContextMenuRequested.connect(show_context_menu)
         except Exception as e:
