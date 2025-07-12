@@ -276,6 +276,33 @@ class PlantUMLParser:
     
     def _parse_relation(self, line: str) -> bool:
         """Parsuje relacje między klasami"""
+        print(f"DEBUG: Parsowanie linii relacji: {line}")
+
+        # Rozpoznaj dziedziczenie (<|-- lub --|>)
+        # Rozpoznaj dziedziczenie (<|-- lub --|>)
+        inheritance_pattern = r'(\w+)\s*<\|--\s*(\w+)|(\w+)\s*--\|>\s*(\w+)'
+        inheritance_match = re.search(inheritance_pattern, line)
+
+        if inheritance_match:
+            if inheritance_match.group(1) and inheritance_match.group(2):
+                # A <|-- B (B dziedziczy po A)
+                parent, child = inheritance_match.group(1), inheritance_match.group(2)
+            else:
+                # A --|> B (B dziedziczy po A)
+                parent, child = inheritance_match.group(3), inheritance_match.group(4)
+                    
+            print(f"Znaleziono dziedziczenie: {child} dziedziczy po {parent}")
+            
+            # Wyciągnij etykietę, jeśli istnieje
+            multiplicities, label = self._extract_multiplicity_and_label(line)
+            
+            # UMLRelation(source, target, relation_type, source_multiplicity, target_multiplicity, label)
+            # W tym przypadku source=child, target=parent (dziecko dziedziczy po rodzicu)
+            self.relations.append(
+                UMLRelation(child, parent, 'inheritance', None, None, label)
+            )
+            return True
+
         # Sprawdź czy linia zawiera symbol relacji
         relation_symbols = ['-->', '<--', '--|>', '<|--', '--|>', '..|>', '<|..', '*--', 'o--', '--']
         if not any(rel_sym in line for rel_sym in relation_symbols):
@@ -447,6 +474,7 @@ class PlantUMLParser:
                 'text': note.text
             } for note in self.notes]
         }
+        
     
 # --- Przykład użycia ---
 if __name__ == '__main__':
