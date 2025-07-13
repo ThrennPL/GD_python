@@ -143,4 +143,5 @@ TRANSLATIONS = {
     "diagram_type_gantt_chart": "Gantt Chart",
     "diagram_type_work_breakdown": "Work Breakdown Structure",
     "diagram_type_flow_diagram": "Data Flow Diagram",
+    'diagram_type_wireframe': "Wireframe",
 }

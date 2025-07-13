@@ -144,4 +144,5 @@ TRANSLATIONS = {
     "diagram_type_gantt_chart": "Diagram Gantta",
     "diagram_type_work_breakdown": "Struktura podziału pracy (WBS)",
     "diagram_type_flow_diagram": "Diagram przepływu danych",
+    'diagram_type_wireframe': "Makieta (Wireframe)",
 }
