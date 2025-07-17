@@ -1,8 +1,11 @@
 import re
 import pprint
 from datetime import datetime
+from logger_utils import log_debug, log_info, log_error, log_exception, setup_logger
 import unittest
 import os
+
+setup_logger()
 
 class PlantUMLSequenceParser:
     """
@@ -220,12 +223,31 @@ class PlantUMLSequenceParser:
 if __name__ == '__main__':
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")  
     input_file = 'diagram_sekwencji_PlantUML.puml'
-    output_file = f'test_sequance_{timestamp}.xmi'
-    with open(input_file, 'r', encoding='utf-8') as f:
-            plantuml_code = f.read()
-        
-    parser = PlantUMLSequenceParser(plantuml_code)
-    parsed_data = parser.parse()
+    output_file = f'test_sequance_{timestamp}.json'
+    try:
+        with open(input_file, 'r', encoding='utf-8') as f:
+                plantuml_code = f.read()
+            
+        parser = PlantUMLSequenceParser(plantuml_code)
+        parsed_data = parser.parse()
 
-    print("--- Wynik Parsowania ---")
-    pprint.pprint(parsed_data)
+        print("--- Wynik Parsowania ---")
+        pprint.pprint(parsed_data)
+
+    # Opcjonalnie zapisz do pliku JSON
+        import json
+        with open(output_file, 'w', encoding='utf-8') as f:
+            json.dump(parsed_data, f, indent=2, ensure_ascii=False)
+        print(f"\nWynik zapisany do: {output_file}")
+        log_info(f"Wynik zapisany do: {output_file}")
+        
+    except FileNotFoundError:
+        print(f"Nie znaleziono pliku: {input_file}")
+        log_error(f"Nie znaleziono pliku: {input_file}")
+        print("Utwórz przykładowy plik PlantUML lub zmień nazwę pliku w kodzie.")
+        log_info("Utwórz przykładowy plik PlantUML lub zmień nazwę pliku w kodzie.")
+    except Exception as e:
+        print(f"Wystąpił błąd: {e}")
+        log_exception(f"Wystąpił błąd: {e}")
+        import traceback
+        traceback.print_exc()    

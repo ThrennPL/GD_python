@@ -1,6 +1,7 @@
 import xml.etree.ElementTree as ET
 import uuid
 from datetime import datetime
+import xml.dom.minidom
 
 class XMIActivityGenerator:
     """
@@ -43,9 +44,10 @@ class XMIActivityGenerator:
             ET.Element: Główny element XMI.
         """
         root = ET.Element(ET.QName(self.ns['xmi'], 'XMI'), {
-            'xmi:version': '2.1',
-            'xmlns:uml': self.ns['uml'],
-            'xmlns:xmi': self.ns['xmi']
+            'xmi:version': '2.1'
+            # Usunięto redundantne atrybuty przestrzeni nazw:
+            # 'xmlns:uml': self.ns['uml'],
+            # 'xmlns:xmi': self.ns['xmi']
         })
 
         # Dodanie dokumentacji z informacjami o eksporterze
@@ -238,18 +240,20 @@ if __name__ == '__main__':
     # 3. Wygenerowanie struktury XMI
     xml_content = generator.generate_xml_structure(diagram_name)
     
-    # 4. Poprawienie nagłówka XML, aby zgadzał się z plikiem wzorcowym
-    # ElementTree domyślnie generuje kodowanie UTF-8, a wzorzec ma windows-1252.
-    # Podmieniamy deklarację, aby zapewnić zgodność.
-    xml_content_final = xml_content.replace(
+    # 4. Poprawienie nagłówka XML
+    xml_content_fixed = xml_content.replace(
         '<?xml version=\'1.0\' encoding=\'unicode\'?>',
-        '<?xml version="1.0" encoding="windows-1252"?>'
+        '<?xml version="1.0" encoding="UTF-8"?>'
     )
     
-    # 5. Zapisanie pliku z odpowiednim kodowaniem
+    # 5. Formatowanie XML z wcięciami
+    dom = xml.dom.minidom.parseString(xml_content_fixed)
+    xml_content_formatted = dom.toprettyxml(indent="  ", encoding="utf-8").decode('utf-8')
+    
+    # 6. Zapisanie pliku z kodowaniem UTF-8
     try:
-        with open(output_filename, 'w', encoding='windows-1252') as f:
-            f.write(xml_content_final)
+        with open(output_filename, 'w', encoding='utf-8') as f:
+            f.write(xml_content_formatted)
         print(f"✔ Plik '{output_filename}' został pomyślnie wygenerowany.")
         print(f"  - Autor: {generator.author}")
         print(f"  - Nazwa diagramu: {diagram_name}")
