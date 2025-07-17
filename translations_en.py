@@ -90,6 +90,8 @@ TRANSLATIONS = {
     "msg_info_response_from_api": "Response from API (Single verification): {response}\n",
     "msg_info_generating_response": "Generating response...",
     "msf_info_model_provider": "Model provider: {MODEL_PROVIDER}\n",
+    "msg_info_waiting_for_verification": "Verifying PlantUML code",
+    "msg_info_waiting_for_model_response": "Waiting for AI model response",
 
     "msg_validation_success_message": "The code is correct. Stopping further attempts.\n",
     "msg_validation_success": "the code is correct",

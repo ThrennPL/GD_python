@@ -84,6 +84,13 @@ def identify_plantuml_diagram_type(plantuml_code: str, LANG="pl") -> str:
         return tr("diagram_type_component_diagram", LANG=LANG)
     
     # Wykrywanie na podstawie zawartości - w kolejności od najbardziej specyficznych
+
+    # Diagram aktywności
+    activity_indicators = ['start', 'stop', ':' in code and ';' in code]
+    activity_control_flow = ['if', 'then', 'else', 'endif', 'repeat', 'while', 'fork', 'fork again']
+    if ('start' in code and any(indicator in code for indicator in activity_control_flow)) or \
+    (re.search(r':[^;]+;', code) and any(indicator in code for indicator in activity_indicators)):
+        return tr("diagram_type_activity_diagram", LANG=LANG)
     
     # Diagram klas - wyższy priorytet niż diagram sekwencji!
     class_indicators = ['class ', 'interface ', 'enum ', 'abstract class', 'extends', 'implements']
@@ -142,33 +149,65 @@ def fetch_plantuml_svg_www(plantuml_code: str, LANG="pl") -> bytes:
             status_code=response.status_code,
             error_text=response.text
         )
+        log_error(f"Nie udało się pobrać SVG: {error_msg}")
         raise Exception(error_msg)
     
 def fetch_plantuml_svg_local(plantuml_code: str, plantuml_jar_path: str = "plantuml.jar", LANG="pl") -> str:
-    """
-    Generates SVG from PlantUML code using local plantuml.jar and returns the path to the SVG file.
-    The temporary file is not deleted automatically – remove it when no longer needed.
-    """
-
     tmpdir = tempfile.mkdtemp()
     puml_path = os.path.join(tmpdir, "diagram.puml")
     svg_path = os.path.join(tmpdir, "diagram.svg")
-    # Save PlantUML code to a temporary file
     with open(puml_path, "w", encoding="utf-8") as f:
         f.write(plantuml_code)
-    # Generate SVG using plantuml.jar
-    result = subprocess.run([
-        "java", "-jar", plantuml_jar_path, "-stdrpt:2", "-tsvg", puml_path,"-charset","UTF-8"
-    ], capture_output=True)
+    result = subprocess.run(
+        [
+            "java", "-jar", plantuml_jar_path, "-stdrpt:2", "-tsvg",
+            puml_path, "-charset", "UTF-8"
+        ],
+        capture_output=True
+    )
     stdout_jar = result.stdout.decode("utf-8")
+    stderr_jar = result.stderr.decode("utf-8")
+    error_msg = None
 
-    error_msg = ''
-    if ":" in stdout_jar:
-        error_msg = stdout_jar.split(":", 1)[1].strip()
-        log_error(f"Extracted error message: {error_msg}")
+    if result.returncode != 0 or stderr_jar:
+        # Priorytetowo zwracamy stderr, bo tam PlantUML wywala błędy Java
+        error_msg = stderr_jar.strip() or stdout_jar.strip()
+        log_error(f"PlantUML error: {error_msg}")
     else:
-        error_msg= stdout_jar
+        # Dodatkowo można sprawdzać stderr na obecność "Error" lub typowych fragmentów
+        error_msg = ""
+        log_info(f"PlantUML stdout: {stdout_jar.strip()}")
 
-    log_info(f"PlantUML stdout: {error_msg}")
     return svg_path, error_msg
 
+# Dodaj na końcu pliku plantuml_utils.py
+if __name__ == "__main__":
+    import sys
+    from datetime import datetime
+    
+    # Obsługa argumentów wiersza poleceń lub użycie wartości domyślnych
+    if len(sys.argv) > 1:
+        input_file = sys.argv[1]
+    else:
+        input_file = 'Diagram_aktywnosci.puml'
+    
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    #output_file = f"diagram_klas_{timestamp}.xmi"
+    
+    try:
+        # Wczytaj plik PlantUML
+        print(f"Wczytywanie pliku: {input_file}")
+        with open(input_file, 'r', encoding='utf-8') as f:
+            plantuml_code = f.read()
+        
+        # Najpierw zidentyfikuj typ diagramu
+        diagram_type = identify_plantuml_diagram_type(plantuml_code)
+        print(f"Zidentyfikowany typ diagramu: {diagram_type}")
+        
+    except FileNotFoundError:
+        print(f"Nie znaleziono pliku: {input_file}")
+        print(f"Użycie: python {sys.argv[0]} [ścieżka_do_pliku_puml]")
+    except Exception as e:
+        print(f"Wystąpił błąd: {e}")
+        import traceback
+        traceback.print_exc()

@@ -6,7 +6,7 @@ import requests
 import traceback
 import os
 from PyQt5.QtGui import QTextCharFormat, QColor, QFont
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, QTimer
 from PyQt5.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QSplitter, QTextEdit, QPushButton, QWidget, QDialog, QLabel, QTabWidget, QComboBox, QCheckBox, QLabel, QGroupBox, QVBoxLayout, QHBoxLayout, QRadioButton, QButtonGroup, QMessageBox, QFileDialog, QMenu
 from PyQt5.QtSvg import QSvgWidget
 from xml.etree.ElementTree import fromstring, ParseError
@@ -363,7 +363,7 @@ class AIApp(QMainWindow):
             self.api_thread.response_received.connect(self.handle_api_response)
             self.api_thread.error_occurred.connect(self.handle_api_error)
             self.api_thread.start()
-            log_info(f"Starting API thread for model {model_name} with prompt: {prompt[:5000]}...")
+            log_info(f"Starting API thread for model {model_name} with prompt: {prompt[:100]}...")
         except Exception as e:
             error_msg = tr("error_sending_request").format(model_name=model_name, error=e)
             log_exception(error_msg)
@@ -398,6 +398,25 @@ class AIApp(QMainWindow):
         process_description = self.input_box.toPlainText().strip()
         use_template = self.use_template_checkbox.isChecked()
 
+        self.output_box.append(tr("msg_info_waiting_for_model_response"))
+        self.waiting_timer = QTimer()
+        self.waiting_dots = 0
+
+        def update_waiting_animation():
+            self.waiting_dots = (self.waiting_dots % 4) + 1
+            cursor = self.output_box.textCursor()
+            cursor.movePosition(cursor.End)
+            cursor.movePosition(cursor.StartOfLine, cursor.KeepAnchor)
+            cursor.removeSelectedText()
+            cursor.setCharFormat(QTextCharFormat())
+            format = QTextCharFormat()
+            format.setForeground(QColor("blue"))
+            format.setFontWeight(QFont.Bold)
+            cursor.setCharFormat(format)
+            cursor.insertText(f"{tr("msg_info_waiting_for_model_response")}{'.' * self.waiting_dots}")
+        self.waiting_timer.timeout.connect(update_waiting_animation)
+        self.waiting_timer.start(500)  # Aktualizuj co 500 ms
+        
         selected_template = self.template_selector.currentText()
         template_data = self.prompt_templates[selected_template]
         if diagram_type.lower() in ["bpmn", "bpmn_flow", "bpmn_component"]:
@@ -511,7 +530,12 @@ class AIApp(QMainWindow):
     
     def handle_api_response(self, model_name, response_content):
         """Obsługuje odpowiedź z API."""
-
+        if hasattr(self, "verification_timer") and self.verification_timer.isActive():
+            self.verification_timer.stop()
+        if hasattr(self, "waiting_timer") and self.waiting_timer.isActive():
+            self.waiting_timer.stop()
+        
+        
         try:
             if DB_PROVIDER == "mysql":
                 from mysql_connector import log_ai_interaction
@@ -520,7 +544,7 @@ class AIApp(QMainWindow):
                 from PostgreSQL_connector import log_ai_interaction
                 subprocess.Popen([ sys.executable, 'postgres_connector.py', self.prompt_text, response_content, model_name])
 
-            log_info(f"AI interaction logged in database successfully for model {model_name}")
+            #log_info(f"AI interaction logged in database successfully for model {model_name}")
         except Exception as e:
             tb = traceback.format_exc()
             log_error(f"Error logging AI interaction: {e}\n{tb}\n")
@@ -624,7 +648,7 @@ class AIApp(QMainWindow):
                 code = self.plantuml_codes[idx]
                 diagram_type = identify_plantuml_diagram_type(code, LANG)
                 timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-                default_filename = f"output_{timestamp}.puml"
+                default_filename = f"{diagram_type.replace(' ', '_')}_{timestamp}.puml"
                 
                 # Otwórz okno dialogowe do wyboru pliku
                 filename, _ = QFileDialog.getSaveFileName(
@@ -676,7 +700,7 @@ class AIApp(QMainWindow):
                         dane=parsed_data  
                     )
                 timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-                default_filename = f"{diagram_type}_{timestamp}.xmi"
+                default_filename = f"{diagram_type.replace(' ', '_')}_{timestamp}.xmi"
                 
                 # Otwórz okno dialogowe do wyboru pliku
                 filename, _ = QFileDialog.getSaveFileName(
@@ -835,14 +859,17 @@ class AIApp(QMainWindow):
             del self.plantuml_codes[idx]
 
     def show_plantuml_diagram(self, plantuml_code):
+        err_msg = ""
         try:
             plantuml_code = plantuml_code.replace("!theme ocean", "")
             plantuml_code = plantuml_code.replace("!theme grameful", "")
             plantuml_code = plantuml_code.replace("!theme plain", "")
             if plantuml_generator_type == "local":
                 svg_data, err_msg = fetch_plantuml_svg_local(plantuml_code, plantuml_jar_path, LANG)
+                print(f"svg_data: {svg_data}" if svg_data else f"svg_data: {err_msg}" if err_msg else f"svg_data: {svg_data}")
             elif plantuml_generator_type == "www":
                 svg_data, err_msg = fetch_plantuml_svg_www(plantuml_code, LANG)
+                print(f"svg_data: {svg_data}" if svg_data else f"svg_data: {err_msg}" if err_msg else f"svg_data: {svg_data}")
             svg_widget = QSvgWidget()
             svg_widget.load(svg_data)
             tab = QWidget()
@@ -915,12 +942,31 @@ class AIApp(QMainWindow):
                     self, tr("verification_template"),
                     tr("msg_verification_attempts_exceeded")
                     ),
+                self.verification_attempts = 0
                 return
             self.verification_attempts += 1
             verification_template = self.prompt_templates[tr("verification_template")]["template"]
             prompt = tr("msg_info_verifying_plantuml_code_error_line").format(err_msg=err_msg)  + verification_template.format(plantuml_code=plantuml_code, diagram_type=diagram_type)
+            self.output_box.append(tr("msg_info_waiting_for_verification"))
+            self.verification_timer = QTimer()
+            self.verification_dots = 0
+            def update_verification_animation():
+                self.verification_dots = (self.verification_dots %4) + 1
+                cursor = self.output_box.textCursor()
+                cursor.movePosition(cursor.End)
+                cursor.movePosition(cursor.StartOfLine, cursor.KeepAnchor)
+                cursor.removeSelectedText()
+                format = QTextCharFormat()
+                format.setForeground(QColor("red"))
+                format.setFontWeight(QFont.Bold)
+                cursor.setCharFormat(format)
+                cursor.insertText(tr("msg_info_waiting_for_verification") + "." * self.verification_dots)
+            self.verification_timer.timeout.connect(update_verification_animation)
+            self.verification_timer.start(500)
+                
             self.last_prompt_type = "Verification"
-            print(f"Błąd diagramu PlantUML: {self.verification_attempts}, {self.last_prompt_type}, {err_msg}")
+
+            print(f"Weryfikacja PlantUML: {self.verification_attempts}, {self.last_prompt_type}, {err_msg}")
             error_msg = tr("msg_sending_code_for_verification")
             self.append_to_chat("System", error_msg)
             self.send_to_api_custom_prompt(prompt)

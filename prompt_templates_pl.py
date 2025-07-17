@@ -345,7 +345,6 @@ prompt_templates = {
                     "**PRZYKŁAD STRUKTURY:**\n"
                     "```plantuml\n"
                     "@startuml\n"
-                    "!theme plain\n"
                     "title [Nazwa Procesu] - Przepływ Aktywności\n\n"
 
                     "start\n\n"

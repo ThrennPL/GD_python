@@ -1,4 +1,4 @@
-from logger_utils import log_info, log_error
+from logger_utils import log_info, log_error, log_debug, log_exception
 import re
 import requests
 import os
@@ -22,7 +22,8 @@ class APICallThread(QThread):
     def run(self):
         """Wysyła żądanie API i emituje odpowiedź."""
         # zapisz w logu treść wysyłanego promptu
-        log_info(f"Wysyłam do API: {self.url} żądanie do modelu: {self.model_name} z treścią: {self.payload.get('messages', [{}])[0].get('content', 'No content')}")   
+        log_info(f"Wysyłam do API: {self.url} żądanie do modelu: {self.model_name}")  
+        #log_debug(f"Wysyłam do API: {self.url} żądanie do modelu: {self.model_name} z treścią: {self.payload.get('messages', [{}])[0].get('content', 'No content')}")   
         try:
             if self.provider == "gemini":
                 import google.generativeai as genai
@@ -32,7 +33,7 @@ class APICallThread(QThread):
                     response = model.generate_content(self.payload["messages"][0]["content"])
                     response_content = response.text if hasattr(response, "text") else str(response)
                     self.response_received.emit(self.model_name, response_content)
-                    log_info(f"Odpowiedź API: {response.text[:5000]}")
+                    log_info(f"Odpowiedź API: {response.text[:100]}")
                 except Exception as e:
                     error_msg = f"Gemini error: {e}"
                     self.error_occurred.emit(error_msg)
@@ -42,7 +43,7 @@ class APICallThread(QThread):
                 if response.status_code == 200:
                     response_content = response.json().get("choices")[0].get("message").get("content", "No response")
                     self.response_received.emit(self.model_name, response_content)
-                    log_info(f"Odpowiedź API: {response.text[:5000]}") # Logujemy tylko pierwsze 2000 znaków
+                    log_info(f"Odpowiedź API: {response.text[:100]}")
                 else:
                     error_msg = f"Error: {response.status_code} - {response.text}"
                     self.error_occurred.emit(error_msg)
