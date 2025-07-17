@@ -142,14 +142,14 @@ def fetch_plantuml_svg_www(plantuml_code: str, LANG="pl") -> bytes:
         error_msg = f"{int(error_headers['line'])+1}: {error_headers['error']} : {error_headers['description']}" 
   
     if response.status_code == 200:
-        log_error(f"Nie udało się pobrać SVG: {response.status_code}, Error: {error_msg}")
+        log_error(tr("msg_error_downloading_SVG", LANG=LANG).format(status_code=response.status_code, error_text=error_msg)) 
         return response.content, error_msg
     else:
         error_msg = tr("msg_error_downloading_SVG", LANG=LANG).format(
             status_code=response.status_code,
             error_text=response.text
         )
-        log_error(f"Nie udało się pobrać SVG: {error_msg}")
+        log_error(f"{error_msg}")
         raise Exception(error_msg)
     
 def fetch_plantuml_svg_local(plantuml_code: str, plantuml_jar_path: str = "plantuml.jar", LANG="pl") -> str:
@@ -176,6 +176,7 @@ def fetch_plantuml_svg_local(plantuml_code: str, plantuml_jar_path: str = "plant
     else:
         # Dodatkowo można sprawdzać stderr na obecność "Error" lub typowych fragmentów
         error_msg = ""
+        log_info(tr("msg_info_success_generating_SVG", LANG=LANG)).format(svg_path=svg_path)
         log_info(f"PlantUML stdout: {stdout_jar.strip()}")
 
     return svg_path, error_msg
@@ -196,18 +197,18 @@ if __name__ == "__main__":
     
     try:
         # Wczytaj plik PlantUML
-        print(f"Wczytywanie pliku: {input_file}")
+        log_info(tr("msg_info_reading_file", LANG="pl").format(input_file=input_file))
         with open(input_file, 'r', encoding='utf-8') as f:
             plantuml_code = f.read()
         
         # Najpierw zidentyfikuj typ diagramu
         diagram_type = identify_plantuml_diagram_type(plantuml_code)
-        print(f"Zidentyfikowany typ diagramu: {diagram_type}")
+        log_info(tr("msg_info_diagram_type", LANG="pl").format(diagram_type=diagram_type)) 
         
     except FileNotFoundError:
-        print(f"Nie znaleziono pliku: {input_file}")
-        print(f"Użycie: python {sys.argv[0]} [ścieżka_do_pliku_puml]")
+        log_error(tr("msg_error_file_not_found", LANG="pl").format(input_file=input_file)) 
+        log_info(tr("msg_info_usage", LANG="pl").format(script_name=sys.argv[0])) 
     except Exception as e:
-        print(f"Wystąpił błąd: {e}")
+        log_error(tr("msg_error_reading_file", LANG="pl").format(input_file=input_file, error=e)) 
         import traceback
         traceback.print_exc()

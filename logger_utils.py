@@ -38,3 +38,6 @@ def log_exception(message):
 
 def log_debug(message):
     logging.debug(message)
+
+def log_warning(message):
+    logging.warning(message)

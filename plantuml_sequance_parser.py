@@ -5,7 +5,7 @@ from logger_utils import log_debug, log_info, log_error, log_exception, setup_lo
 import unittest
 import os
 
-setup_logger()
+setup_logger('app.log')
 
 class PlantUMLSequenceParser:
     """

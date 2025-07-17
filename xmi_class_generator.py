@@ -7,10 +7,16 @@ import re
 from typing import Dict, List, Optional, Tuple
 from plantuml_model import UMLClass, UMLRelation, UMLEnum, UMLNote
 from plantuml_class_parser import PlantUMLClassParser
-from logger_utils import log_info, log_error, log_exception, log_debug, setup_logger
+from logger_utils import log_info, log_error, log_exception, log_debug, setup_logger, log_warning
+from translations_pl import TRANSLATIONS as PL
+from translations_en import TRANSLATIONS as EN
 
 
 setup_logger()
+
+def tr(key):
+    return EN[key] if LANG == "en" else PL[key]
+
 class XMIClassGenerator:
     """Generator plików XMI dla diagramów klas Enterprise Architect"""
     
@@ -482,7 +488,7 @@ class XMIClassGenerator:
             target_id = self.id_map.get(f"class_{relation.target}") or self.id_map.get(f"enum_{relation.target}")
             
             if not source_id or not target_id:
-                print(f"WARN: Nie znaleziono ID dla {relation.source} lub {relation.target}, pomijam relację")
+                log_warning(f"WARN: Nie znaleziono ID dla {relation.source} lub {relation.target}, pomijam relację")
                 continue
                 
             # Obsługa różnych typów relacji
@@ -521,7 +527,7 @@ class XMIClassGenerator:
         # Znajdź diagram
         diagram_id = self.id_map.get('diagram')
         if not diagram_id:
-            print("WARN: Nie znaleziono ID diagramu")
+            log_warning("WARN: Nie znaleziono ID diagramu")
             return
             
         diagrams = doc.getElementsByTagName("diagram")
@@ -532,7 +538,7 @@ class XMIClassGenerator:
                 break
         
         if not diagram:
-            print("WARN: Nie znaleziono elementu diagramu")
+            log_warning("WARN: Nie znaleziono elementu diagramu")
             return
         
         # Znajdź lub utwórz sekcję diagramlinks
@@ -610,7 +616,7 @@ class XMIClassGenerator:
         target_id = self.id_map.get(f"class_{relation.target}") or self.id_map.get(f"enum_{relation.target}")
         
         if not source_id or not target_id:
-            print(f"WARN: Nie znaleziono ID dla {relation.source} lub {relation.target}, pomijam relację")
+            log_warning(f"WARN: Nie znaleziono ID dla {relation.source} lub {relation.target}, pomijam relację")
             return None, None
         
         # Obsługa dziedziczenia jako specjalny przypadek
@@ -700,7 +706,7 @@ class XMIClassGenerator:
             
             return real_elem, realization_id
         else:
-            print(f"WARN: Nie znaleziono elementu klasy {relation.source} dla relacji realizacji")
+            log_warning(f"WARN: Nie znaleziono elementu klasy {relation.source} dla relacji realizacji")
             return None, None
 
 
@@ -756,7 +762,7 @@ class XMIClassGenerator:
                 break
         
         if not diagrams_elem:
-            print("WARN: Nie znaleziono sekcji diagrams w rozszerzeniu")
+            log_warning("WARN: Nie znaleziono sekcji diagrams w rozszerzeniu")
             return
         
         # Znajdź element diagram
@@ -767,7 +773,7 @@ class XMIClassGenerator:
                 break
         
         if not diagram_elem:
-            print("WARN: Nie znaleziono elementu diagram w sekcji diagrams")
+            log_warning("WARN: Nie znaleziono elementu diagram w sekcji diagrams")
             return
         
         # Znajdź lub utwórz elements w diagramie
@@ -917,12 +923,12 @@ class XMIClassGenerator:
             elif elem.getAttribute("xmi:type") == "uml:Dependency":
                 dependencies += 1
         
-        print(f"\nANALIZA WYGENEROWANEGO XMI:")
-        print(f"- Klasy: {classes}")
-        print(f"- Interfejsy: {interfaces}")
-        print(f"- Generalizacje (dziedziczenie): {generalizations}")
-        print(f"- Asocjacje: {associations}")
-        print(f"- Zależności: {dependencies}")
+        log_info(f"\nANALIZA WYGENEROWANEGO XMI:")
+        log_info(f"- Klasy: {classes}")
+        log_info(f"- Interfejsy: {interfaces}")
+        log_info(f"- Generalizacje (dziedziczenie): {generalizations}")
+        log_info(f"- Asocjacje: {associations}")
+        log_info(f"- Zależności: {dependencies}")
 
     
     def _map_relation_to_connector_id(self, relation):
@@ -1066,7 +1072,7 @@ class XMIClassGenerator:
                 break
         
         if not connectors_elem:
-            print("WARN: Nie znaleziono sekcji connectors w rozszerzeniu")
+            log_warning("WARN: Nie znaleziono sekcji connectors w rozszerzeniu")
             connectors_elem = doc.createElement("connectors")
             extension_element.appendChild(connectors_elem)
         
@@ -1082,7 +1088,7 @@ class XMIClassGenerator:
             target_id = self.id_map.get(f"class_{relation.target}") or self.id_map.get(f"enum_{relation.target}")
             
             if not source_id or not target_id:
-                print(f"WARN: Nie znaleziono ID dla {relation.source} lub {relation.target}, pomijam relację")
+                log_warning(f"WARN: Nie znaleziono ID dla {relation.source} lub {relation.target}, pomijam relację")
                 continue
                 
             # Znajdź ID konektora w zależności od typu relacji
@@ -1100,7 +1106,7 @@ class XMIClassGenerator:
             if not connector_id:
                 # Jeśli nie znaleziono ID, wygeneruj nowy
                 connector_id = self._generate_uuid()
-                print(f"DEBUG: Wygenerowano nowe ID konektora: {connector_id}")
+                log_debug(f"DEBUG: Wygenerowano nowe ID konektora: {connector_id}")
                 
             # Utwórz element konektora
             connector = doc.createElement("connector")
@@ -1249,7 +1255,7 @@ class XMIClassGenerator:
         # Znajdź diagram
         diagram_id = self.id_map.get('diagram')
         if not diagram_id:
-            print("WARN: Nie znaleziono ID diagramu")
+            log_warning("WARN: Nie znaleziono ID diagramu")
             return
             
         diagrams = doc.getElementsByTagName("diagram")
@@ -1260,7 +1266,7 @@ class XMIClassGenerator:
                 break
         
         if not diagram:
-            print("WARN: Nie znaleziono elementu diagramu")
+            log_warning("WARN: Nie znaleziono elementu diagramu")
             return
         
         # Znajdź lub utwórz sekcję diagramlinks
@@ -1393,7 +1399,7 @@ class XMIClassGenerator:
             break
         
         if not extension:
-            print("WARN: Nie znaleziono sekcji Extension")
+            log_warning("WARN: Nie znaleziono sekcji Extension")
             return type_ids
         
         # Znajdź lub utwórz sekcję primitivetypes
@@ -1491,12 +1497,12 @@ if __name__ == "__main__":
         with open(output_file, 'w', encoding='utf-8') as f:
             f.write(xmi_content)
             
-        print(f"Wygenerowano plik XMI: {output_file}")
+        log_info(f"Wygenerowano plik XMI: {output_file}")
         
     except FileNotFoundError:
-        print(f"Nie znaleziono pliku: {input_file}")
-        print("Utwórz przykładowy plik PlantUML lub zmień nazwę pliku w kodzie.")
+        log_error(f"Nie znaleziono pliku: {input_file}")
+        log_error("Utwórz przykładowy plik PlantUML lub zmień nazwę pliku w kodzie.")
     except Exception as e:
-        print(f"Wystąpił błąd: {e}")
+        log_error(f"Wystąpił błąd: {e}")
         import traceback
         traceback.print_exc()

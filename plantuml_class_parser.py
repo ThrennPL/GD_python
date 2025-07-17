@@ -2,7 +2,8 @@ from plantuml_model import UMLClass, UMLRelation, UMLEnum, UMLNote
 from logger_utils import setup_logger, log_info, log_error, log_debug, log_exception
 import re
 
-setup_logger()
+setup_logger('app.log')
+
 class PlantUMLClassParser:
     """Parser dla kodu PlantUML - poprawiona wersja z eliminacją duplikatów"""
     
@@ -74,7 +75,7 @@ class PlantUMLClassParser:
             
             # Jeśli nic nie dopasowano, może to być błąd lub nieobsługiwany element
             print(f"DEBUG: Unrecognized line: {line}")
-            log_info(f"Unrecognized line: {line}")
+            log_debug(f"Unrecognized line: {line}")
         
         # Po zakończeniu parsowania wypisz statystyki relacji
         self._print_relation_stats()
@@ -224,7 +225,7 @@ class PlantUMLClassParser:
                     target_multiplicity=None
                 )
                 if self._add_relation_if_not_exists(new_relation):
-                    log_info(f"DEBUG: Found inheritance: {name} extends {extends_class}")
+                    log_debug(f"DEBUG: Found inheritance: {name} extends {extends_class}")
             
             # Dodaj relacje implementacji
             if implements_interfaces:
@@ -239,7 +240,7 @@ class PlantUMLClassParser:
                         target_multiplicity=None
                     )
                     if self._add_relation_if_not_exists(new_relation):
-                        log_info(f"DEBUG: Found implementation: {name} implements {interface}")
+                        log_debug(f"DEBUG: Found implementation: {name} implements {interface}")
             
             return True
         
@@ -295,7 +296,7 @@ class PlantUMLClassParser:
                     target_multiplicity=None
                 )
                 if self._add_relation_if_not_exists(new_relation):
-                    log_info(f"DEBUG: Found interface inheritance: {name} extends {extends_interface}")
+                    log_debug(f"DEBUG: Found interface inheritance: {name} extends {extends_interface}")
             
             return True
         
@@ -385,7 +386,7 @@ class PlantUMLClassParser:
         Jeśli nie, tworzy ją jako pustą klasę.
         """
         if class_name not in self.classes and class_name not in self.enums:
-            log_info(f"INFO: Tworzenie klasy z relacji: {class_name}")
+            log_info(f"Tworzenie klasy z relacji: {class_name}")
             self.classes[class_name] = UMLClass(name=class_name, attributes=[], methods=[], stereotype=None)
         
         if class_name in self.classes:

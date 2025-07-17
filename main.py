@@ -166,9 +166,12 @@ class AIApp(QMainWindow):
         self.save_xml_button = QPushButton(tr("save_xml_button"))
         self.save_xml_button.setEnabled(False)  # Domyślnie nieaktywny
 
+        # Przycisk "Edytuj PlantUML"
+        self.edit_plantuml_button = QPushButton(tr("edit_plantuml_button"))
+        self.edit_plantuml_button.setEnabled(False)  
         # Przycisk "Zapisz PlantUML"
         self.save_PlantUML_button = QPushButton(tr("save_plantuml_button"))
-        self.save_PlantUML_button.setEnabled(False)  # Domyślnie nieaktywny
+        self.save_PlantUML_button.setEnabled(False)  
 
         self.save_xmi_button = QPushButton(tr("save_xmi_button"))
         self.save_xmi_button.setEnabled(False)
@@ -193,6 +196,7 @@ class AIApp(QMainWindow):
         buttons_layout.addWidget(self.validate_input_button)
         buttons_layout.addWidget(self.send_button)
         buttons_layout.addWidget(self.save_xml_button)
+        buttons_layout.addWidget(self.edit_plantuml_button)
         buttons_layout.addWidget(self.save_PlantUML_button)
         buttons_layout.addWidget(self.save_xmi_button)
         buttons_layout.addWidget(self.save_diagram_button)
@@ -225,6 +229,7 @@ class AIApp(QMainWindow):
         self.send_button.clicked.connect(self.send_to_api)
         self.save_xml_button.clicked.connect(self.save_xml)
         self.save_PlantUML_button.clicked.connect(self.save_plantuml)
+        self.edit_plantuml_button.clicked.connect(self.edit_plantuml)
 
         # Historia rozmowy
         self.conversation_history = []
@@ -566,6 +571,7 @@ class AIApp(QMainWindow):
         plantuml_blocks = extract_plantuml_blocks(response_content)
         if plantuml_blocks:
             self.save_PlantUML_button.setEnabled(True)
+            self.edit_plantuml_button.setEnabled(True)
             # Sprawdź typ diagramu
             diagram_type = identify_plantuml_diagram_type(plantuml_blocks[-1], LANG)
             # print(f"Identified diagram type: {diagram_type}")
@@ -601,6 +607,7 @@ class AIApp(QMainWindow):
             return
 
         self.save_PlantUML_button.setEnabled(False)
+        self.edit_plantuml_button.setEnabled(False)
         self.latest_plantuml = None
 
 
@@ -637,6 +644,185 @@ class AIApp(QMainWindow):
                 log_exception(error_msg)
         else:
             error_msg = (tr("msg_no_valid_xml_to_save"))
+            self.append_to_chat("System", error_msg)
+            log_exception(error_msg)
+
+    def preview_plantuml_diagram(self, plantuml_code):
+        """
+        Generuje podgląd diagramu PlantUML w nowym oknie na podstawie podanego kodu.
+        
+        Args:
+            plantuml_code (str): Kod PlantUML do wygenerowania podglądu
+        """
+        try:
+            # Usunięcie motywów, które mogą powodować problemy
+            plantuml_code = plantuml_code.replace("!theme ocean", "")
+            plantuml_code = plantuml_code.replace("!theme grameful", "")
+            plantuml_code = plantuml_code.replace("!theme plain", "")
+            
+            # Generowanie SVG zgodnie z ustawionym typem generatora
+            if plantuml_generator_type == "local":
+                svg_data, err_msg = fetch_plantuml_svg_local(plantuml_code, plantuml_jar_path, LANG)
+            elif plantuml_generator_type == "www":
+                svg_data, err_msg = fetch_plantuml_svg_www(plantuml_code, LANG)
+            
+            # Jeśli wystąpił błąd podczas generowania
+            if err_msg:
+                QMessageBox.warning(self, tr("preview_diagram_error_title"), 
+                                tr("msg_error_generating_diagram").format(error=err_msg))
+                return
+                
+            # Tworzenie okna dialogowego do podglądu
+            preview_dialog = QDialog(self)
+            preview_dialog.setWindowTitle(tr("preview_diagram_title"))
+            preview_dialog.resize(800, 600)
+            
+            # Dodanie widżetu SVG
+            svg_widget = QSvgWidget()
+            svg_widget.load(svg_data)
+            
+            # Layout dla dialogu
+            layout = QVBoxLayout(preview_dialog)
+            layout.addWidget(svg_widget)
+            
+            # Przycisk zamknięcia
+            close_button = QPushButton(tr("dialog_close_button"), preview_dialog)
+            close_button.clicked.connect(preview_dialog.accept)
+            
+            # Dodanie przycisku do layoutu
+            button_layout = QHBoxLayout()
+            button_layout.addStretch()
+            button_layout.addWidget(close_button)
+            layout.addLayout(button_layout)
+            
+            # Wyświetlenie okna dialogowego
+            preview_dialog.exec_()
+            
+        except Exception as e:
+            error_msg = tr("msg_error_previewing_diagram").format(error=str(e))
+            log_exception(error_msg)
+            QMessageBox.warning(self, tr("preview_diagram_error_title"), error_msg)
+
+    def save_edited_plantuml(self, idx, new_code, dialog):
+        """
+        Zapisuje zmodyfikowany kod PlantUML i aktualizuje diagram w zakładce.
+        
+        Args:
+            idx (int): Indeks zakładki do aktualizacji
+            new_code (str): Nowy kod PlantUML
+            dialog (QDialog): Okno dialogowe edycji
+        """
+        try:
+            # Usunięcie motywów, które mogą powodować problemy
+            new_code = new_code.replace("!theme ocean", "")
+            new_code = new_code.replace("!theme grameful", "")
+            new_code = new_code.replace("!theme plain", "")
+            
+            # Sprawdzanie poprawności kodu przez generowanie SVG
+            if plantuml_generator_type == "local":
+                svg_data, err_msg = fetch_plantuml_svg_local(new_code, plantuml_jar_path, LANG)
+            elif plantuml_generator_type == "www":
+                svg_data, err_msg = fetch_plantuml_svg_www(new_code, LANG)
+            
+            # Jeśli wystąpił błąd podczas generowania diagramu
+            if err_msg:
+                QMessageBox.warning(dialog, tr("edit_plantuml_error_title"), 
+                                tr("msg_error_validating_plantuml").format(error=err_msg))
+                return  # Nie zamykamy dialogu, aby użytkownik mógł poprawić kod
+            
+            # Aktualizacja kodu w słowniku
+            if idx in self.plantuml_codes:
+                self.plantuml_codes[idx] = new_code
+                
+                # Pobranie aktualnego widgetu
+                current_tab = self.diagram_tabs.widget(idx)
+                
+                # Aktualizacja diagramu
+                svg_widget = QSvgWidget()
+                svg_widget.load(svg_data)
+                
+                # Aktualizacja zawartości zakładki
+                layout = current_tab.layout()
+                
+                # Usunięcie starego widgetu SVG
+                for i in reversed(range(layout.count())):
+                    layout.itemAt(i).widget().setParent(None)
+                
+                # Dodanie nowego widgetu SVG
+                layout.addWidget(svg_widget)
+                
+                # Aktualizacja tytułu zakładki
+                diagram_type = identify_plantuml_diagram_type(new_code, LANG)
+                self.diagram_tabs.setTabText(idx, diagram_type)
+                
+                # Zamknięcie dialogu edycji
+                dialog.accept()
+                
+                # Wyświetlenie komunikatu o sukcesie
+                ok_msg = tr("msg_info_edited_plantuml_saved").format(diagram_type=diagram_type)
+                self.append_to_chat("System", ok_msg)
+                log_info(ok_msg)
+                
+                # Aktualizacja przycisków
+                self.save_diagram_button.setEnabled(True)
+                if ("klas" in diagram_type.lower()) or ("sekwencji" in diagram_type.lower()):
+                    self.save_xmi_button.setEnabled(True)
+                else:
+                    self.save_xmi_button.setEnabled(False)
+            else:
+                error_msg = tr("msg_no_valid_edited_plantuml_to_save")
+                self.append_to_chat("System", error_msg)
+                log_exception(error_msg)
+                dialog.reject()
+        except Exception as e:
+            error_msg = tr("msg_error_updating_plantuml").format(error=str(e))
+            log_exception(error_msg)
+            QMessageBox.warning(dialog, tr("edit_plantuml_error_title"), error_msg)
+
+    def edit_plantuml(self):
+        """Otwiera okno dialogowe do edycji kodu PlantUML."""
+        idx = self.diagram_tabs.currentIndex()
+        if idx in self.plantuml_codes:
+            plantuml_code = self.plantuml_codes[idx]
+            dialog = QDialog(self)
+            dialog.setWindowTitle(tr("dialog_edit_plantuml_title"))
+            layout = QVBoxLayout(dialog)
+
+            # Ustawienie minimalnego rozmiaru dla edytora tekstu
+            text_edit = QTextEdit(dialog)
+            text_edit.setPlainText(plantuml_code)
+            text_edit.setMinimumSize(500, 400)  # Minimum 500x400
+            layout.addWidget(text_edit)
+            
+            save_button = QPushButton(tr("dialog_save_button"), dialog)
+            preview_button = QPushButton(tr("dialog_preview_button"), dialog)
+            cancel_button = QPushButton(tr("dialog_cancel_button"), dialog)
+            
+            if text_edit.textChanged:
+                save_button.setEnabled(True)
+                preview_button.setEnabled(True)
+            else:
+                save_button.setEnabled(False)
+                preview_button.setEnabled(False)
+                
+            cancel_button.clicked.connect(dialog.reject)
+            preview_button.clicked.connect(lambda: self.preview_plantuml_diagram(text_edit.toPlainText()))
+            save_button.clicked.connect(lambda: self.save_edited_plantuml(idx, text_edit.toPlainText(), dialog))
+            
+            # Poziomy layout dla przycisków w jednej linii
+            button_layout = QHBoxLayout()
+            button_layout.addStretch()  # Elastyczna przestrzeń po lewej
+            button_layout.addWidget(preview_button)
+            button_layout.addWidget(save_button)
+            button_layout.addWidget(cancel_button)
+            layout.addLayout(button_layout)  # Dodaj layout przycisków do głównego layoutu
+
+            # Ustawienie minimalnego rozmiaru dla całego dialogu
+            dialog.setMinimumSize(550, 500)
+            
+            dialog.exec_()
+        else:
+            error_msg = tr("msg_no_valid_plantuml_to_edit")
             self.append_to_chat("System", error_msg)
             log_exception(error_msg)
 
@@ -889,6 +1075,7 @@ class AIApp(QMainWindow):
             tab.setContextMenuPolicy(Qt.CustomContextMenu)
             def show_context_menu(point):
                 menu = QMenu(self)
+                action_edit=menu.addAction(tr("edit_plantuml_button"))
                 action_plum=menu.addAction(tr("save_plantuml_button"))
                 action_svg=menu.addAction(tr("save_diagram_button"))
                 #action_test=menu.addAction("test")
@@ -903,6 +1090,8 @@ class AIApp(QMainWindow):
                     self.save_active_diagram()
                 elif (("klas" in current_diagram_type.lower()) or ("sekwencji" in current_diagram_type.lower())) and (action==action_xmi):
                     self.save_xmi()
+                elif action==action_edit:
+                    self.edit_plantuml()
 
             tab.customContextMenuRequested.connect(show_context_menu)
         except Exception as e:
