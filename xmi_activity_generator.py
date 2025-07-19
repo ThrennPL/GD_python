@@ -8,12 +8,13 @@ import re
 class LayoutManager:
     """Klasa zarządzająca layoutem elementów diagramu."""
     
-    def __init__(self, swimlane_ids):
+    def __init__(self, swimlane_ids, transitions=None, id_map=None):
         self.positions = {}
         self.current_y = {}
         self.swimlanes_geometry = {}
         self.swimlane_ids = swimlane_ids
-        self.id_map = {}
+        self.id_map = id_map or {}
+        self.transitions = transitions or []
         
         # Inicjalizuj wysokości dla każdego toru
         lane_x = 100  # Początkowa pozycja X pierwszego toru
@@ -42,7 +43,7 @@ class LayoutManager:
             print(f"📊 Inicjalizacja toru {name}: x={self.swimlanes_geometry[swimlane_id]['x']}, center={self.swimlanes_geometry[swimlane_id]['center_x']}")
     
     def get_position_for_element(self, node):
-        """Zwraca pozycję (geometrię) dla danego elementu - wersja uniwersalna."""
+        """Zwraca pozycję (geometrię) dla danego elementu z uwzględnieniem struktury diagramu."""
         node_id = node.attrib.get('xmi:id')
         
         # Sprawdź, czy już mamy zapisaną pozycję
@@ -55,46 +56,144 @@ class LayoutManager:
         # Pobierz rozmiary elementu
         width, height = self._get_element_size(node)
         
-        # Określ domyślne pozycje
-        left = 300 - (width / 2)  # Domyślna pozycja X (środek)
-        top = 180  # Domyślna pozycja Y
+        # Sprawdź typ elementu dla specjalnego pozycjonowania
+        node_type = node.attrib.get('xmi:type', '')
+        node_name = node.attrib.get('name', '')
+        is_decision = 'DecisionNode' in node_type
+        is_control = 'InitialNode' in node_type or 'ActivityFinalNode' in node_type
         
-        # Zapisz dla debugowania
-        position_before = f"Brak pozycji"
+        # Domyślne wartości pozycji
+        left = 200 - (width / 2)  # Środek standardowego toru
+        top = 180  # Domyślna wysokość startowa
         
-        # Jeśli element należy do toru i mamy informacje o geometrii toru
-        if partition_id and partition_id in self.swimlanes_geometry:
-            # Pobierz informacje o geometrii toru
+        # Ustal pozycję bazującą na strukturze diagramu
+        if partition_id in self.swimlanes_geometry:
             swimlane = self.swimlanes_geometry[partition_id]
+            lane_center = swimlane['center_x']
+            lane_left = swimlane['x']
+            lane_width = swimlane['width']
             
-            # Ustaw element na środku toru w poziomie
-            left = swimlane['center_x'] - (width / 2)
+            # Wyśrodkuj element w torze
+            left = lane_center - (width / 2)
             
-            # Ustal pozycję Y i zaktualizuj "high water mark" dla toru
-            if partition_id in self.current_y:
-                top = self.current_y[partition_id]
-                # Zawsze aktualizuj wysokość dla następnego elementu
-                self.current_y[partition_id] = top + height + 70  # Większy odstęp między elementami
+            branch_path = self._determine_branch_path(node_id)
+            
+            # Analiza informacji o gałęzi
+            branch_info = {}
+            if branch_path:
+                parts = branch_path.split('_')
+                if len(parts) >= 3:
+                    decision_id = parts[1]
+                    branch_type = parts[2]
+                    branch_info = {
+                        'branch_path': branch_path,
+                        'branch_type': branch_type,
+                        'parent_decision': decision_id,
+                        'depth': self._get_decision_depth(node_id)
+                    }
+                    
+                    # Sprawdź pozycję Y węzła decyzyjnego (rodzica)
+                    parent_id = "branch_" + decision_id
+                    if parent_id in self.id_map:
+                        # Wyekstraktuj wartość Top z zapisanej pozycji
+                        match = re.search(r'Top=(\d+\.?\d*);', self.positions.get(parent_id, ''))
+                        if match:
+                            branch_info['parent_y'] = float(match.group(1))
+            
+            # Ustal pozycję Y i przesunięcie X w zależności od rodzaju elementu
+            if is_control:
+                if 'InitialNode' in node_type:
+                    # Węzeł początkowy zawsze na górze diagramu
+                    top = swimlane['y'] + 80
+                    self.current_y[partition_id] = top + height + 50
+                elif 'ActivityFinalNode' in node_type:
+                    # Znajdź wszystkie istniejące węzły końcowe
+                    finals_count = sum(1 for n in self.positions 
+                                    if n in self.id_map and 
+                                    'ActivityFinalNode' in self.id_map[n].attrib.get('xmi:type', ''))
+                    # Umieść każdy nowy węzeł końcowy poniżej poprzednich
+                    top = swimlane['y'] + 180 + (finals_count * 60)
+                    
+            elif is_decision:
+                # Węzły decyzyjne potrzebują więcej miejsca
+                decision_depth = branch_info.get('depth', 0) or self._get_decision_depth(node_id)
                 
-                # Znajdź nazwę toru dla komunikatu debugowania
-                swimlane_name = "Nieznany"
-                for name, pid in self.swimlane_ids.items():
-                    if pid == partition_id:
-                        swimlane_name = name
-                        break
-                print(f"   📏 Aktualizacja wysokości dla {swimlane_name}: {top} -> {self.current_y[partition_id]}")
-        else:
-            # Element nie ma przypisanego toru lub nie znaleziono geometrii
-            # Stosujemy domyślne pozycjonowanie w wolnym obszarze
-            print(f"   ⚠️ Element {node_id[-6:]} nie ma przypisanego toru lub brak geometrii toru")
-            
-            # Jeżeli nie przypisano toru, a jest to element typu decyzyjnego lub control, 
-            # możemy go umieścić w środku diagramu
-            node_type = node.attrib.get('xmi:type', '')
-            if 'DecisionNode' in node_type or 'InitialNode' in node_type or 'ActivityFinalNode' in node_type:
-                # Środek diagramu dla ważnych elementów bez przypisanego toru
-                left = 400 - (width / 2)  # Środek wszystkich torów
+                # Przesunięcie w poziomie zależne od głębokości decyzji
+                horizontal_offset = min(50 * decision_depth, (lane_width - width) / 2 - 20)
+                left += horizontal_offset
                 
+                # Określ pozycję pionową na podstawie poprzednich elementów w hierarchii
+                if branch_info.get('parent_y') is not None:
+                    # Umieść decyzję pod jej rodzicem (poprzednim elementem)
+                    top = branch_info['parent_y'] + 120
+                else:
+                    top = self.current_y.get(partition_id, 180) + 60
+                
+                # Zapisz informacje o tej decyzji do wykorzystania przez jej gałęzie
+                decision_key = f"decision_{node_id[-6:]}"
+                self.current_y[decision_key] = top
+                
+                # Oddzielne wysokości dla gałęzi "tak" i "nie"
+                self.current_y[f"{decision_key}_yes"] = top + height + 50
+                self.current_y[f"{decision_key}_no"] = top + height + 50
+                
+                # Rozdziel przestrzeń dla gałęzi
+                self._register_branch_space(node_id, left, top)
+                
+                # Aktualizuj ogólną wysokość toru tylko jeśli potrzeba
+                self.current_y[partition_id] = max(self.current_y[partition_id], top + height + 150)
+                
+            else:
+                # Dla standardowych elementów (actions)
+                if branch_path:
+                    # Element jest częścią gałęzi decyzyjnej
+                    branch_type = branch_info.get('branch_type', 'default')
+                    parent_decision = branch_info.get('parent_decision')
+                    
+                    if parent_decision:
+                        # Pobierz bazową pozycję decyzji
+                        decision_key = f"decision_{parent_decision}"
+                        base_top = self.current_y.get(f"{decision_key}_{branch_type}", 
+                                                    self.current_y.get(partition_id, 180))
+                        
+                        # Pozycja Y zależna od gałęzi
+                        top = base_top + 70
+                        
+                        # Pozycja X zależna od typu gałęzi (tak/nie)
+                        if branch_type == 'yes':
+                            # Gałąź "tak" - przesuń w lewo
+                            left -= 50
+                        else:  # branch_type == 'no'
+                            # Gałąź "nie" - przesuń w prawo
+                            left += 50
+                        
+                        # Aktualizuj wysokość dla tej konkretnej gałęzi
+                        self.current_y[f"{decision_key}_{branch_type}"] = top + height + 20
+                    else:
+                        # Standardowy element bez powiązania z decyzją
+                        top = self.current_y.get(partition_id, 180) + 70
+                        self.current_y[partition_id] = top + height + 20
+                else:
+                    # Element nie jest w żadnej gałęzi - standardowe pozycjonowanie
+                    top = self.current_y.get(partition_id, 180) + 70
+                    self.current_y[partition_id] = top + height + 20
+            
+            # Zapewnij, że element nie wychodzi poza granice toru
+            if left < lane_left + 10:
+                left = lane_left + 10
+            if left + width > lane_left + lane_width - 10:
+                left = lane_left + lane_width - width - 10
+            
+            # Znajdź nazwę toru dla komunikatu debugowania
+            swimlane_name = "Nieznany"
+            for name, pid in self.swimlane_ids.items():
+                if pid == partition_id:
+                    swimlane_name = name
+                    break
+                    
+            # Logowanie informacji o aktualizacji wysokości
+            print(f"   📏 Aktualizacja wysokości dla {swimlane_name}: {top} -> {self.current_y[partition_id]}")
+        
         # Oblicz pozostałe współrzędne
         right = left + width
         bottom = top + height
@@ -105,10 +204,116 @@ class LayoutManager:
         # Zapisz pozycję do cache
         self.positions[node_id] = position
         
-        # Debugowanie pozycji
+        # Debugowanie
+        position_before = "Brak pozycji"
         self._debug_position_calculation(node_id, partition_id, position_before, position)
         
         return position
+
+
+    def _register_branch_space(self, decision_id, x_pos, y_pos):
+        """Rejestruje przestrzeń dla gałęzi decyzyjnych."""
+        if not hasattr(self, 'branch_spaces'):
+            self.branch_spaces = {}
+        
+        # Zapisz informacje o położeniu tej decyzji
+        self.branch_spaces[decision_id] = {
+            'x': x_pos,
+            'y': y_pos,
+            'yes_branch': {
+                'x_offset': -50,  # Gałąź "tak" idzie w lewo
+                'elements': []
+            },
+            'no_branch': {
+                'x_offset': 50,   # Gałąź "nie" idzie w prawo
+                'elements': []
+            }
+        }
+
+    def _determine_branch_path(self, node_id):
+        """Określa ścieżkę gałęzi dla elementu na podstawie połączeń z pełnym śledzeniem historii."""
+        # Znajdź wszystkie połączenia wchodzące do tego węzła
+        incoming = [t for t in self.transitions if t.get('target_id') == node_id]
+        
+        if not incoming:
+            return None
+        
+        # Budujemy pełne drzewo ścieżek wstecz
+        paths = []
+        visited = set()
+        
+        def trace_back(curr_id, path=None):
+            if path is None:
+                path = []
+            
+            if curr_id in visited:
+                return  # Unikaj cykli
+            
+            visited.add(curr_id)
+            path = [curr_id] + path  # Dodaj bieżący węzeł do ścieżki
+            
+            # Jeśli to element początkowy, zapisz ścieżkę
+            incoming = [t for t in self.transitions if t.get('target_id') == curr_id]
+            if not incoming:
+                paths.append(path)
+                return
+            
+            # Kontynuuj śledzenie wstecz dla wszystkich połączeń przychodzących
+            for transition in incoming:
+                source_id = transition.get('source_id')
+                if source_id:
+                    # Dodaj etykietę przejścia do ścieżki
+                    trace_back(source_id, path)
+        
+        # Rozpocznij śledzenie od bieżącego węzła
+        trace_back(node_id)
+        
+        # Analizuj ścieżki do najbliższej decyzji
+        for path in paths:
+            for i, path_node_id in enumerate(path[1:], 1):  # Pomijamy pierwszy węzeł (to nasz bieżący)
+                if path_node_id in self.id_map:
+                    node = self.id_map[path_node_id]
+                    if node is not None and 'xmi:type' in node.attrib and 'DecisionNode' in node.attrib.get('xmi:type', ''):
+                        # Znajdujemy tę decyzję, która jest najbliżej bieżącego węzła
+                        prev_id = path[i-1]  # Id węzła poprzedzającego decyzję
+                        for trans in self.transitions:
+                            if trans.get('source_id') == path_node_id and trans.get('target_id') == prev_id:
+                                guard = trans.get('name', '').lower()
+                                branch_type = 'yes' if guard == 'tak' else 'no'
+                                return f"branch_{path_node_id[-6:]}_{branch_type}"
+        
+        return None
+
+    def _get_decision_depth(self, node_id):
+        """Oblicza głębokość zagnieżdżenia decyzji dla elementu z limitem przesunięcia."""
+        depth = 0
+        
+        # Sprawdź stos decyzji dla bieżącego węzła
+        parent_ids = set()
+        current_ids = {node_id}
+        
+        # Iteracyjnie przeszukuj graf wstecz
+        while current_ids:
+            next_ids = set()
+            for nid in current_ids:
+                # Znajdź wszystkie węzły, które prowadzą do obecnego węzła
+                for trans in self.transitions:
+                    if trans.get('target_id') == nid and trans.get('source_id') not in parent_ids:
+                        source_id = trans.get('source_id')
+                        # Sprawdź, czy to węzeł decyzyjny
+                        if source_id in self.id_map:
+                            node_type = self.id_map[source_id].attrib.get('xmi:type', '')
+                            if 'DecisionNode' in node_type:
+                                depth += 1
+                        next_ids.add(source_id)
+                        parent_ids.add(source_id)
+            
+            current_ids = next_ids
+        
+        # Ogranicz maksymalną głębokość, aby uniknąć wyjścia poza tor
+        # Zakładamy że 3 poziomy to maksimum w ramach jednego toru
+        max_safe_depth = 3
+        return min(depth, max_safe_depth)
     
     def _debug_position_calculation(self, node_id, partition_id, position_before, position_after):
         """Loguje informacje o procesie wyliczania pozycji elementu."""
@@ -1499,38 +1704,46 @@ class XMIActivityGenerator:
         return diagram
 
     def _get_style_for_element(self, node):
-        """Zwraca styl CSS dla elementu diagramu."""
+        """Zwraca styl CSS dla elementu diagramu z uwzględnieniem kolorów z PlantUML."""
         node_type = node.attrib.get('xmi:type', '')
+        node_name = node.attrib.get('name', '').lower()
         
         # Domyślny styl dla elementu
         style = "BorderColor=-1;BorderWidth=-1;"
         
         if 'InitialNode' in node_type:
-            # Węzeł początkowy - czarny okrąg
             style += "BColor=0;FontColor=-1;BorderWidth=0;Shape=Circle;"
         elif 'ActivityFinalNode' in node_type:
-            # Węzeł końcowy - okrąg z czarnym środkiem
             style += "BColor=0;FontColor=-1;BorderWidth=1;Shape=Circle;"
         elif 'DecisionNode' in node_type or 'MergeNode' in node_type:
-            # Węzły decyzyjne - zielone romby
             style += "BColor=16777062;FontColor=-1;Shape=Diamond;"
         elif 'ForkNode' in node_type or 'JoinNode' in node_type:
-            # Węzły fork/join - czarne prostokąty
             style += "BColor=0;FontColor=-1;LineWidth=3;Shape=Rectangle;"
-        elif 'Comment' in node_type:
-            # Komentarze - białe tło
-            style += "BColor=16777215;Shape=Note;"
         else:
-            # Standardowe akcje - zaokrąglone prostokąty
-            style += "BColor=13434828;FontColor=-1;BorderRadius=10;"
+            # Standardowe akcje - zaokrąglone prostokąty z kolorami zależnymi od nazwy
+            if 'pozytywny' in node_name:
+                # Zielony dla pozytywnych wyników
+                style += "BColor=8454143;FontColor=-1;BorderRadius=10;"
+            elif 'negatywny' in node_name or 'błąd' in node_name or 'blad' in node_name:
+                # Czerwony dla negatywnych wyników
+                style += "BColor=5263615;FontColor=-1;BorderRadius=10;"
+            elif 'wizualn' in node_name:
+                # Pomarańczowy dla błędów wizualnych
+                style += "BColor=42495;FontColor=-1;BorderRadius=10;"
+            else:
+                # Standardowy kolor dla pozostałych akcji
+                style += "BColor=13434828;FontColor=-1;BorderRadius=10;"
         
         return style
 
     def _create_layout_manager(self):
         """Tworzy i zwraca instancję managera layoutu."""
         # Przekaż ID wszystkich torów oraz mapę ID do LayoutManager
-        layout_manager = LayoutManager(self.swimlane_ids)
-        layout_manager.id_map = self.id_map  # Dodaj referencję do id_map
+        layout_manager = LayoutManager(
+            self.swimlane_ids, 
+            transitions=self.transitions,
+            id_map=self.id_map
+        )
         return layout_manager
 
     def _sanitize_tree(self, element):
@@ -1564,54 +1777,17 @@ class XMIActivityGenerator:
 if __name__ == '__main__':
     generator = XMIActivityGenerator(author="195841_AI")
     
-    input_puml_file = 'diagram_aktywnosci_PlantUML.puml'
+    input_puml_file = 'Diagram_aktywnosci_test2.puml'
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     output_filename = f"pelny_diagram_aktywnosci_{timestamp}.xmi"
     diagram_name = f"Pełny diagram aktywności {timestamp}"
 
     # Przykładowy, złożony kod PlantUML do testów
-    plantuml_example_code = """
-    @startuml
-    title Proces weryfikacji tożsamości
-    
-    |Klient|
-    start
-    :Rozpocznij proces;
-    
-    |System|
-    :Poproś o dane;
-    
-    |Klient|
-    :Wprowadź dane logowania;
-    note right: Użytkownik wpisuje login i hasło.
-    
-    |System|
-    if (Dane poprawne?) then (tak)
-      :Zaloguj użytkownika;
-      if (Wymagana weryfikacja 2FA?) then (tak)
-        :Wyślij kod 2FA;
-        |Klient|
-        :Wprowadź kod 2FA;
-      endif
-      |System|
-      fork
-        :Zapisz logowanie w historii;
-      fork again
-        :Przekieruj na stronę główną;
-      end fork
-    else (nie)
-      :Wyświetl błąd logowania;
-    endif
-    
-    |Klient|
-    stop
-    
-    @enduml
-    """
+    plantuml_example_code = ""
     
     try:
-        with open(input_puml_file, 'w', encoding='utf-8') as f:
-            f.write(plantuml_example_code)
+        #with open(input_puml_file, 'w', encoding='utf-8') as f:
+         #   f.write(plantuml_example_code)
         
         with open(input_puml_file, 'r', encoding='utf-8') as f:
             parser = PlantUMLActivityParser(f.read())
