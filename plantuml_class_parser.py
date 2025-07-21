@@ -2,12 +2,12 @@ from plantuml_model import UMLClass, UMLRelation, UMLEnum, UMLNote
 from logger_utils import setup_logger, log_info, log_error, log_debug, log_exception
 import re
 
-setup_logger('app.log')
+setup_logger('plantuml_class_parser.log')
 
 class PlantUMLClassParser:
     """Parser dla kodu PlantUML - poprawiona wersja z eliminacją duplikatów"""
     
-    def __init__(self):
+    def __init__(self, debug_options=None):
         self.classes = {}
         self.relations = []
         self.enums = {}  
@@ -20,6 +20,12 @@ class PlantUMLClassParser:
         self.note_lines = []
         self.current_package = None
         self.class_aliases = {} 
+        self.debug_options = debug_options or {
+            'parsing': False,
+            'structure': False,
+            'relations': False,
+            'notes': False,
+        }
     
     def parse(self, plantuml_code: str):
         """Główna metoda parsowania"""
@@ -34,7 +40,9 @@ class PlantUMLClassParser:
         
         for line in lines:
             line = line.strip()
-            
+            if self.debug_options.get('parsing'):
+                log_debug(f"Przetwarzanie linii: {line}")
+                print(f"Przetwarzanie linii: {line}")
             # Pomiń puste linie, komentarze i znaczniki
             if not line or line.startswith("'") or line.startswith("@"):
                 continue
@@ -710,18 +718,37 @@ class PlantUMLClassParser:
     
 # --- Przykład użycia ---
 if __name__ == '__main__':
+    import argparse
     import pprint
     from datetime import datetime
-    
+
+    parser = argparse.ArgumentParser(description='Parser diagramów klas PlantUML')
+    parser.add_argument('input_file', nargs='?', default='diagram_klas_PlantUML.puml',
+                        help='Plik wejściowy z kodem PlantUML')
+    parser.add_argument('--output', '-o', help='Plik wyjściowy JSON (domyślnie: generowana nazwa)')
+    parser.add_argument('--debug', '-d', action='store_true', help='Włącz tryb debugowania')
+    parser.add_argument('--parsing', '-p', action='store_true', help='Debugowanie procesu parsowania')
+    parser.add_argument('--structure', '-s', action='store_true', help='Debugowanie struktury')
+    parser.add_argument('--relations', '-r', action='store_true', help='Debugowanie relacji')
+    parser.add_argument('--notes', '-n', action='store_true', help='Debugowanie notatek')
+    args = parser.parse_args()
+
+    debug_options = {
+        'parsing': args.parsing or args.debug,
+        'structure': args.structure or args.debug,
+        'relations': args.relations or args.debug,
+        'notes': args.notes or args.debug,
+    }
+
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")  
-    input_file = 'diagram_klas_PlantUML.puml'
-    output_file = f'test_class_{timestamp}.json'
-    
+    input_file = args.input_file
+    output_file = args.output or f'test_class_{timestamp}.json'
+
     try:
         with open(input_file, 'r', encoding='utf-8') as f:
             plantuml_code = f.read()
         
-        parser = PlantUMLParser()
+        parser = PlantUMLClassParser(debug_options=debug_options)
         parser.parse(plantuml_code)
         
         # Przygotuj dane do wyświetlenia

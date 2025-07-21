@@ -1,6 +1,63 @@
 # Generator i Weryfikator Diagramów UML/BPMN z AI
 
-Aplikacja do generowania, wizualizacji i weryfikacji diagramów UML (PlantUML) oraz BPMN (XML) na podstawie opisu procesu, z wykorzystaniem modeli AI (np. LLM). Projekt oferuje zarówno wersję desktopową (PyQt5) , jak i webową (Streamlit) , umożliwiając wybór szablonu promptu, typu diagramu, walidację opisu procesu oraz automatyczną weryfikację kodu PlantUML . Aplikacja obsługuje **dwie wersje językowe (angielską i polską)**, z dedykowanymi szablonami promptów dla każdej z nich, co zapewnia lepsze rezultaty generowania w wybranym języku.
+Aplikacja do generowania, wizualizacji i weryfikacji diagramów UML (PlantUML) oraz BPMN (XML) na podstawie opisu procesu, z wykorzystaniem modeli AI (np. LLM). Projekt oferuje zarówno wersję desktopową (PyQt5), jak i webową (Streamlit), umożliwiając wybór szablonu promptu, typu diagramu, walidację opisu procesu oraz automatyczną weryfikację kodu PlantUML. Aplikacja obsługuje **dwie wersje językowe (angielską i polską)**, z dedykowanymi szablonami promptów dla każdej z nich, co zapewnia lepsze rezultaty generowania w wybranym języku.
+
+---
+
+## Szybki start (dla nowych użytkowników)
+
+1. **Sklonuj repozytorium:**
+    ```bash
+    git clone https://github.com/ThrennPL/GD_python
+    cd GD_python
+    ```
+2. **Zainstaluj zależności:**
+    ```bash
+    pip install -r requirements.txt
+    ```
+3. **Pobierz `plantuml.jar`**  
+   Pobierz plik ze strony [PlantUML Download](https://plantuml.com/download) i umieść go w katalogu projektu.
+4. **Sprawdź Java:**  
+   Upewnij się, że masz zainstalowaną Javę (polecenie w terminalu):
+    ```bash
+    java -version
+    ```
+5. **Utwórz plik `.env`:**  
+   Skopiuj poniższą konfigurację do pliku `.env` w katalogu głównym projektu i uzupełnij wymagane pola (np. `API_KEY` dla Gemini/OpenAI, dane bazy jeśli chcesz zapisywać historię):
+    ```
+    PLANTUML_JAR_PATH=plantuml.jar
+    PLANTUML_GENERATOR_TYPE=local
+    API_URL=http://localhost:1234/v1/models
+    #API_URL=https://api.openai.com/v1/models
+    #API_URL=https://generativelanguage.googleapis.com/v1beta/models
+    API_DEFAULT_MODEL=
+    CHAT_URL=http://localhost:1234/v1/chat/completions
+    #CHAT_URL=https://api.openai.com/v1/chat/completions
+    #CHAT_URL=https://generativelanguage.googleapis.com/v1v1beta/chat/completions
+    API_KEY=
+    MODEL_PROVIDER=local
+    #MODEL_PROVIDER=openai
+    #MODEL_PROVIDER=gemini
+    DB_PROVIDER=
+    DB_HOST=
+    DB_PORT=
+    DB_NAME=
+    DB_USER=
+    DB_PASSWORD=
+    ```
+6. **Uruchom lokalny serwer AI (np. LM Studio):**  
+   Jeśli korzystasz z lokalnego modelu, uruchom LM Studio i sprawdź, czy jest dostępny pod `http://localhost:1234`.
+7. **Uruchom aplikację:**
+   - **Streamlit:**  
+     ```bash
+     streamlit run streamlit_app.py
+     ```
+   - **PyQt5:**  
+     ```bash
+     python main.py
+     ```
+
+---
 
 ## Funkcje
 
@@ -17,121 +74,90 @@ Aplikacja do generowania, wizualizacji i weryfikacji diagramów UML (PlantUML) o
   * **Dwie wersje językowe interfejsu i promptów (angielska i polska)**
   * Przykładowe prompty testowe dla branży bankowej
 
+---
+
 ## Eksport XMI
 
-Eksport XMI jest obecnie dostępny **tylko dla diagramu klas i sekwencji (Class Diagram, Sequance Diagram)**. Przycisk „Zapisz XMI” jest aktywny wyłącznie, gdy aktywna zakładka zawiera diagram klas lub diagram sekwencji. Dla innych typów diagramów (np. przypadków użycia, aktywności) eksport XMI nie jest jeszcze obsługiwany. Elementy na diagramie po wczytaniu do EA nie mogą być ułożone w sposób nie czytelny, sugerowana jest uporządkowanie ich ręcznie..
+Eksport XMI jest obecnie dostępny **tylko dla diagramu klas, sekwencji i aktywnmości (Class Diagram, Sequence Diagram, Activity Diagram),**. Przycisk „Zapisz XMI” (również menu kontekstowe) jest aktywny wyłącznie, gdy aktywna zakładka zawiera diagram klas, diagram sekwencji lub diagram aktywności. Dla innych typów diagramów (np. przypadków użycia, komponentów) eksport XMI nie jest jeszcze obsługiwany. Po imporcie do EA elementy mogą wymagać ręcznego uporządkowania.
+
+---
 
 ## Obsługa Zakładek (dla wersji desktopowej)
 
-Aplikacja desktopowa umożliwia pracę z wieloma diagramami w zakładkach. Po przełączeniu zakładki aplikacja automatycznie sprawdza typ diagramu i aktywuje/dezaktywuje przycisk eksportu XMI .
+Aplikacja desktopowa umożliwia pracę z wieloma diagramami w zakładkach. Po przełączeniu zakładki aplikacja automatycznie sprawdza typ diagramu i aktywuje/dezaktywuje przycisk eksportu XMI.
+
+---
 
 ## Generowanie Diagramów SVG
 
 Diagramy SVG mogą być generowane na dwa sposoby, zależnie od ustawienia parametru `plantuml_generator_type`:
 
-  * **`plantuml_generator_type = local`**: Diagramy SVG są generowane lokalnie przy użyciu `plantuml.jar` i Javy. Upewnij się, że oba są dostępne w Twoim systemie .
-  * **`plantuml_generator_type = www`**: Diagramy SVG są generowane z wykorzystaniem strony [www.plantuml.com](https://plantuml.com/) .
+  * **`plantuml_generator_type = local`**: Diagramy SVG są generowane lokalnie przy użyciu `plantuml.jar` i Javy. Upewnij się, że oba są dostępne w Twoim systemie.
+  * **`plantuml_generator_type = www`**: Diagramy SVG są generowane z wykorzystaniem strony [www.plantuml.com](https://plantuml.com/).
+
+---
 
 ## Wymagania
 
   * Python 3.7+ (dla Streamlit) lub Python 3.8+ (dla PyQt5)
-  * Lokalny serwer AI (np. LM Studio) uruchomiony na porcie `http://localhost:1234`
+  * Lokalny serwer AI (np. LM Studio) uruchomiony na porcie `http://localhost:1234` (jeśli korzystasz z lokalnego modelu)
   * Zależności z pliku `requirements.txt`
   * Java (dla lokalnego renderowania PlantUML)
   * `plantuml.jar` (do pobrania ze strony PlantUML)
   * PyQt5 (tylko dla wersji desktopowej)
-  * :exclamation: `.env` - plik konfiguracyjny w katalogu programu  
+  * Plik `.env` z konfiguracją (patrz wyżej)
 
-## Instalacja
+---
 
-1.  Sklonuj repozytorium:
-    ```bash
-    git clone https://github.com/ThrennPL/GD_python
-    cd twoj-projekt
-    ```
-2.  Zainstaluj zależności:
-    ```bash
-    pip install -r requirements.txt
-    ```
-3.  Upewnij się, że lokalny serwer AI jest uruchomiony na `http://localhost:1234` .
+## FAQ / Najczęstsze problemy
 
-## Konfiguracja (`.env`)
+- **Brak Javy lub plantuml.jar:**  
+  Upewnij się, że Java jest zainstalowana (`java -version`) i plik `plantuml.jar` znajduje się w katalogu projektu.
+- **Brak połączenia z serwerem AI:**  
+  Sprawdź, czy LM Studio lub inny serwer jest uruchomiony i dostępny pod wskazanym adresem.
+- **Brak API_KEY:**  
+  W przypadku Gemini/OpenAI musisz podać własny klucz API w pliku `.env`.
+- **Problemy z bazą danych:**  
+  Jeśli chcesz zapisywać historię do bazy, skonfiguruj odpowiednie parametry w `.env` i upewnij się, że baza jest dostępna. Szczegóły jakie sa potrzeben tabeme dla danej bazy w dedykowanym konektorze mysql_connector.py i PostgreSQL_connector.py.
 
-Przykładowa konfiguracja w pliku `.env`:
-
-```
-PLANTUML_JAR_PATH=plantuml.jar
-PLANTUML_GENERATOR_TYPE=local
-#API_URL=https://api.openai.com/v1/models
-#API_URL=http://localhost:1234/v1/models
-API_URL=https://generativelanguage.googleapis.com/v1beta/models
-API_DEFAULT_MODEL=models/gemini-2.0-flash
-#API_DEFAULT_MODEL=google/gemma-3-4b
-#CHAT_URL=https://api.openai.com/v1/chat/completions
-#CHAT_URL=http://localhost:1234/v1/chat/completions
-CHAT_URL=https://generativelanguage.googleapis.com/v1v1beta/chat/completions
-API_KEY=
-MODEL_PROVIDER =gemini
-#MODEL_PROVIDER =local
-#MODEL_PROVIDER =openai
-DB_PROVIDER=
-#DB_PROVIDER=mysql
-#DB_PROVIDER=postgresql
-DB_HOST=
-DB_PORT=
-DB_NAME=
-DB_USER=
-DB_PASSWORD=
-```
-
-:information_source: Dla Gemini i OpenAI trzeba użyć własnych API_KEY. W przypadku chęci zbierania zapytań i odpowiedzi od modelu w bazie danych trzeba też wybrać odpowiedni rodzaj bazy i ustawić parametry jej połączenia.
-
-## Uruchomienie
-
-### Wersja Streamlit
-
-  * **Metoda 1: Bezpośrednio**
-    ```bash
-    streamlit run streamlit_app.py
-    ```
-  * **Metoda 2: Skrypt batch (Windows)**
-    ```bash
-    run_streamlit.bat
-    ```
-
-### Wersja PyQt5
-
-```bash
-python main.py
-```
+---
 
 ## Użytkowanie
 
-1.  **Wybierz model AI**: Z listy dostępnych modeli na serwerze .
-2.  **Skonfiguruj szablon**: Wybierz typ szablonu (PlantUML/XML) i konkretny szablon .
+1.  **Wybierz model AI**: Z listy dostępnych modeli na serwerze.
+2.  **Skonfiguruj szablon**: Wybierz typ szablonu (PlantUML/XML) i konkretny szablon.
 3.  **Wybierz typ diagramu**: Sekwencja, aktywność, klasa itp.
-4.  **Wprowadź opis procesu**: W polu tekstowym wpisz szczegółowy opis procesu, który chcesz zwizualizować .
-5.  **Generowanie/Walidacja**: Kliknij przycisk „Wyślij zapytanie” lub „Waliduj opis” .
-6.  **Wyświetlanie Diagramu**: Wygenerowany diagram PlantUML (SVG) lub kod XML BPMN pojawi się w odpowiednich zakładkach .
+4.  **Wprowadź opis procesu**: W polu tekstowym wpisz szczegółowy opis procesu, który chcesz zwizualizować.
+5.  **Generowanie/Walidacja**: Kliknij przycisk „Wyślij zapytanie” lub „Waliduj opis”.
+6.  **Wyświetlanie Diagramu**: Wygenerowany diagram PlantUML (SVG) lub kod XML BPMN pojawi się w odpowiednich zakładkach.
+
+---
 
 ## Struktura plików
 
   * `streamlit_app.py` - główna aplikacja Streamlit
   * `main.py` - oryginalna aplikacja PyQt5
   * `run_streamlit.bat` - skrypt uruchamiający (Windows) dla wersji Streamlit
-  * Pozostałe pliki Python - moduły pomocnicze (bez zmian)
+  * Pozostałe pliki Python - moduły pomocnicze
       * `translations_pl.py`, `translations_en.py` - pliki z tłumaczeniami interfejsu
       * `prompt_templates_pl.py`, `prompt_templates_en.py` - pliki z szablonami promptów dla języka polskiego i angielskiego
 
+---
+
 ## TODO (rozwojowe)
 
-  * Praca nad szablonami promptów, szczególnie w zakresie sprawdzania poprawności procesu (rozważyć krokowość) .
-  * Eksport XMI dla innych typów diagramów będzie dostępny w przyszłych wersjach .
+  * Praca nad szablonami promptów, szczególnie w zakresie sprawdzania poprawności procesu (rozważyć krokowość).
+  * Eksport XMI dla innych typów diagramów będzie dostępny w przyszłych wersjach.
+  * Opracowanie agenta wspierającego użytkownika przy tworzeniu kompleksowej dokumentacji.
+
+---
 
 ## Przykładowe prompty
 
-Zobacz plik `Prompty_bankowe.txt` – znajdziesz tam przykłady opisów procesów dla różnych typów diagramów UML/BPMN .
-Zapoznaj się z plikiem `Szablony_promptow.txt` - zawiera opis działania poszczególnych szablonów promptów dedykowanych dla typów diagramów .
+Zobacz plik `Prompty_bankowe.txt` – znajdziesz tam przykłady opisów procesów dla różnych typów diagramów UML/BPMN.
+Zapoznaj się z plikiem `Szablony_promptow.txt` - zawiera opis działania poszczególnych szablonów promptów dedykowanych dla typów diagramów.
+
+---
 
 ## Zrzuty ekranu
 

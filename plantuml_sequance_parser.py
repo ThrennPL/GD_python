@@ -5,7 +5,7 @@ from logger_utils import log_debug, log_info, log_error, log_exception, setup_lo
 import unittest
 import os
 
-setup_logger('app.log')
+setup_logger('plantuml_sequance_parser.log')
 
 class PlantUMLSequenceParser:
     """
@@ -13,17 +13,24 @@ class PlantUMLSequenceParser:
     i przekształca go w strukturyzowane dane.
     """
 
-    def __init__(self, plantuml_code: str):
+    def __init__(self, plantuml_code: str, debug_options=None):
         """
         Inicjalizuje parser.
 
         Args:
             plantuml_code: Ciąg znaków zawierający kod diagramu PlantUML.
+            debug_options: Słownik opcji debugowania.
         """
         self.code = plantuml_code
         self.title = ""
         self.participants = {}  # Słownik na uczestników {alias: {'name': name, 'type': type}}
         self.flow = []          # Lista przechowująca przebieg interakcji
+        self.debug_options = debug_options or {
+            'parsing': False,
+            'structure': False,
+            'messages': False,
+            'fragments': False,
+        }
 
     def parse(self):
         """
@@ -34,15 +41,26 @@ class PlantUMLSequenceParser:
         # Stos do śledzenia zagnieżdżonych fragmentów (np. alt, loop)
         fragment_stack = []
 
+        if self.debug_options.get('parsing'):
+            log_debug("Rozpoczynam parsowanie kodu PlantUML (sekwencja)")
+            print("Rozpoczynam parsowanie kodu PlantUML (sekwencja)")
+
         for line in lines:
             line = line.strip()
             if not line or line.startswith("'") or line in ["@startuml", "@enduml"]:
                 continue # Pomiń puste linie, komentarze i znaczniki start/end
 
+            if self.debug_options.get('parsing'):
+                log_debug(f"Przetwarzanie linii: {line}")
+                print(f"Przetwarzanie linii: {line}")
+
             if line.startswith('title'):
                 match = re.match(r'^title\s+(.*)$', line)
                 if match:
                     self.title = match.group(1).strip()
+                    if self.debug_options.get('parsing'):
+                        log_debug(f"Znaleziono tytuł: {self.title}")
+                        print(f"Znaleziono tytuł: {self.title}")
                     continue
             
             participant_paterns = [
@@ -64,6 +82,9 @@ class PlantUMLSequenceParser:
                         'type': p_type
                     }
                     participant_found = True
+                    if self.debug_options.get('structure'):
+                        log_debug(f"Dodano uczestnika: {name} jako {alias} ({p_type})")
+                        print(f"Dodano uczestnika: {name} jako {alias} ({p_type})")
                     break
             if participant_found:
                 continue
@@ -78,9 +99,12 @@ class PlantUMLSequenceParser:
                     'arrow': arrow.strip(),
                     'text': message.strip()
                 })
+                if self.debug_options.get('messages'):
+                    log_debug(f"Wiadomość: {source} {arrow} {target}: {message}")
+                    print(f"Wiadomość: {source} {arrow} {target}: {message}")
                 continue
 
-            activation_match = re.match(r'^(activate|deactivade)\s+([a-zA-Z0-9_]+)$', line)
+            activation_match = re.match(r'^(activate|deactivate)\s+([a-zA-Z0-9_]+)$', line)
             if activation_match:
                 action, participant = activation_match.groups()
                 self.flow.append({
@@ -88,6 +112,9 @@ class PlantUMLSequenceParser:
                     'action': action,
                     'participant': participant
                 })
+                if self.debug_options.get('messages'):
+                    log_debug(f"Aktywacja: {action} {participant}")
+                    print(f"Aktywacja: {action} {participant}")
                 continue
 
             note_match = re.match(r'^note\s+(left|right|over\s+\S+)\s*:\s*(.*)$', line)
@@ -98,6 +125,9 @@ class PlantUMLSequenceParser:
                     'participant': participant.strip(),
                     'text': note.strip()
                 })
+                if self.debug_options.get('messages'):
+                    log_debug(f"Notatka: {participant.strip()} : {note.strip()}")
+                    print(f"Notatka: {participant.strip()} : {note.strip()}")
                 continue
             
             if re.match(r'^(alt|opt|loop)\s*(.*)$', line):
@@ -110,6 +140,9 @@ class PlantUMLSequenceParser:
                 }
                 self.flow.append(fragment)
                 fragment_stack.append(fragment)
+                if self.debug_options.get('fragments'):
+                    log_debug(f"Fragment start: {frag_type} [{condition.strip()}]")
+                    print(f"Fragment start: {frag_type} [{condition.strip()}]")
                 continue
             
             if line.startswith('else'):
@@ -120,11 +153,17 @@ class PlantUMLSequenceParser:
                         'type': 'fragment_else',
                         'condition': condition
                     })
+                    if self.debug_options.get('fragments'):
+                        log_debug(f"Fragment else: {condition}")
+                        print(f"Fragment else: {condition}")
                     continue
 
             if line == 'end' and fragment_stack:
                 fragment_stack.pop()
                 self.flow.append({'type': 'fragment_end'})
+                if self.debug_options.get('fragments'):
+                    log_debug("Fragment end")
+                    print("Fragment end")
                 continue
 
         return {
@@ -221,21 +260,41 @@ class PlantUMLSequenceParser:
 
 # --- Przykład użycia ---
 if __name__ == '__main__':
+    import argparse
+    import json
+    setup_logger('plantuml_sequance_parser.log')
+    parser = argparse.ArgumentParser(description='Parser diagramów sekwencji PlantUML')
+    parser.add_argument('input_file', nargs='?', default='diagram_sekwencji_PlantUML.puml',
+                        help='Plik wejściowy z kodem PlantUML')
+    parser.add_argument('--output', '-o', help='Plik wyjściowy JSON (domyślnie: generowana nazwa)')
+    parser.add_argument('--debug', '-d', action='store_true', help='Włącz tryb debugowania')
+    parser.add_argument('--parsing', '-p', action='store_true', help='Debugowanie procesu parsowania')
+    parser.add_argument('--messages', '-m', action='store_true', help='Debugowanie wiadomości')
+    parser.add_argument('--fragments', '-f', action='store_true', help='Debugowanie fragmentów')
+    parser.add_argument('--structure', '-s', action='store_true', help='Debugowanie struktury')
+    args = parser.parse_args()
+
+    debug_options = {
+        'parsing': args.parsing or args.debug,
+        'messages': args.messages or args.debug,
+        'fragments': args.fragments or args.debug,
+        'structure': args.structure or args.debug,
+    }
+
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")  
-    input_file = 'diagram_sekwencji_PlantUML.puml'
-    output_file = f'test_sequance_{timestamp}.json'
+    input_file = args.input_file
+    output_file = args.output or f'test_sequance_{timestamp}.json'
     try:
         with open(input_file, 'r', encoding='utf-8') as f:
-                plantuml_code = f.read()
-            
-        parser = PlantUMLSequenceParser(plantuml_code)
+            plantuml_code = f.read()
+        
+        parser = PlantUMLSequenceParser(plantuml_code, debug_options=debug_options)
         parsed_data = parser.parse()
 
         print("--- Wynik Parsowania ---")
         pprint.pprint(parsed_data)
 
-    # Opcjonalnie zapisz do pliku JSON
-        import json
+        # Opcjonalnie zapisz do pliku JSON
         with open(output_file, 'w', encoding='utf-8') as f:
             json.dump(parsed_data, f, indent=2, ensure_ascii=False)
         print(f"\nWynik zapisany do: {output_file}")
@@ -250,4 +309,4 @@ if __name__ == '__main__':
         print(f"Wystąpił błąd: {e}")
         log_exception(f"Wystąpił błąd: {e}")
         import traceback
-        traceback.print_exc()    
+        traceback.print_exc()  
