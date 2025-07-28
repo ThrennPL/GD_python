@@ -35,6 +35,10 @@ try:
     from xmi_sequance_generator import XMISequenceGenerator
     from plantuml_class_parser import PlantUMLClassParser
     from xmi_class_generator import XMIClassGenerator
+    from plantuml_activity_parser import PlantUMLActivityParser
+    from xmi_activity_generator import XMIActivityGenerator 
+    from plantuml_component_parser import PlantUMLComponentParser
+    from xmi_component_generator import XMIComponentGenerator
     MODULES_LOADED = True
 except ImportError as e:
     MODULES_LOADED = False
@@ -625,8 +629,9 @@ if st.session_state.plantuml_diagrams:
                         try:
                             parser = PlantUMLClassParser()
                             parser.parse(plantuml_code)
+                            diagram_title = parser.title if hasattr(parser, 'title') and parser.title else diagram_type 
                             xmi_content = XMIClassGenerator(autor = "195841").save_xmi(parser.classes, parser.relations, parser.enums, 
-                                                            parser.notes, parser.primitive_types, diagram_name = diagram_type)
+                                                            parser.notes, parser.primitive_types, diagram_name = diagram_title)
                             if st.download_button(
                                 label=tr("download_xmi_button"),
                                 data=xmi_content,
@@ -644,8 +649,9 @@ if st.session_state.plantuml_diagrams:
                         try:
                             parser = PlantUMLSequenceParser(plantuml_code)
                             parsed_data = parser.parse()
+                            diagram_title = parsed_data.get('title', diagram_type)
                             xmi_content = XMISequenceGenerator(autor = "195841").generuj_diagram(
-                                nazwa_diagramu=diagram_type,
+                                nazwa_diagramu=diagram_title,
                                 dane=parsed_data
                             )
                             #xmi_content = plantuml_to_xmi(plantuml_code)
@@ -660,6 +666,52 @@ if st.session_state.plantuml_diagrams:
                             error_msg = tr("msg_error_generating_xmi").format(error=str(e))
                             safe_log_error(error_msg)   
                             st.error(error_msg)
+                    elif ("aktywności" in diagram_type_identified.lower()) or ("activity" in diagram_type_identified.lower()):
+
+                        try:
+                            parser = PlantUMLActivityParser(plantuml_code)
+                            parsed_data = parser.parse()
+                            diagram_title = parsed_data.get('title', diagram_type)
+                            xmi_content = XMIActivityGenerator(author = "195841").generate_activity_diagram(
+                                nazwa_diagramu=diagram_title,
+                                dane=parsed_data
+                            )
+                            #xmi_content = plantuml_to_xmi(plantuml_code)
+                            if st.download_button(
+                                label=tr("download_xmi_button"),
+                                data=xmi_content,
+                                file_name=f"{diagram_type}_{i+1}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xmi",
+                                mime="application/xml"
+                            ):
+                                st.success(tr("msg_success_ready_for_downloading_XMI"))
+                        except Exception as e:
+                            error_msg = tr("msg_error_generating_xmi").format(error=str(e))
+                            safe_log_error(error_msg)   
+                            st.error(error_msg)
+                    elif ("komponentów" in diagram_type_identified.lower()) or ("component" in diagram_type_identified.lower()):
+                        
+                        try:
+                            parser = PlantUMLComponentParser(plantuml_code)
+                            parsed_data = parser.parse()
+                            diagram_title = parsed_data.get('title', diagram_type)
+                            xmi_content = XMIComponentGenerator(author = "195841").generate_component_diagram(
+                                nazwa_diagramu=diagram_title,
+                                dane=parsed_data
+                            )
+                            #xmi_content = plantuml_to_xmi(plantuml_code)
+                            if st.download_button(
+                                label=tr("download_xmi_button"),
+                                data=xmi_content,
+                                file_name=f"{diagram_type}_{i+1}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xmi",
+                                mime="application/xml"
+                            ):
+                                st.success(tr("msg_success_ready_for_downloading_XMI"))
+                        except Exception as e:
+                            error_msg = tr("msg_error_generating_xmi").format(error=str(e))
+                            safe_log_error(error_msg)   
+                            st.error(error_msg)
+                    
+
                     #else:
                         #st.button(f"Pobierz XMI {i+1}", disabled=True, help="XMI dostępne tylko dla diagramów klas", key=f"xmi_button_{i}")
     else:
@@ -733,8 +785,9 @@ if st.session_state.plantuml_diagrams:
                 try:
                     parser = PlantUMLClassParser()
                     parser.parse(plantuml_code)
+                    diagram_title = parser.title if hasattr(parser, 'title') and parser.title else diagram_type_identified
                     xmi_content = XMIClassGenerator(autor = "195841").save_xmi(parser.classes, parser.relations, parser.enums, 
-                                                    parser.notes, parser.primitive_types, diagram_name = diagram_type)
+                                                    parser.notes, parser.primitive_types, diagram_name = diagram_title)
                     if st.download_button(
                         label=tr("download_xmi_button"),
                         data=xmi_content,
@@ -748,9 +801,56 @@ if st.session_state.plantuml_diagrams:
                 try:
                     parser = PlantUMLSequenceParser(plantuml_code)
                     parsed_data = parser.parse()
+                    diagram_title = parsed_data.get('title', diagram_type_identified)
                     xmi_content = XMISequenceGenerator(autor = "195841").generuj_diagram(
-                        nazwa_diagramu=diagram_type,
+                        nazwa_diagramu=diagram_title,
                         dane=parsed_data
+                    )
+                    #xmi_content = plantuml_to_xmi(plantuml_code)
+                    if st.download_button(
+                        label=tr("download_xmi_button"),
+                        data=xmi_content,
+                        file_name=f"{diagram_type}_{i+1}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xmi",
+                        mime="application/xml"
+                    ):
+                        st.success(tr("msg_success_ready_for_downloading_XMI"))
+                except Exception as e:
+                    error_msg = tr("msg_error_generating_xmi").format(error=str(e))
+                    safe_log_error(error_msg)   
+                    st.error(error_msg)
+
+            elif ("aktywności" in diagram_type_identified.lower()) or ("activity" in diagram_type_identified.lower()):
+
+                try:
+                    parser = PlantUMLActivityParser(plantuml_code)
+                    parsed_data = parser.parse()
+                    diagram_title = parsed_data.get('title', diagram_type)
+                    xmi_content = XMIActivityGenerator(author = "195841").generate_activity_diagram(
+                        diagram_name=diagram_title,
+                        parsed_data=parsed_data
+                        )
+                        #xmi_content = plantuml_to_xmi(plantuml_code)
+                    if st.download_button(
+                        label=tr("download_xmi_button"),
+                        data=xmi_content,
+                        file_name=f"{diagram_type}_{i+1}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xmi",
+                        mime="application/xml"
+                    ):
+                        st.success(tr("msg_success_ready_for_downloading_XMI"))
+                except Exception as e:
+                    error_msg = tr("msg_error_generating_xmi").format(error=str(e))
+                    safe_log_error(error_msg)   
+                    st.error(error_msg)
+
+            elif ("komponentów" in diagram_type_identified.lower()) or ("component" in diagram_type_identified.lower()):
+                        
+                try:
+                    parser = PlantUMLComponentParser(plantuml_code)
+                    parsed_data = parser.parse()
+                    diagram_title = parsed_data.get('title', diagram_type)
+                    xmi_content = XMIComponentGenerator(author = "195841").generate_component_diagram(
+                        diagram_name=diagram_title,
+                        parsed_data1=parsed_data
                     )
                     #xmi_content = plantuml_to_xmi(plantuml_code)
                     if st.download_button(

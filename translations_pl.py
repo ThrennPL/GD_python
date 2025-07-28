@@ -146,6 +146,7 @@ TRANSLATIONS = {
     "msg_error_updating_plantuml": "Błąd podczas aktualizacji kodu PlantUML: {error}\n",
     "msg_error_file_not_found": "Nie znaleziono pliku: {input_file}\n",
     "msg_error_reading_file": "Wystąpił błąd podczas wczytywania pliku: {input_file}\nBłąd: {error}\n",
+    "msg_error_previewing_diagram": "Błąd podglądu diagramu: {error}\n",
 
     "download_plantuml_success": "Plik został pobrany!",
     "msg_verification_attempts_exceeded": "Próbowano dwukrotnie zweryfikować kod PlantUML. Przerywam dalsze próby.\n",

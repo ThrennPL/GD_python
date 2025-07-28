@@ -145,6 +145,7 @@ TRANSLATIONS = {
     "msg_error_updating_plantuml": "Error updating PlantUML code: {error}\n",
     "msg_error_file_not_found": "File not found: {input_file}\n",
     "msg_error_reading_file": "An error occurred while reading the file: {input_file}\nError: {error}\n",
+    "msg_error_previewing_diagram": "Error previewing diagram: {error}\n",
     
 
     "download_plantuml_success": "File has been downloaded!",
