@@ -33,6 +33,8 @@ try:
     from xmi_class_generator import XMIClassGenerator
     from plantuml_activity_parser import PlantUMLActivityParser
     from xmi_activity_generator import XMIActivityGenerator
+    from plantuml_component_parser import PlantUMLComponentParser
+    from xmi_component_generator import XMIComponentGenerator
 except ImportError as e:
     MODULES_LOADED = False
     print(f"Error importing modules: {e}")
@@ -270,7 +272,7 @@ class AIApp(QMainWindow):
             return
         current_diagram_type = identify_plantuml_diagram_type(plantuml_code, LANG=LANG)
         print(f"Zidentyfikowany typ diagramu: {current_diagram_type}")
-        if (("klas" in current_diagram_type.lower()) or ("sekwencji" in current_diagram_type.lower()) or ("aktywności" in current_diagram_type.lower()) or ("class" in current_diagram_type.lower()) or ("sequence" in current_diagram_type.lower()) or ("activity" in current_diagram_type.lower())):
+        if any(word in current_diagram_type for word in ["klas", "sekwenc", "aktywno", "komponent", "class", "sequence", "activity", "component"]):
             self.save_xmi_button.setEnabled(True)
         else:
             self.save_xmi_button.setEnabled(False)
@@ -576,7 +578,7 @@ class AIApp(QMainWindow):
             # Sprawdź typ diagramu
             diagram_type = identify_plantuml_diagram_type(plantuml_blocks[-1], LANG)
             # print(f"Identified diagram type: {diagram_type}")
-            if ("klas" in diagram_type.strip().lower()) or ("sekwencji" in diagram_type.strip().lower()) or ("aktywności" in diagram_type.strip().lower()) or ("class" in diagram_type.strip().lower()) or ("sequence" in diagram_type.strip().lower()) or ("activity" in diagram_type.strip().lower()):
+            if any(word in diagram_type for word in ["klas", "sekwenc", "aktywno", "komponent", "class", "sequence", "activity", "component"]):
                 self.save_xmi_button.setEnabled(True)
             else:
                 self.save_xmi_button.setEnabled(False)
@@ -768,7 +770,8 @@ class AIApp(QMainWindow):
                 # Aktualizacja przycisków
                 self.save_diagram_button.setEnabled(True)
                 
-                if ("klas" in diagram_type.lower()) or ("sekwencji" in diagram_type.lower()) or ("aktywności" in diagram_type.lower()) or ("class" in diagram_type.lower()) or ("sequence" in diagram_type.lower()) or ("activity" in diagram_type.lower()):
+                diagram_type = identify_plantuml_diagram_type(plantuml_code, LANG).lower()
+                if any(word in diagram_type for word in ["klas", "sekwenc", "aktywno", "komponent", "class", "sequence", "activity", "component"]):
                     self.save_xmi_button.setEnabled(True)
                 else:
                     self.save_xmi_button.setEnabled(False)
@@ -879,20 +882,31 @@ class AIApp(QMainWindow):
                     #xmi_code = plantuml_to_xmi(plantuml_code)
                     parser = PlantUMLClassParser()
                     parser.parse(plantuml_code)
+                    diagram_title = parser.title if hasattr(parser, 'title') and parser.title else diagram_type  # Use title if it exists or diagram_type
                     xmi_code = XMIClassGenerator(autor = "195841").save_xmi(parser.classes, parser.relations, parser.enums, 
-                                    parser.notes, parser.primitive_types, diagram_name = diagram_type)
+                                    parser.notes, parser.primitive_types, diagram_name = diagram_title)
                 elif diagram_type == ('Diagram sekwencji' or 'Sequence diagram'):
                     parser = PlantUMLSequenceParser(plantuml_code)
                     parsed_data = parser.parse()
+                    diagram_title = parsed_data.get('title', diagram_type)
                     xmi_code =XMISequenceGenerator(autor = "195841").generuj_diagram(
-                        nazwa_diagramu=diagram_type,
-                        dane=parsed_data  
+                        nazwa_diagramu=diagram_title,
+                        dane=parsed_data
                     )
                 elif diagram_type == ('Diagram aktywności' or 'Activity diagram'):
                     parser = PlantUMLActivityParser(plantuml_code)
                     parsed_data = parser.parse()
+                    diagram_title = parsed_data.get('title', diagram_type)
                     xmi_code = XMIActivityGenerator(author = "195841").generate_activity_diagram(
-                        diagram_name=diagram_type,
+                        diagram_name=diagram_title,
+                        parsed_data=parsed_data
+                    )
+                elif diagram_type == ('Diagram komponentów' or 'Component diagram'):
+                    parser = PlantUMLComponentParser(plantuml_code)
+                    parsed_data = parser.parse()
+                    diagram_title = parsed_data.get('title', diagram_type)
+                    xmi_code = XMIComponentGenerator(author = "195841").generate_component_diagram(
+                        diagram_name=diagram_title,
                         parsed_data=parsed_data  
                     )
                 timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -1090,7 +1104,7 @@ class AIApp(QMainWindow):
                 action_svg=menu.addAction(tr("save_diagram_button"))
                 #action_test=menu.addAction("test")
                 current_diagram_type = identify_plantuml_diagram_type(self.plantuml_codes[idx], LANG)
-                if ("klas" in current_diagram_type.lower()) or ("sekwencji" in current_diagram_type.lower()) or ("aktywności" in current_diagram_type.lower()) or ("class" in current_diagram_type.lower()) or ("sequence" in current_diagram_type.lower()) or ("activity" in current_diagram_type.lower()):
+                if any(word in current_diagram_type for word in ["klas", "sekwenc", "aktywno", "komponent", "class", "sequence", "activity", "component"]):
                     action_xmi=menu.addAction(tr("save_xmi_button"))
                 action=menu.exec_(svg_widget.mapToGlobal(point))
                 
@@ -1098,7 +1112,7 @@ class AIApp(QMainWindow):
                     self.save_plantuml()
                 elif action==action_svg:
                     self.save_active_diagram()
-                elif (("klas" in current_diagram_type.lower()) or ("sekwencji" in current_diagram_type.lower()) or ("aktywności" in current_diagram_type.lower()) or ("class" in current_diagram_type.lower()) or ("sequence" in current_diagram_type.lower()) or ("activity" in current_diagram_type.lower())) and (action==action_xmi):
+                elif (any(word in current_diagram_type for word in ["klas", "sekwenc", "aktywno", "komponent", "class", "sequence", "activity", "component"])) and (action==action_xmi):
                     self.save_xmi()
                 elif action==action_edit:
                     self.edit_plantuml()

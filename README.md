@@ -78,7 +78,7 @@ Aplikacja do generowania, wizualizacji i weryfikacji diagramów UML (PlantUML) o
 
 ## Eksport XMI
 
-Eksport XMI jest obecnie dostępny **tylko dla diagramu klas, sekwencji i aktywnmości (Class Diagram, Sequence Diagram, Activity Diagram),**. Przycisk „Zapisz XMI” (również menu kontekstowe) jest aktywny wyłącznie, gdy aktywna zakładka zawiera diagram klas, diagram sekwencji lub diagram aktywności. Dla innych typów diagramów (np. przypadków użycia, komponentów) eksport XMI nie jest jeszcze obsługiwany. Po imporcie do EA elementy mogą wymagać ręcznego uporządkowania.
+Eksport XMI jest obecnie dostępny **tylko dla diagramu klas, sekwencji, aktywnmości i komponentów (Class Diagram, Sequence Diagram, Activity Diagram, Component Diagram),**. Przycisk „Zapisz XMI” (również menu kontekstowe) jest aktywny wyłącznie, gdy aktywna zakładka zawiera diagram klas, diagram sekwencji lub diagram aktywności. Dla innych typów diagramów (np. przypadków użycia, komponentów) eksport XMI nie jest jeszcze obsługiwany. Po imporcie do EA elementy mogą wymagać ręcznego uporządkowania.
 
 ---
 

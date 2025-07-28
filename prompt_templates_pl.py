@@ -1136,7 +1136,6 @@ prompt_templates = {
         
                     "**KROK 1: ANALIZA PROCESU BIZNESOWEGO**\n"
                     "Przeanalizuj opisany proces i zidentyfikuj:\n"
-                    "- Kto uczestniczy w procesie (aktorzy, role)?\n"
                     "- Jakie dane są przetwarzane, przechowywane, przekazywane?\n"
                     "- Jakie decyzje są podejmowane i na podstawie czego?\n"
                     "- Jakie systemy zewnętrzne są wymagane?\n"

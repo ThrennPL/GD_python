@@ -78,7 +78,7 @@ An application for generating, visualizing, and validating UML (PlantUML) and BP
 
 ## XMI Export
 
-XMI export is currently available **only for class, sequence, and activity diagrams (Class Diagram, Sequence Diagram, Activity Diagram)**. The "Save XMI" button (also in the context menu) is active only when the current tab contains a class, sequence, or activity diagram. For other diagram types (e.g., use case, component), XMI export is not yet supported. After importing into EA, elements may require manual arrangement.
+XMI export is currently available **only for class, sequence, activity and component diagrams (Class Diagram, Sequence Diagram, Activity Diagram, Component Diagram)**. The "Save XMI" button (also in the context menu) is active only when the current tab contains a class, sequence, or activity diagram. For other diagram types (e.g., use case, component), XMI export is not yet supported. After importing into EA, elements may require manual arrangement.
 
 ---
 

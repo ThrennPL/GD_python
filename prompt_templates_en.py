@@ -918,7 +918,6 @@ prompt_templates = {
 
             "**STEP 1: BUSINESS PROCESS ANALYSIS**\n"
             "Analyze the described process and identify:\n"
-            "- Who participates in the process (actors, roles)?\n"
             "- What data is processed, stored, transferred?\n"
             "- What decisions are made and based on what?\n"
             "- What external systems are required?\n"
