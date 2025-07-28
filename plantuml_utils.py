@@ -12,8 +12,6 @@ from typing import List, Dict, Tuple
 from dataclasses import dataclass
 from dotenv import load_dotenv 
 from logger_utils import setup_logger, log_info, log_error, log_exception
-from translations_pl import TRANSLATIONS as PL
-from translations_en import TRANSLATIONS as EN
 
 load_dotenv()
 
@@ -24,11 +22,6 @@ plantuml_url = os.getenv("PLANTUML_URL", "https://www.plantuml.com/plantuml")
 plantuml_alphabet = string.digits + string.ascii_uppercase + string.ascii_lowercase + '-_'
 base64_alphabet   = string.ascii_uppercase + string.ascii_lowercase + string.digits + '+/'
 b64_to_plantuml = bytes.maketrans(base64_alphabet.encode('utf-8'), plantuml_alphabet.encode('utf-8'))
-
-LANG = os.getenv("LANG", "pl")
-
-def tr(key, LANG="pl"):
-        return EN[key] if LANG == "en" else PL[key]
 
 def plantuml_encode(plantuml_text):
     """Kompresuje i koduje tekst PlantUML do formatu URL zgodnego z plantuml.com."""
@@ -153,6 +146,7 @@ class PlantUMLDiagramIdentifier:
                 'explicit': [r'@startcomponent'],
                 'strong': [
                     r'!include\s+<c4/',
+                    r'\bcomponent\s+.*<<.*>>',  # Komponent ze stereotypem - silny wzorzec!
                     r'\bcomponent\(',
                     r'\bperson\(',
                     r'\bsystem\(',
@@ -161,12 +155,17 @@ class PlantUMLDiagramIdentifier:
                     r'\bcomponentdb\(',
                     r'\bsystemdb\(',
                     r'\bcontainerdb\(',
+                    r'package\s+".*"\s+{.*component', # Pakiet zawierający komponenty
+                    r'package\s+.*{.*component',      # Dowolny pakiet z komponentami
+                    r'frame\s+.*{.*component',        # Frame z komponentami
+                    r'\bdatabase\s+.*',               # Definicja bazy danych
+                    r'\bqueue\s+.*',                  # Definicja kolejki
+                    r'\binterface\s+".*"',            # Definicja interfejsu w cudzysłowach
                 ],
                 'moderate': [
-                    r'\bcomponent\s+\w+',
+                    r'\bcomponent\s+.*',             # Dowolny komponent
                     r'\[component\]',
                     r'\(\)<>',
-                    r'\bdatabase\b',
                 ],
                 'weak': []
             },
@@ -198,6 +197,10 @@ class PlantUMLDiagramIdentifier:
                 r'extends\b',
                 r'implements\b',
                 r'<\|--', r'--\|>',
+                r'package\s+.*{\s*.*component',  # Wykluczenie gdy są pakiety z komponentami
+                r'component\s+.*<<.*>>',         # Wykluczenie gdy są komponenty ze stereotypami
+                r'frame\s+.*{.*component',       # Wykluczenie gdy są ramki z komponentami
+
             ],
             'class_diagram': [
                 r'\bparticipant\b',
@@ -319,24 +322,41 @@ class PlantUMLDiagramIdentifier:
             # C4 ma priorytet
             if re.search(r'(!include\s+<c4/|component\(|person\()', code):
                 return next(c for c in top_candidates if c.type_key == 'component_diagram')
+        if {'component_diagram', 'sequence_diagram'}.issubset(candidate_types):
+            # Jeśli są pakiety z komponentami wewnątrz, to jest to diagram komponentów
+            if re.search(r'package\s+.*\{\s*.*component', code):
+                return next(c for c in top_candidates if c.type_key == 'component_diagram')
+            # Jeśli są komponenty ze stereotypami, to jest to diagram komponentów
+            elif re.search(r'component\s+.*<<.*>>', code):
+                return next(c for c in top_candidates if c.type_key == 'component_diagram')
+            # Jeśli w pliku jest jawne określenie, że to diagram komponentów
+            elif re.search(r'diagram\s*komponent(ów|ow)', code, re.IGNORECASE):
+                return next(c for c in top_candidates if c.type_key == 'component_diagram')
+            # Jeśli nazwa pliku wskazuje na diagram komponentów
+            elif hasattr(self, 'filename') and re.search(r'komponent', getattr(self, 'filename', ''), re.IGNORECASE):
+                return next(c for c in top_candidates if c.type_key == 'component_diagram')   
+
         
         # Zwróć kandydata z najwyższym wynikiem
         return top_candidates[0] if top_candidates else candidates[0]
 
-def identify_plantuml_diagram_type(plantuml_code: str, LANG="pl", debug=False) -> str:
+def identify_plantuml_diagram_type(plantuml_code: str, LANG="pl", debug=False, filename=None) -> str:
     """
     Rozpoznaje typ diagramu PlantUML na podstawie kodu źródłowego.
-    Funkcja kompatybilna z oryginalnym interfejsem plantuml_utils.py
+    Zwraca polską nazwę typu diagramu do wyświetlenia w interfejsie.
     
     Args:
         plantuml_code: Kod PlantUML do analizy
-        LANG: Kod języka dla tłumaczeń
+        LANG: Kod języka dla tłumaczeń (domyślnie 'pl')
         debug: Czy wyświetlić informacje debugowe (opcjonalny)
+        filename: Nazwa pliku z kodem (opcjonalny)
         
     Returns:
         str: Przetłumaczona nazwa typu diagramu
     """
     identifier = PlantUMLDiagramIdentifier()
+    if filename:
+        identifier.filename = filename
     code = identifier.preprocess_code(plantuml_code)
     
     if debug:
@@ -347,7 +367,18 @@ def identify_plantuml_diagram_type(plantuml_code: str, LANG="pl", debug=False) -
     if explicit_type:
         if debug:
             print(f"Znaleziono jawną deklarację: {explicit_type}")
-        return tr(f"diagram_type_{explicit_type}", LANG=LANG)
+        # Tłumaczenie specjalnych typów diagramów
+        translations = {
+            'wireframe': 'Diagram interfejsu',
+            'mindmap_diagram': 'Mapa myśli',
+            'mindmap': 'Mapa myśli',
+            'gantt_chart': 'Wykres Gantta',
+            'gantt': 'Wykres Gantta',
+            'work_breakdown': 'Diagram WBS',
+            'erd_diagram': 'Diagram ERD',
+            'erd': 'Diagram ERD'
+        }
+        return translations.get(explicit_type, f"Diagram {explicit_type}")
     
     if debug:
         print("Brak jawnych deklaracji, przechodząc do punktowania...")
@@ -366,7 +397,7 @@ def identify_plantuml_diagram_type(plantuml_code: str, LANG="pl", debug=False) -
     if not candidates:
         if debug:
             print("Brak kandydatów, zwracam typ ogólny")
-        return tr("diagram_type_general", LANG=LANG)
+        return "Diagram ogólny"
     
     if debug:
         print(f"\n=== ETAP 3: Rozwiązywanie konfliktów ===")
@@ -378,7 +409,20 @@ def identify_plantuml_diagram_type(plantuml_code: str, LANG="pl", debug=False) -
         print(f"Wybrany kandydat: {final_candidate}")
     
     diagram_type = final_candidate.type_key.replace('_diagram', '')
-    return tr(f"diagram_type_{diagram_type}_diagram", LANG=LANG)
+    
+    # Mapa tłumaczeń typów diagramów na język polski
+    pl_diagram_types = {
+        'class': 'Diagram klas',
+        'sequence': 'Diagram sekwencji',
+        'activity': 'Diagram aktywności',
+        'state': 'Diagram stanów',
+        'usecase': 'Diagram przypadków użycia',
+        'component': 'Diagram komponentów',
+        'object': 'Diagram obiektów',
+    }
+    
+    # Zwróć polską nazwę typu diagramu lub ogólną jeśli brak tłumaczenia
+    return pl_diagram_types.get(diagram_type, "Diagram ogólny")
 
 def fetch_plantuml_svg_www(plantuml_code: str, LANG="pl") -> bytes:
     #Pobiera diagram PlantUML jako SVG z serwisu plantuml.com.
@@ -398,13 +442,10 @@ def fetch_plantuml_svg_www(plantuml_code: str, LANG="pl") -> bytes:
         error_msg = f"{int(error_headers['line'])+1}: {error_headers['error']} : {error_headers['description']}" 
   
     if response.status_code == 200:
-        log_error(tr("msg_error_downloading_SVG", LANG=LANG).format(status_code=response.status_code, error_text=error_msg)) 
+        log_error(f"Błąd powbierania SVG (kod: {response.status_code}):\n {error_msg}") 
         return response.content, error_msg
     else:
-        error_msg = tr("msg_error_downloading_SVG", LANG=LANG).format(
-            status_code=response.status_code,
-            error_text=response.text
-        )
+        error_msg = f"Błąd powbierania SVG (kod: {response.status_code}):\n {response.text}"
         log_error(f"{error_msg}")
         raise Exception(error_msg)
     
@@ -432,40 +473,136 @@ def fetch_plantuml_svg_local(plantuml_code: str, plantuml_jar_path: str = "plant
     else:
         # Dodatkowo można sprawdzać stderr na obecność "Error" lub typowych fragmentów
         error_msg = ""
-        log_info(tr("msg_info_success_generating_SVG", LANG=LANG).format(svg_path=svg_path))
+        log_info(f"Plik SVG został pomyślnie wygenerowany i zapisany jako: {svg_path}")
         log_info(f"PlantUML stdout: {stdout_jar.strip()}")
 
     return svg_path, error_msg
 
-# Dodaj na końcu pliku plantuml_utils.py
+# Przykład użycia funkcji
 if __name__ == "__main__":
     import sys
+    import argparse
     from datetime import datetime
+
+    # Konfiguracja parsera argumentów
+    parser = argparse.ArgumentParser(description="Narzędzie do obsługi diagramów PlantUML")
+    parser.add_argument('input_file', nargs='?', default='Diagram_aktywnosci_test2.puml',
+                    help='Ścieżka do pliku z kodem PlantUML (domyślnie: diagram.puml)')
     
-    # Obsługa argumentów wiersza poleceń lub użycie wartości domyślnych
-    if len(sys.argv) > 1:
-        input_file = sys.argv[1]
-    else:
-        input_file = 'diagram_sekwencji_PlantUML.puml'
+    # Grupa wzajemnie wykluczających się operacji
+    group = parser.add_mutually_exclusive_group(required=True)
+    group.add_argument('--identify', '-i', action='store_true', 
+                      help='Identyfikuj typ diagramu')
+    group.add_argument('--generate-local', '-gl', action='store_true', 
+                      help='Generuj SVG lokalnie')
+    group.add_argument('--generate-www', '-gw', action='store_true', 
+                      help='Generuj SVG przez serwis www.plantuml.com')
     
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    #output_file = f"diagram_klas_{timestamp}.xmi"
+    # Opcje dodatkowe
+    parser.add_argument('--output', '-o', 
+                      help='Ścieżka pliku wyjściowego (dla generowania)')
+    parser.add_argument('--debug', '-d', action='store_true', 
+                      help='Włącz tryb debugowania')
+    parser.add_argument('--jar', 
+                      help=f'Ścieżka do pliku JAR PlantUML (domyślnie: {plantuml_jar_path})')
+    
+    # Parsowanie argumentów
+    args = parser.parse_args()
+    
+    # Konfiguracja logowania
+    setup_logger('plantuml_utils.log')
     
     try:
         # Wczytaj plik PlantUML
-        log_info(tr("msg_info_reading_file", LANG="pl").format(input_file=input_file))
-        with open(input_file, 'r', encoding='utf-8') as f:
+        log_info(f"Wczytywanie pliku: {args.input_file}")
+        with open(args.input_file, 'r', encoding='utf-8') as f:
             plantuml_code = f.read()
         
-        # Najpierw zidentyfikuj typ diagramu - teraz z możliwością debugowania
-        diagram_type = identify_plantuml_diagram_type(plantuml_code, debug=True)
-        log_info(tr("msg_info_diagram_type", LANG="pl").format(diagram_type=diagram_type)) 
-        print(f"Zidentyfikowany typ diagramu: {diagram_type}")
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         
+        # 1. Identyfikacja typu diagramu
+        if args.identify:
+            diagram_type = identify_plantuml_diagram_type(plantuml_code, debug=args.debug, filename=args.input_file)            
+            log_info(f"Zidentyfikowany typ diagramu: {diagram_type}")
+            print(f"\nZidentyfikowany typ diagramu: {diagram_type}\n")
+            
+            # Wypisz szczegóły jeśli włączono debugowanie
+            if args.debug:
+                print("\nSzczegółowa analiza diagramu:")
+                identifier = PlantUMLDiagramIdentifier()
+                code = identifier.preprocess_code(plantuml_code)
+                candidates = identifier.score_candidates(code)
+                
+                if candidates:
+                    print("\nWszystkie znalezione typy diagramów (według punktacji):")
+                    for i, candidate in enumerate(candidates, 1):
+                        print(f"{i}. {candidate.type_key} - {candidate.score:.2f} punktów")
+        
+        # 2. Generowanie SVG lokalnie
+        elif args.generate_local:
+            jar_path = args.jar or plantuml_jar_path
+            output_path = args.output or f"diagram_local_{timestamp}.svg"
+            
+            print(f"Generowanie SVG lokalnie przy użyciu {jar_path}...")
+            svg_path, error_msg = fetch_plantuml_svg_local(plantuml_code, jar_path)
+            
+            if not error_msg:
+                # Kopiowanie do wskazanego miejsca docelowego
+                import shutil
+                shutil.copy(svg_path, output_path)
+                log_info(f"SVG wygenerowano pomyślnie i zapisano jako: {output_path}")
+                print(f"\nSVG wygenerowano pomyślnie i zapisano jako: {output_path}")
+                
+                if args.debug:
+                    # Identyfikuj diagram dla celów informacyjnych
+                    diagram_type = identify_plantuml_diagram_type(plantuml_code)
+                    print(f"Typ diagramu: {diagram_type}")
+            else:
+                log_error(f"Błąd generowania SVG: {error_msg}")
+                print(f"\nBłąd generowania SVG: {error_msg}")
+                sys.exit(1)
+        
+        # 3. Generowanie SVG przez serwis WWW
+        elif args.generate_www:
+            output_path = args.output or f"diagram_www_{timestamp}.svg"
+            
+            print("Generowanie SVG przez serwis www.plantuml.com...")
+            try:
+                svg_content, error_msg = fetch_plantuml_svg_www(plantuml_code)
+                
+                if not error_msg:
+                    # Zapisz SVG do pliku
+                    with open(output_path, 'wb') as f:
+                        f.write(svg_content)
+                    log_info(f"SVG wygenerowano pomyślnie i zapisano jako: {output_path}")
+                    print(f"\nSVG wygenerowano pomyślnie i zapisano jako: {output_path}")
+                    
+                    if args.debug:
+                        # Identyfikuj diagram dla celów informacyjnych
+                        diagram_type = identify_plantuml_diagram_type(plantuml_code)
+                        print(f"Typ diagramu: {diagram_type}")
+                else:
+                    log_error(f"Ostrzeżenie generowania SVG: {error_msg}")
+                    print(f"\nOstrzeżenie generowania SVG: {error_msg}")
+                    
+                    # Zapisz SVG do pliku mimo ostrzeżenia
+                    with open(output_path, 'wb') as f:
+                        f.write(svg_content)
+                    print(f"SVG zapisano jako: {output_path} (z ostrzeżeniami)")
+            except Exception as e:
+                log_error(f"Błąd generowania SVG przez WWW: {e}")
+                print(f"\nBłąd generowania SVG przez WWW: {e}")
+                sys.exit(1)
+    
     except FileNotFoundError:
-        log_error(tr("msg_error_file_not_found", LANG="pl").format(input_file=input_file)) 
-        log_info(tr("msg_info_usage", LANG="pl").format(script_name=sys.argv[0])) 
+        log_error(f"Nie znaleziono pliku: {args.input_file}")
+        print(f"\nNie znaleziono pliku: {args.input_file}")
+        print(f"Użycie: python {sys.argv[0]} <ścieżka_do_pliku_puml> [opcje]")
+        sys.exit(1)
     except Exception as e:
-        log_error(tr("msg_error_reading_file", LANG="pl").format(input_file=input_file, error=e)) 
-        import traceback
-        traceback.print_exc()
+        log_error(f"Wystąpił błąd: {e}")
+        print(f"\nWystąpił błąd: {e}")
+        if args.debug:
+            import traceback
+            traceback.print_exc()
+        sys.exit(1)
