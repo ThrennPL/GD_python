@@ -2,412 +2,35 @@ import xml.etree.ElementTree as ET
 import uuid
 from datetime import datetime
 import xml.dom.minidom
-from plantuml_activity_parser import PlantUMLActivityParser
+import sys
 import re 
-from logger_utils import log_debug, log_info, log_error, log_exception, log_warning, setup_logger
+import os
+
+parent_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
+sys.path.append(parent_dir)
+
+# PODSTAWOWE IMPORTY - ZAWSZE POTRZEBNE
+try:
+    from logger_utils import log_debug, log_info, log_error, log_exception, log_warning, setup_logger
+    from utils.plantuml.plantuml_activity_parser import PlantUMLActivityParser
+except ImportError as e:
+    print(f"❌ Krytyczny błąd importu podstawowych modułów: {e}")
+    sys.exit(1)
+
+try:
+    graph_layout_path = os.path.join(os.path.dirname(__file__), 'graph_layout_manager.py')
+    if os.path.exists(graph_layout_path):
+        from utils.xmi.graph_layout_manager import GraphLayoutManager
+        GRAPH_LAYOUT_AVAILABLE = True
+        log_info("✅ GraphLayoutManager dostępny")
+    else:
+        GRAPH_LAYOUT_AVAILABLE = False
+        log_warning("⚠️ graph_layout_manager.py nie istnieje")
+except ImportError as e:
+    GRAPH_LAYOUT_AVAILABLE = False
+    log_warning(f"⚠️ GraphLayoutManager niedostępny: {e}")
 
 setup_logger('xmi_activity_generator.log')
-
-class LayoutManager:
-    """Klasa zarządzająca layoutem elementów diagramu."""
-    
-    def __init__(self, swimlane_ids, transitions=None, id_map=None, debug_positioning=False):
-        self.positions = {}
-        self.current_y = {}
-        self.swimlanes_geometry = {}
-        self.swimlane_ids = swimlane_ids
-        self.id_map = id_map or {}
-        self.transitions = transitions or []
-        self.debug_positioning = debug_positioning
-        
-        # Inicjalizuj wysokości dla każdego toru
-        lane_x = 100  # Początkowa pozycja X pierwszego toru
-        lane_width = 250  # Szerokość każdego toru
-        
-        # Dynamiczne rozłożenie torów w zależności od ich liczby
-        total_lanes = len(swimlane_ids)
-        for i, (name, swimlane_id) in enumerate(swimlane_ids.items()):
-            # Inicjalizuj początkową wysokość dla toru
-            self.current_y[swimlane_id] = 180
-            
-            # Utwórz podstawową geometrię dla toru
-            self.swimlanes_geometry[swimlane_id] = {
-                'x': lane_x,
-                'y': 100,
-                'width': lane_width,
-                'height': 1050,  # Standardowa wysokość
-                'center_x': lane_x + lane_width / 2,
-                'index': i,      # Zapamiętaj indeks toru (kolejność)
-                'name': name     # Zapamiętaj nazwę toru
-            }
-            
-            # Przesuń pozycję X dla następnego toru
-            lane_x += lane_width + 30  # 30px to margines między torami
-            
-            if self.debug_positioning:
-                print(f"📊 Inicjalizacja toru {name}: x={self.swimlanes_geometry[swimlane_id]['x']}, center={self.swimlanes_geometry[swimlane_id]['center_x']}")
-                log_debug(f"📊 Inicjalizacja toru {name}: x={self.swimlanes_geometry[swimlane_id]['x']}, center={self.swimlanes_geometry[swimlane_id]['center_x']}")
-
-    
-    def get_position_for_element(self, node):
-        """Zwraca pozycję (geometrię) dla danego elementu z uwzględnieniem struktury diagramu."""
-        node_id = node.attrib.get('xmi:id')
-        
-        # Sprawdź, czy już mamy zapisaną pozycję
-        if node_id in self.positions:
-            return self.positions[node_id]
-        
-        # Określ, do którego toru należy element
-        partition_id = node.attrib.get('inPartition')
-        
-        # Pobierz rozmiary elementu
-        width, height = self._get_element_size(node)
-        
-        # Sprawdź typ elementu dla specjalnego pozycjonowania
-        node_type = node.attrib.get('xmi:type', '')
-        node_name = node.attrib.get('name', '')
-        is_decision = 'DecisionNode' in node_type
-        is_control = 'InitialNode' in node_type or 'ActivityFinalNode' in node_type
-        
-        # Domyślne wartości pozycji
-        left = 200 - (width / 2)  # Środek standardowego toru
-        top = 180  # Domyślna wysokość startowa
-        
-        # Ustal pozycję bazującą na strukturze diagramu
-        if partition_id in self.swimlanes_geometry:
-            swimlane = self.swimlanes_geometry[partition_id]
-            lane_center = swimlane['center_x']
-            lane_left = swimlane['x']
-            lane_width = swimlane['width']
-            
-            # Wyśrodkuj element w torze
-            left = lane_center - (width / 2)
-            
-            branch_path = self._determine_branch_path(node_id)
-            
-            # Analiza informacji o gałęzi
-            branch_info = {}
-            if branch_path:
-                parts = branch_path.split('_')
-                if len(parts) >= 3:
-                    decision_id = parts[1]
-                    branch_type = parts[2]
-                    branch_info = {
-                        'branch_path': branch_path,
-                        'branch_type': branch_type,
-                        'parent_decision': decision_id,
-                        'depth': self._get_decision_depth(node_id)
-                    }
-                    
-                    # Sprawdź pozycję Y węzła decyzyjnego (rodzica)
-                    parent_id = "branch_" + decision_id
-                    if parent_id in self.id_map:
-                        # Wyekstraktuj wartość Top z zapisanej pozycji
-                        match = re.search(r'Top=(\d+\.?\d*);', self.positions.get(parent_id, ''))
-                        if match:
-                            branch_info['parent_y'] = float(match.group(1))
-            
-            # Ustal pozycję Y i przesunięcie X w zależności od rodzaju elementu
-            if is_control:
-                if 'InitialNode' in node_type:
-                    # Węzeł początkowy zawsze na górze diagramu
-                    top = swimlane['y'] + 80
-                    self.current_y[partition_id] = top + height + 50
-                elif 'ActivityFinalNode' in node_type:
-                    # Znajdź wszystkie istniejące węzły końcowe
-                    finals_count = sum(1 for n in self.positions 
-                                    if n in self.id_map and 
-                                    'ActivityFinalNode' in self.id_map[n].attrib.get('xmi:type', ''))
-                    # Umieść każdy nowy węzeł końcowy poniżej poprzednich
-                    top = swimlane['y'] + 180 + (finals_count * 60)
-                    
-            elif is_decision:
-                # Węzły decyzyjne potrzebują więcej miejsca
-                decision_depth = branch_info.get('depth', 0) or self._get_decision_depth(node_id)
-                
-                # Przesunięcie w poziomie zależne od głębokości decyzji
-                horizontal_offset = min(50 * decision_depth, (lane_width - width) / 2 - 20)
-                left += horizontal_offset
-                
-                # Określ pozycję pionową na podstawie poprzednich elementów w hierarchii
-                if branch_info.get('parent_y') is not None:
-                    # Umieść decyzję pod jej rodzicem (poprzednim elementem)
-                    top = branch_info['parent_y'] + 120
-                else:
-                    top = self.current_y.get(partition_id, 180) + 60
-                
-                # Zapisz informacje o tej decyzji do wykorzystania przez jej gałęzie
-                decision_key = f"decision_{node_id[-6:]}"
-                self.current_y[decision_key] = top
-                
-                # Oddzielne wysokości dla gałęzi "tak" i "nie"
-                self.current_y[f"{decision_key}_yes"] = top + height + 50
-                self.current_y[f"{decision_key}_no"] = top + height + 50
-                
-                # Rozdziel przestrzeń dla gałęzi
-                self._register_branch_space(node_id, left, top)
-                
-                # Aktualizuj ogólną wysokość toru tylko jeśli potrzeba
-                self.current_y[partition_id] = max(self.current_y[partition_id], top + height + 150)
-                
-            else:
-                # Dla standardowych elementów (actions)
-                if branch_path:
-                    # Element jest częścią gałęzi decyzyjnej
-                    branch_type = branch_info.get('branch_type', 'default')
-                    parent_decision = branch_info.get('parent_decision')
-                    
-                    if parent_decision:
-                        # Pobierz bazową pozycję decyzji
-                        decision_key = f"decision_{parent_decision}"
-                        base_top = self.current_y.get(f"{decision_key}_{branch_type}", 
-                                                    self.current_y.get(partition_id, 180))
-                        
-                        # Pozycja Y zależna od gałęzi
-                        top = base_top + 70
-                        
-                        # Pozycja X zależna od typu gałęzi (tak/nie)
-                        if branch_type == 'yes':
-                            # Gałąź "tak" - przesuń w lewo
-                            left -= 50
-                        else:  # branch_type == 'no'
-                            # Gałąź "nie" - przesuń w prawo
-                            left += 50
-                        
-                        # Aktualizuj wysokość dla tej konkretnej gałęzi
-                        self.current_y[f"{decision_key}_{branch_type}"] = top + height + 20
-                    else:
-                        # Standardowy element bez powiązania z decyzją
-                        top = self.current_y.get(partition_id, 180) + 70
-                        self.current_y[partition_id] = top + height + 20
-                else:
-                    # Element nie jest w żadnej gałęzi - standardowe pozycjonowanie
-                    top = self.current_y.get(partition_id, 180) + 70
-                    self.current_y[partition_id] = top + height + 20
-            
-            # Zapewnij, że element nie wychodzi poza granice toru
-            if left < lane_left + 10:
-                left = lane_left + 10
-            if left + width > lane_left + lane_width - 10:
-                left = lane_left + lane_width - width - 10
-            
-            # Znajdź nazwę toru dla komunikatu debugowania
-            swimlane_name = "Nieznany"
-            for name, pid in self.swimlane_ids.items():
-                if pid == partition_id:
-                    swimlane_name = name
-                    break
-                    
-            # Logowanie informacji o aktualizacji wysokości
-            if self.debug_positioning:
-                print(f"   📏 Aktualizacja wysokości dla {swimlane_name}: {top} -> {self.current_y[partition_id]}")
-                log_debug(f"   📏 Aktualizacja wysokości dla {swimlane_name}: {top} -> {self.current_y[partition_id]}")
-        
-        # Oblicz pozostałe współrzędne
-        right = left + width
-        bottom = top + height
-        
-        # Utwórz string z pozycją
-        position = f"Left={left};Top={top};Right={right};Bottom={bottom};"
-        
-        # Zapisz pozycję do cache
-        self.positions[node_id] = position
-        
-        # Debugowanie
-        position_before = "Brak pozycji"
-        self._debug_position_calculation(node_id, partition_id, position_before, position)
-        
-        return position
-
-
-    def _register_branch_space(self, decision_id, x_pos, y_pos):
-        """Rejestruje przestrzeń dla gałęzi decyzyjnych."""
-        if not hasattr(self, 'branch_spaces'):
-            self.branch_spaces = {}
-        
-        # Zapisz informacje o położeniu tej decyzji
-        self.branch_spaces[decision_id] = {
-            'x': x_pos,
-            'y': y_pos,
-            'yes_branch': {
-                'x_offset': -50,  # Gałąź "tak" idzie w lewo
-                'elements': []
-            },
-            'no_branch': {
-                'x_offset': 50,   # Gałąź "nie" idzie w prawo
-                'elements': []
-            }
-        }
-
-    def _determine_branch_path(self, node_id):
-        """Określa ścieżkę gałęzi dla elementu na podstawie połączeń z pełnym śledzeniem historii."""
-        # Znajdź wszystkie połączenia wchodzące do tego węzła
-        incoming = [t for t in self.transitions if t.get('target_id') == node_id]
-        
-        if not incoming:
-            return None
-        
-        # Budujemy pełne drzewo ścieżek wstecz
-        paths = []
-        visited = set()
-        
-        def trace_back(curr_id, path=None):
-            if path is None:
-                path = []
-            
-            if curr_id in visited:
-                return  # Unikaj cykli
-            
-            visited.add(curr_id)
-            path = [curr_id] + path  # Dodaj bieżący węzeł do ścieżki
-            
-            # Jeśli to element początkowy, zapisz ścieżkę
-            incoming = [t for t in self.transitions if t.get('target_id') == curr_id]
-            if not incoming:
-                paths.append(path)
-                return
-            
-            # Kontynuuj śledzenie wstecz dla wszystkich połączeń przychodzących
-            for transition in incoming:
-                source_id = transition.get('source_id')
-                if source_id:
-                    # Dodaj etykietę przejścia do ścieżki
-                    trace_back(source_id, path)
-        
-        # Rozpocznij śledzenie od bieżącego węzła
-        trace_back(node_id)
-        
-        # Analizuj ścieżki do najbliższej decyzji
-        for path in paths:
-            for i, path_node_id in enumerate(path[1:], 1):  # Pomijamy pierwszy węzeł (to nasz bieżący)
-                if path_node_id in self.id_map:
-                    node = self.id_map[path_node_id]
-                    if node is not None and 'xmi:type' in node.attrib and 'DecisionNode' in node.attrib.get('xmi:type', ''):
-                        # Znajdujemy tę decyzję, która jest najbliżej bieżącego węzła
-                        prev_id = path[i-1]  # Id węzła poprzedzającego decyzję
-                        for trans in self.transitions:
-                            if trans.get('source_id') == path_node_id and trans.get('target_id') == prev_id:
-                                guard = trans.get('name', '').lower()
-                                branch_type = 'yes' if guard == 'tak' else 'no'
-                                return f"branch_{path_node_id[-6:]}_{branch_type}"
-        
-        return None
-
-    def _get_decision_depth(self, node_id):
-        """Oblicza głębokość zagnieżdżenia decyzji dla elementu z limitem przesunięcia."""
-        depth = 0
-        
-        # Sprawdź stos decyzji dla bieżącego węzła
-        parent_ids = set()
-        current_ids = {node_id}
-        
-        # Iteracyjnie przeszukuj graf wstecz
-        while current_ids:
-            next_ids = set()
-            for nid in current_ids:
-                # Znajdź wszystkie węzły, które prowadzą do obecnego węzła
-                for trans in self.transitions:
-                    if trans.get('target_id') == nid and trans.get('source_id') not in parent_ids:
-                        source_id = trans.get('source_id')
-                        # Sprawdź, czy to węzeł decyzyjny
-                        node_type = "unknown"
-                        if source_id in self.id_map:
-                            node_type = self.id_map[source_id].attrib.get('xmi:type', '')
-                            if 'DecisionNode' in node_type:
-                                depth += 1
-                        
-                        # Usuń problematyczną linię lub zamień na poprawną:
-                        if self.debug_positioning:
-                            log_debug(f"Analizuję przejście: {source_id[-6:]} -> {nid[-6:]}, typ: '{node_type}'")
-                        
-                        next_ids.add(source_id)
-                        parent_ids.add(source_id)
-                
-                current_ids = next_ids
-        
-        # Ogranicz maksymalną głębokość, aby uniknąć wyjścia poza tor
-        # Zakładamy że 3 poziomy to maksimum w ramach jednego toru
-        max_safe_depth = 3
-        return min(depth, max_safe_depth)
-    
-    def _debug_position_calculation(self, node_id, partition_id, position_before, position_after):
-        """Loguje informacje o procesie wyliczania pozycji elementu."""
-        # Jeśli debugowanie nie jest włączone, nic nie rób
-        if not self.debug_positioning:
-            return
-            
-        if not hasattr(self, 'id_map') or not self.id_map or node_id not in self.id_map:
-            print(f"\n🔍 Debug pozycjonowania elementu: ID={node_id[-6:]} (brak informacji)")
-            log_debug(f"🔍 Debug pozycjonowania elementu: ID={node_id[-6:]} (brak informacji)")
-            return
-                
-        node_type = self.id_map[node_id].attrib.get('xmi:type', 'unknown')
-        node_name = self.id_map[node_id].attrib.get('name', 'unnamed')
-        
-        # Pobierz nazwę swimlane'a na podstawie partition_id
-        swimlane_name = "Nieznany"
-        for name, pid in self.swimlane_ids.items():
-            if pid == partition_id:
-                swimlane_name = name
-                break
-        
-        print(f"\n🔍 Debug pozycjonowania elementu: {node_name} ({node_type})")
-        log_debug(f"🔍 Debug pozycjonowania elementu: {node_name} ({node_type})")
-        print(f"   ID: {node_id[-6:]} | Partition: {swimlane_name} ({partition_id[-6:] if partition_id else 'None'})")
-        log_debug(f"   ID: {node_id[-6:]} | Partition: {swimlane_name} ({partition_id[-6:] if partition_id else 'None'})")
-        print(f"   Przed: {position_before}")
-        log_debug(f"   Przed: {position_before}")
-        print(f"   Po:    {position_after}")
-        log_debug(f"   Po:    {position_after}")
-        print(f"   Wysokość toru {swimlane_name}: {self.current_y.get(partition_id, 'nie istnieje')}")
-        log_debug(f"   Wysokość toru {swimlane_name}: {self.current_y.get(partition_id, 'nie istnieje')}")
-        
-        # Sprawdź, czy element jest w swoim torze
-        if partition_id:
-            for name, pid in self.swimlane_ids.items():
-                if pid == partition_id:
-                    swimlane = self.swimlanes_geometry.get(pid, {})
-                    left_edge = swimlane.get('x', 0)
-                    right_edge = left_edge + swimlane.get('width', 0)
-                    
-                    # Sprawdź, czy element wykracza poza tor
-                    match = re.search(r'Left=(\d+\.?\d*);Top=(\d+\.?\d*);Right=(\d+\.?\d*);Bottom=(\d+\.?\d*);', position_after)
-                    if match:
-                        element_left = float(match.group(1))
-                        element_right = float(match.group(3))
-                        
-                        if element_left < left_edge or element_right > right_edge:
-                            print(f"   ⚠️ Element wykracza poza swój tor! ({left_edge} - {right_edge})")
-        
-    def _get_element_size(self, node):
-        """Określa rozmiar elementu na podstawie jego typu."""
-        node_type = node.attrib.get('xmi:type', '')
-        
-        # Domyślny rozmiar dla standardowej akcji
-        width, height = 120, 60
-        
-        # Dostosuj rozmiary w zależności od typu
-        if 'InitialNode' in node_type or 'ActivityFinalNode' in node_type:
-            # Węzły początkowe/końcowe - małe okrągłe symbole
-            width, height = 30, 30
-        elif 'DecisionNode' in node_type or 'MergeNode' in node_type:
-            # Węzły decyzyjne - romby
-            width, height = 40, 40
-        elif 'ForkNode' in node_type or 'JoinNode' in node_type:
-            # Węzły fork/join - małe prostokąty
-            width, height = 80, 10
-        elif 'Comment' in node_type:
-            # Notatki - szerokie, aby zmieścić tekst
-            width, height = 140, 60
-        elif 'Action' in node_type:
-            # Sprawdź, czy akcja ma długą nazwę
-            if 'name' in node.attrib:
-                name_len = len(node.attrib['name'])
-                # Dostosuj szerokość na podstawie długości nazwy
-                if name_len > 20:
-                    width = min(220, 80 + name_len * 4)
-        
-        return width, height
 
 class XMIActivityGenerator:
     """
@@ -429,6 +52,9 @@ class XMIActivityGenerator:
         if debug_options:
             self.debug_options.update(debug_options)
         
+        # DODAJ TU: Inicjalizacja flagi decision_else
+        self._processing_decision_else = False
+        
         self._reset_state()
         self.ns = {
             'uml': 'http://schema.omg.org/spec/UML/2.1',
@@ -447,6 +73,7 @@ class XMIActivityGenerator:
         self.main_activity_id = None
         self.package_id = None
         self.diagram_id = None
+        self._processing_decision_else = False
 
     def _register_namespaces(self):
         ET.register_namespace('xmi', self.ns['xmi'])
@@ -480,8 +107,46 @@ class XMIActivityGenerator:
         # Krok 1: Utwórz wszystkie tory (swimlanes) jako partycje
         self._create_partitions_from_swimlanes(main_activity, parsed_data['swimlanes'])
         
+        # Utwórz i zapisz instancję LayoutManager
+        self.layout_manager = self._create_layout_manager()
+        
+        # Przeprowadź analizę struktury diagramu i utwórz siatkę pozycjonowania
+        if self.debug_options.get('positioning', False):
+            log_debug(f"🚀 WYWOŁANIE analyze_diagram_structure z {len(parsed_data.get('flow', []))} elementami")
+    
+        # DEBUGOWANIE: Sprawdź co faktycznie zwraca metoda
+        result = self.layout_manager.analyze_diagram_structure(parsed_data)
+        
+        if self.debug_options.get('positioning', False):
+            log_debug(f"🔍 analyze_diagram_structure zwróciło: {type(result)}")
+            log_debug(f"🔍 Zawartość: {result if not isinstance(result, dict) or len(result) < 10 else f'dict z {len(result)} kluczami'}")
+        
+        # Inteligentne przypisanie na podstawie typu zwróconej wartości
+        if isinstance(result, tuple) and len(result) == 2:
+            # Prawidłowy format - tuple (positions, grid)
+            self.element_positions, self.grid = result
+        elif isinstance(result, dict):
+            # Zwrócono tylko positions
+            self.element_positions = result
+            self.grid = None
+        else:
+            # Nieoczekiwany format
+            log_warning(f"⚠️ analyze_diagram_structure zwróciło nieoczekiwany typ: {type(result)}")
+            self.element_positions = {}
+            self.grid = None
+        
+        if self.debug_options.get('positioning', False):
+            if isinstance(self.element_positions, dict):
+                log_debug(f"🎯 ELEMENT POSITIONS: {len(self.element_positions)} pozycji")
+                for elem_id, pos in list(self.element_positions.items())[:3]:
+                    log_debug(f"   {elem_id}: {pos}")
+            log_debug(f"🎯 GRID: {self.grid}")
+        
         # Krok 2: Przetwarzaj przepływ, tworząc węzły i krawędzie
         self._process_flow(main_activity, parsed_data['flow'])
+
+        #Zaktualizuj geometrię torów na podstawie faktycznych pozycji elementów
+        self.layout_manager.update_swimlane_geometry()
         
         # Krok 3: Upewnij się, że wszystkie decyzje mają kompletne gałęzie
         self._ensure_complete_decision_branches(main_activity)
@@ -494,33 +159,178 @@ class XMIActivityGenerator:
         
         # Krok 6: Weryfikuj spójność diagramu
         self._verify_diagram_consistency()
-        
+
+        # Weryfikacja końcowa
+        self._final_validation()
+
         # Krok 7: Stwórz rozszerzenia specyficzne dla Enterprise Architect
         self._create_ea_extensions(root, diagram_name)
-        
+                
         # Krok 8: Zwróć sformatowany XML
         return self._format_xml(root)
 
+    def _final_validation(self):
+        """Końcowa weryfikacja diagramu przed generowaniem XMI."""
+        
+        if self.debug_options.get('processing', False):
+            log_debug(f"\n🔍 KOŃCOWA WERYFIKACJA DIAGRAMU")
+        
+        # 1. Sprawdź ActivityFinalNode z wyjściami
+        final_nodes_with_outgoing = []
+        for trans in self.transitions:
+            source_node = self.id_map.get(trans['source_id'])
+            if source_node is not None and source_node.attrib.get('xmi:type') == 'uml:ActivityFinalNode':
+                final_nodes_with_outgoing.append(trans)
+        
+        # Usuń nieprawidłowe przejścia
+        for bad_trans in final_nodes_with_outgoing:
+            self.transitions.remove(bad_trans)
+            log_debug(f"Usunięto nieprawidłowe przejście z ActivityFinalNode: {bad_trans['id'][-6:]}")
+        
+        # 2. Sprawdź duplikaty przejść
+        seen_transitions = set()
+        duplicates_to_remove = []
+        
+        for trans in self.transitions:
+            key = (trans['source_id'], trans['target_id'], trans.get('name', ''))
+            if key in seen_transitions:
+                duplicates_to_remove.append(trans)
+            else:
+                seen_transitions.add(key)
+        
+        # Usuń duplikaty
+        for dup in duplicates_to_remove:
+            self.transitions.remove(dup)
+            log_debug(f"Usunięto duplikat przejścia: {dup['id'][-6:]}")
+        
+        # 3. Sprawdź izolowane węzły
+        connected_nodes = set()
+        for trans in self.transitions:
+            connected_nodes.add(trans['source_id'])
+            connected_nodes.add(trans['target_id'])
+        
+        isolated_nodes = []
+        for node_id, node in self.id_map.items():
+            node_type = node.attrib.get('xmi:type', '')
+            if (node_id not in connected_nodes and 
+                'ActivityPartition' not in node_type and 
+                'Comment' not in node_type):
+                isolated_nodes.append(node_id)
+        
+        if isolated_nodes:
+            log_warning(f"Znaleziono {len(isolated_nodes)} izolowanych węzłów")
+        
+        # Podsumowanie
+        if self.debug_options.get('processing', False):
+            log_debug(f"Końcowa weryfikacja: usunięto {len(final_nodes_with_outgoing) + len(duplicates_to_remove)} przejść")
+            log_debug(f"   Ostrzeżenia: {len(isolated_nodes)} izolowanych węzłów")
+
+    def _analyze_decision_positioning(self):
+        """Analizuje pozycjonowanie węzłów decyzyjnych i ich gałęzi."""
+        if not self.debug_options.get('positioning', False):
+            return
+            
+        log_debug("\n=== ANALIZA POZYCJONOWANIA DECYZJI ===")
+        
+        # Znajdź wszystkie węzły decyzyjne UŻYWAJĄC PEŁNYCH ID XMI
+        for node_id, node in self.id_map.items():
+            if node.attrib.get('xmi:type') == 'uml:DecisionNode':
+                decision_name = node.attrib.get('name', 'unnamed')
+                
+                log_debug(f"\n🔹 Decyzja: {node_id} '{decision_name}'")
+                
+                # Znajdź pozycję decyzji UŻYWAJĄC PEŁNEGO ID
+                decision_pos = None
+                if hasattr(self, 'layout_manager') and hasattr(self.layout_manager, 'element_positions'):
+                    # POPRAWKA: Znajdź parser_id używając PEŁNEGO node_id
+                    parser_id = None
+                    for p_id, x_id in self.parser_id_to_xmi_id.items():
+                        if x_id == node_id:  # Porównaj z pełnym ID
+                            parser_id = p_id
+                            break
+                    
+                    if parser_id and parser_id in self.layout_manager.element_positions:
+                        decision_pos = self.layout_manager.element_positions[parser_id]
+                        log_debug(f"   Pozycja decyzji: kolumna={decision_pos['column']}, x={decision_pos['x']}")
+                
+                # Znajdź gałęzie tej decyzji UŻYWAJĄC PEŁNYCH ID
+                yes_branches = []
+                no_branches = []
+                
+                for trans in self.transitions:
+                    if trans['source_id'] == node_id:  # PEŁNE ID
+                        target_id = trans['target_id']   # PEŁNE ID
+                        guard = trans.get('name', '')
+                        target_node = self.id_map.get(target_id)
+                        target_name = target_node.attrib.get('name', 'unnamed') if target_node is not None else 'unknown'                        
+                        # Znajdź pozycję celu UŻYWAJĄC PEŁNEGO ID
+                        target_pos = None
+                        if hasattr(self, 'layout_manager') and hasattr(self.layout_manager, 'element_positions'):
+                            target_parser_id = None
+                            for p_id, x_id in self.parser_id_to_xmi_id.items():
+                                if x_id == target_id:  # Porównaj z pełnym ID
+                                    target_parser_id = p_id
+                                    break
+                            
+                            if target_parser_id and target_parser_id in self.layout_manager.element_positions:
+                                target_pos = self.layout_manager.element_positions[target_parser_id]
+                        
+                        if guard == 'tak':
+                            yes_branches.append({
+                                'id': target_id,
+                                'name': target_name,
+                                'position': target_pos
+                            })
+                        elif guard == 'nie':
+                            no_branches.append({
+                                'id': target_id,
+                                'name': target_name,
+                                'position': target_pos
+                            })
+                
+                # Wyświetl wyniki z pełnymi ID
+                log_debug(f"   Gałęzie 'tak' ({len(yes_branches)}):")
+                for branch in yes_branches:
+                    pos_info = ""
+                    if branch['position']:
+                        pos_info = f" - kolumna={branch['position']['column']}, x={branch['position']['x']}"
+                        if decision_pos:
+                            relative = "LEWO" if branch['position']['x'] < decision_pos['x'] else "PRAWO" if branch['position']['x'] > decision_pos['x'] else "ŚRODEK"
+                            pos_info += f" ({relative} od decyzji)"
+
+                    log_debug(f"     - {branch['id']} '{branch['name']}'{pos_info}")
+                
+                log_debug(f"   Gałęzie 'nie' ({len(no_branches)}):")
+                for branch in no_branches:
+                    pos_info = ""
+                    if branch['position']:
+                        pos_info = f" - kolumna={branch['position']['column']}, x={branch['position']['x']}"
+                        if decision_pos:
+                            relative = "LEWO" if branch['position']['x'] < decision_pos['x'] else "PRAWO" if branch['position']['x'] > decision_pos['x'] else "ŚRODEK"
+                            pos_info += f" ({relative} od decyzji)"
+
+                    log_debug(f"     - {branch['id']} '{branch['name']}'{pos_info}")
+
     def _process_flow(self, main_activity: ET.Element, flow: list):
-        """Przetwarza listę elementów z parsera, tworząc logikę diagramu."""
+        """POPRAWIONA: Przetwarza listę elementów z poprawnymi etykietami decyzji"""
         previous_node_id = None
+        previous_parser_id = None
         previous_swimlane = None
         structure_stack = []
-        fork_source_id = None
         
-        # Inicjalizacja słownika mapującego ID z parsera na ID XMI
+        next_transition_label = ""
+        
         if not hasattr(self, 'parser_id_to_xmi_id'):
             self.parser_id_to_xmi_id = {}
 
         for i, item in enumerate(flow):
             current_swimlane = item.get('swimlane')
             item_type = item.get('type')
-            parser_item_id = item.get('id')  # Pobranie unikalnego ID elementu z parsera
+            parser_item_id = item.get('id')
             current_node_id = None
             transition_needed = True
-            special_source_id = None  
+            special_source_id = None
             
-            # Pobierz ID partycji dla bieżącego elementu
             partition_id = self.swimlane_ids.get(item.get('swimlane'))
 
             # Mapowanie typów na metody obsługujące
@@ -536,129 +346,192 @@ class XMIActivityGenerator:
                 'note': self._handle_note,
             }
 
-            # Logowanie dla debugowania
             if self.debug_options.get('processing', False):
-                print(f"Przetwarzanie elementu {i+1}/{len(flow)}: typ={item_type}, ID={parser_item_id}, tekst={item.get('text', '')}")
                 log_debug(f"Przetwarzanie elementu {i+1}/{len(flow)}: typ={item_type}, ID={parser_item_id}, tekst={item.get('text', '')}")
 
+            # Obsługa elementów przez odpowiednie handlery
             handler = handlers.get(item_type)
             if handler:
-                # Przekaż ID z parsera do handlera
+                if item_type == 'decision_else':
+                    self._processing_decision_else = True
+                
+                # Znajdź decision_start dla tego decision_else
+                decision_id = item.get('decision_id')
+                if decision_id:
+                    # Znajdź etykietę "nie" w logical_connections
+                    for conn in self.parsed_data['logical_connections']:
+                        if (conn.get('source_id') == decision_id and 
+                            conn.get('target_id') == parser_item_id and
+                            conn.get('label') == 'nie'):
+                            
+                            # Następne przejście będzie miało etykietę "nie"
+                            next_transition_label = 'nie'
+                            break
+
                 result = handler(item, main_activity, structure_stack, previous_node_id, partition_id)
                 current_node_id = result.get('id')
                 
-                # Zapisz mapowanie ID z parsera na ID XMI
+                if 'next_label' in result:
+                    next_transition_label = result['next_label']
+                
                 if parser_item_id and current_node_id:
                     self.parser_id_to_xmi_id[parser_item_id] = current_node_id
-                    if self.debug_options.get('processing', False):
-                        print(f"  → Mapowanie ID: parser_id={parser_item_id} → xmi_id={current_node_id}")
-                        log_debug(f"  → Mapowanie ID: parser_id={parser_item_id} → xmi_id={current_node_id}")
-                
-                # Specjalna obsługa dla fork_again - pobierz ID forka jako źródło przejścia
-                if item_type == 'fork_again' and 'prev_id' in result:
-                    special_source_id = result.get('prev_id')
-                    # Zapisz ID forka do użycia dla następnego elementu
-                    fork_source_id = special_source_id
-                    transition_needed = False  # Sam fork_again nie tworzy przejścia
                     
-                # Obsługa elementu po fork_again (musi być połączony z forkiem)
-                elif fork_source_id and current_node_id:
-                    # Połącz bieżący węzeł z ostatnim forkiem
-                    self._add_transition(main_activity, fork_source_id, current_node_id, 
-                                        name=item.get('label', ''))
-                    fork_source_id = None  # Zresetuj fork_source_id po użyciu
-                    transition_needed = False  # Już utworzyliśmy przejście
+                    if self.debug_options.get('positioning', False):
+                        log_debug(f"   ✅ Mapowanie ID: {parser_item_id} → {current_node_id[-6:]}")
                 
-                # Standardowa obsługa dla innych elementów
-                else:
-                    transition_needed = result.get('transition', True)
-            
+                transition_needed = result.get('transition', True)
+                special_source_id = result.get('prev_id')
+                
             elif item_type != 'swimlane':
-                print(f"ℹ️ Pominięto nieznany element: {item_type}")
+                log_debug(f"ℹ️ Pominięto nieznany element: {item_type}")
 
-            # Tworzenie przejścia, jeśli jest to wymagane
             if transition_needed and previous_node_id and current_node_id:
-                # Sprawdź, czy mamy specjalne źródło dla tego przejścia
+                if self.debug_options.get('transitions', False):
+                    log_debug(f"🔗 Próba utworzenia przejścia: {previous_node_id[-6:]} → {current_node_id[-6:]}")
+                
                 source_id = special_source_id if special_source_id else previous_node_id
                 
-                # Sprawdź czy elementy nie mają bezpośrednich odniesień do siebie
-                direct_reference = None
-                if item.get('decision_id'):
-                    # Znajdź XMI ID odpowiadające ID decyzji z parsera
-                    direct_reference = self.parser_id_to_xmi_id.get(item.get('decision_id'))
-                    if direct_reference:
-                        source_id = direct_reference
+                # ✅ KLUCZOWA POPRAWKA: Specjalna logika dla etykiet "nie"
+                transition_label = ""
                 
-                # Pobierz ewentualną etykietę przejścia (np. dla decision)
-                guard = self._get_guard_for_transition(structure_stack, item)
-                
-                # Dodaj przejście od źródła do bieżącego węzła
-                self._add_transition(main_activity, source_id, current_node_id, name=guard)
-                
-                # Specjalna obsługa przejść międzytorowych
-                if previous_swimlane and current_swimlane and previous_swimlane != current_swimlane:
-                    # Oznacz, że to przejście jest między torami (do późniejszego wykorzystania)
-                    for trans in self.transitions:
-                        if trans['source_id'] == source_id and trans['target_id'] == current_node_id:
-                            trans['cross_swimlane'] = True
-                            break
+                if hasattr(self, 'parsed_data') and 'logical_connections' in self.parsed_data:
+                    
+                    # METODA 1: Znajdź przez mapowanie parser_id
+                    source_parser_id = None
+                    target_parser_id = None
+                    
+                    # Znajdź parser_id dla źródła przejścia
+                    for p_id, x_id in self.parser_id_to_xmi_id.items():
+                        if x_id == source_id:
+                            source_parser_id = p_id
+                        if x_id == current_node_id:
+                            target_parser_id = p_id
+                    
+                    # Szukaj etykiety w logical_connections
+                    if source_parser_id and target_parser_id:
+                        for conn in self.parsed_data['logical_connections']:
+                            if (conn.get('source_id') == source_parser_id and 
+                                conn.get('target_id') == target_parser_id):
+                                transition_label = conn.get('label', '')
+                                
+                                if self.debug_options.get('connections') and transition_label:
+                                    log_debug(f"   🏷️ BEZPOŚREDNIE: '{transition_label}' dla {source_parser_id[-6:]} → {target_parser_id[-6:]}")
+                                break
+                    
+                    # ✅ NOWA METODA 2: Specjalna logika dla etykiet "nie" przez decision_else
+                    if not transition_label and source_parser_id:
+                        # Sprawdź czy źródło to DecisionNode
+                        source_node = self.id_map.get(source_id)
+                        if source_node is not None and source_node.attrib.get('xmi:type') == 'uml:DecisionNode':
+                            
+                            # Znajdź decision_else dla tej decyzji i sprawdź czy prowadzi do current_node
+                            for conn in self.parsed_data['logical_connections']:
+                                # Szukamy: decision_start → decision_else z etykietą "nie"
+                                if (conn.get('source_id') == source_parser_id and 
+                                    conn.get('label') == 'nie'):
+                                    
+                                    decision_else_id = conn.get('target_id')
+                                    
+                                    # Teraz znajdź co jest PO decision_else
+                                    for conn2 in self.parsed_data['logical_connections']:
+                                        if conn2.get('source_id') == decision_else_id:
+                                            # Sprawdź czy cel tego połączenia to nasz current_node
+                                            if conn2.get('target_id') == target_parser_id:
+                                                transition_label = 'nie'
+                                                
+                                                if self.debug_options.get('connections'):
+                                                    log_debug(f"   🏷️ PRZEZ DECISION_ELSE: 'nie' dla {source_parser_id[-6:]} → {target_parser_id[-6:]}")
+                                                break
+                                    
+                                    if transition_label:
+                                        break
+                    
+                    if not transition_label and current_node_id in self.id_map:
+                        current_node = self.id_map[current_node_id]
+                        current_name = current_node.attrib.get('name', '').lower()
+                        
+                        # Jeśli cel to aktywność negatywna, a źródło to decyzja
+                        if (source_id in self.id_map and 
+                            self.id_map[source_id].attrib.get('xmi:type') == 'uml:DecisionNode' and
+                            ('negatywny' in current_name or 'błąd' in current_name or 'error' in current_name)):
+                            
+                            transition_label = 'nie'
+                            
+                            if self.debug_options.get('connections'):
+                                log_debug(f"   🏷️ PRZEZ NAZWĘ: 'nie' dla decyzji → aktywność negatywna")
+
+                self._add_transition(main_activity, source_id, current_node_id, name=transition_label)
             
-            # Aktualizuj ID poprzedniego węzła dla następnej iteracji
             if current_node_id:
                 previous_node_id = current_node_id
+                previous_parser_id = parser_item_id
                 
-            # Aktualizuj poprzedni swimlane
             if current_swimlane:
                 previous_swimlane = current_swimlane
-            
-            # Logowanie dla debugowania stanu
-            if self.debug_options.get('processing', False):
-                stack_info = [f"{s['type']}:{s['id'][-6:]}" for s in structure_stack]
-                print(f"  - Stan: prev={previous_node_id[-6:] if previous_node_id else 'None'}, "
-                    f"curr={current_node_id[-6:] if current_node_id else 'None'}, "
-                    f"fork_src={fork_source_id[-6:] if fork_source_id else 'None'}, "
-                    f"stos={stack_info}")
-                log_debug(f"  - Stan: prev={previous_node_id[-6:] if previous_node_id else 'None'}, "
-                        f"curr={current_node_id[-6:] if current_node_id else 'None'}, "
-                        f"fork_src={fork_source_id[-6:] if fork_source_id else 'None'}, "
-                        f"stos={stack_info}")
         
-        # Po przetworzeniu wszystkich elementów, zrób dodatkowe przejście
-        # dla elementów bez wyjść (poza końcowymi)
+        # Po przetworzeniu wszystkich elementów
         self._connect_hanging_elements(main_activity)
-        
         self._update_partition_elements(main_activity)
         self._debug_transitions_graph()
+        self._analyze_decision_positioning()
 
     def _connect_hanging_elements(self, main_activity):
-        """Znajduje i łączy elementy bez wyjść z węzłami końcowymi."""
-        final_nodes = []
-        potential_sources = []
-            
-        # Znajdź wszystkie węzły końcowe i ostatni przetworzony element
-        for node_id, node in self.id_map.items():
-            if node.attrib.get('xmi:type') == 'uml:ActivityFinalNode':
-                final_nodes.append(node_id)
-            # Znajdź elementy, które nie mają przejść wychodzących (poza końcowymi)
-            elif node.attrib.get('xmi:type') != 'uml:ActivityFinalNode':
-                has_outgoing = False
-                for trans in self.transitions:
-                    if trans['source_id'] == node_id:
-                        has_outgoing = True
-                        break
-                if not has_outgoing:
-                    potential_sources.append(node_id)
+        """Uproszczona metoda łączenia elementów bez wyjść."""
         
-        # Połącz elementy bez wyjść z węzłami końcowymi
-        if final_nodes and potential_sources:
-            if self.debug_options.get('processing', False):
-                print(f"Dodawanie przejść końcowych dla {len(potential_sources)} elementów bez wyjść")
-                log_debug(f"Dodawanie przejść końcowych dla {len(potential_sources)} elementów bez wyjść")
-            for source_id in potential_sources:
-                target_id = final_nodes[0]  # Użyj pierwszego węzła końcowego
-                # Sprawdź, czy nie tworzymy duplikatu
-                if not any(t['source_id'] == source_id and t['target_id'] == target_id for t in self.transitions):
-                    self._add_transition(main_activity, source_id, target_id) 
+        # Znajdź elementy bez wyjść (oprócz węzłów końcowych)
+        elements_without_outgoing = []
+        final_nodes = []
+        
+        for node_id, node in self.id_map.items():
+            node_type = node.attrib.get('xmi:type')
+            
+            if node_type == 'uml:ActivityFinalNode':
+                final_nodes.append(node_id)
+            else:
+                # Sprawdź czy ma przejścia wychodzące
+                has_outgoing = any(trans['source_id'] == node_id for trans in self.transitions)
+                if not has_outgoing:
+                    elements_without_outgoing.append(node_id)
+        
+        # Jeśli nie ma węzła końcowego, utwórz go
+        if not final_nodes:
+            final_id = self._add_node(main_activity, 'uml:ActivityFinalNode', 'Final', None)
+            final_nodes.append(final_id)
+            self.diagram_objects.append({
+                'id': final_id,
+                'type': 'ActivityFinalNode'
+            })
+            log_debug(f"Utworzono węzeł końcowy: {final_id[-6:]}")
+        
+        # Połącz elementy bez wyjść z pierwszym węzłem końcowym
+        if elements_without_outgoing and final_nodes:
+            main_final = final_nodes[0]
+            
+            for source_id in elements_without_outgoing:
+                self._add_transition(main_activity, source_id, main_final)
+                log_debug(f"Połączono element bez wyjścia {source_id[-6:]} z Final {main_final[-6:]}")
+                
+    def _remove_element_from_parent(self, element_to_remove, root_element):
+        """Pomocnicza metoda do usuwania elementu z jego rodzica w drzewie XML."""
+        # Funkcja rekurencyjna do przeszukiwania drzewa XML
+        def find_and_remove(current_element):
+            # Sprawdź czy element_to_remove jest bezpośrednim dzieckiem current_element
+            for child in list(current_element):  # list() aby bezpiecznie iterować podczas usuwania
+                if child is element_to_remove:
+                    current_element.remove(child)
+                    log_debug(f"Usunięto element z rodzica: {element_to_remove.attrib.get('xmi:id', 'unknown')[-6:]}")
+                    return True
+                
+                # Rekurencyjnie przeszukuj dzieci
+                if find_and_remove(child):
+                    return True
+            
+            return False
+        
+        # Rozpocznij przeszukiwanie od głównego elementu aktywności
+        if not find_and_remove(root_element):
+            log_warning(f"Nie udało się znaleźć rodzica dla elementu: {element_to_remove.attrib.get('xmi:id', 'unknown')[-6:]}")
 
     def _debug_find_none_values(self, element, path=""):
         """Funkcja znajdująca wszystkie atrybuty None w drzewie XML."""
@@ -666,36 +539,33 @@ class XMIActivityGenerator:
         
         for key, value in element.attrib.items():
             if value is None:
-                print(f"⚠️ Znaleziono atrybut None: {current_path} -> {key}")
+                log_debug(f"⚠️ Znaleziono atrybut None: {current_path} -> {key}")
         
         for child in element:
             self._debug_find_none_values(child, current_path)
 
     def _handle_decision_end(self, item, parent, stack, prev_id, partition):
-        """Obsługuje zakończenie bloku decyzyjnego."""
+        """Poprawiona obsługa zakończenia bloku decyzyjnego."""
         if stack and stack[-1]['type'] == 'decision':
             decision_data = stack.pop()
             
-            # Dodaj bieżący węzeł jako koniec gałęzi
-            if prev_id:
-                decision_data['branch_ends'].append(prev_id)
+            # Sprawdź czy potrzebujemy merge node
+            if len(decision_data.get('branch_ends', [])) > 1:
+                # Utwórz merge node dla łączenia gałęzi
+                merge_node_id = self._add_node(parent, 'uml:MergeNode', '', partition)
                 
-            # Utwórz węzeł merge, jeśli były co najmniej dwie gałęzie
-            if len(decision_data['branch_ends']) > 1:
-                merge_node_id = self._add_node(parent, 'uml:MergeNode', 'Merge', partition)
-                
-                # Połącz wszystkie końce gałęzi z węzłem merge
+                # Połącz wszystkie końce gałęzi z merge node
                 for branch_end_id in decision_data['branch_ends']:
-                    self._add_transition(parent, branch_end_id, merge_node_id)
-                log_debug(f"Zakończono blok decyzyjny, utworzono merge: {merge_node_id[-6:]} dla {len(decision_data['branch_ends'])} gałęzi")
+                    if branch_end_id and branch_end_id != merge_node_id:
+                        self._add_transition(parent, branch_end_id, merge_node_id)
+                
                 return {'id': merge_node_id, 'transition': False}
-            
-            # Jeśli była tylko jedna gałąź, po prostu kontynuuj
-            log_debug(f"Zakończono blok decyzyjny bez tworzenia merge (tylko {len(decision_data['branch_ends'])} gałąź)")
-            return {'id': prev_id, 'transition': True}
+            else:
+                # Jeśli była tylko jedna gałąź, kontynuuj z poprzednim elementem
+                return {'id': prev_id, 'transition': False}
         
-        log_debug(f"Zakończono blok decyzyjny, ale brak danych decyzji na stosie")
-        return {'id': prev_id, 'transition': True}
+        # Jeśli brak stosu decyzji, kontynuuj normalnie
+        return {'id': prev_id, 'transition': False}
 
     def _debug_transitions_graph(self):
         """Generuje czytelną reprezentację grafu przejść dla celów analizy i debugowania."""
@@ -703,7 +573,6 @@ class XMIActivityGenerator:
             return
             
         log_debug("\n=== GRAF PRZEJŚĆ ===")
-        print("\n=== GRAF PRZEJŚĆ ===")
         
         # Stwórz słownik węzłów
         nodes = {}
@@ -760,57 +629,45 @@ class XMIActivityGenerator:
             
             # Wyświetl podsumowanie węzła
             message = f"Węzeł: {short_id} [{node_type}] '{node_name}'"
-            print(message)
             log_debug(message)
             
             # Wyświetl przejścia wchodzące
             if node_data['incoming']:
-                print("  Przejścia wchodzące:")
                 log_debug("  Przejścia wchodzące:")
                 for source_id, label in node_data['incoming']:
                     source_short_id = source_id[-6:] if source_id and len(source_id) >= 6 else source_id
                     source_type = nodes[source_id]['type'] if source_id in nodes else '?'
                     label_str = f" [{label}]" if label else ""
                     in_message = f"    - z {source_short_id} [{source_type}]{label_str}"
-                    print(in_message)
                     log_debug(in_message)
             else:
-                print("  Brak przejść wchodzących (węzeł początkowy?)")
                 log_debug("  Brak przejść wchodzących (węzeł początkowy?)")
             
             # Wyświetl przejścia wychodzące
             if node_data['outgoing']:
-                print("  Przejścia wychodzące:")
                 log_debug("  Przejścia wychodzące:")
                 for target_id, label in node_data['outgoing']:
                     target_short_id = target_id[-6:] if target_id and len(target_id) >= 6 else target_id
                     target_type = nodes[target_id]['type'] if target_id in nodes else '?'
                     label_str = f" [{label}]" if label else ""
                     out_message = f"    - do {target_short_id} [{target_type}]{label_str}"
-                    print(out_message)
                     log_debug(out_message)
             else:
-                print("  Brak przejść wychodzących (węzeł końcowy?)")
                 log_debug("  Brak przejść wychodzących (węzeł końcowy?)")
-            
-            print("")
             log_debug("")
         
         # Wyświetl zidentyfikowane problemy
         if self_connections:
-            print("\n=== WYKRYTE POŁĄCZENIA DO SIEBIE SAMEGO ===")
             log_debug("\n=== WYKRYTE POŁĄCZENIA DO SIEBIE SAMEGO ===")
             for conn in self_connections:
                 node_id = conn['node_id']
                 node_type = nodes[node_id]['type'] if node_id in nodes else '?'
                 node_name = nodes[node_id]['name'] if node_id in nodes else 'unnamed'
                 message = f"  * Węzeł {node_id[-6:]} [{node_type}] '{node_name}' ma połączenie do siebie samego"
-                print(message)
                 log_debug(message)
                 
         # Wyświetl informacje o węzłach decyzyjnych
         if decision_branches:
-            print("\n=== WĘZŁY DECYZYJNE ===")
             log_debug("\n=== WĘZŁY DECYZYJNE ===")
             for decision_id, branches in decision_branches.items():
                 decision_name = nodes[decision_id]['name'] if decision_id in nodes else 'unnamed'
@@ -822,15 +679,14 @@ class XMIActivityGenerator:
                 no_name = nodes[no_id]['name'] if no_id and no_id in nodes else 'none'
                 
                 message = f"  * Decyzja: {decision_id[-6:]} '{decision_name}'"
-                print(message)
                 log_debug(message)
                 
                 message = f"    - Gałąź 'tak': {yes_id[-6:] if yes_id else 'brak'} '{yes_name}'"
-                print(message)
+                
                 log_debug(message)
                 
                 message = f"    - Gałąź 'nie': {no_id[-6:] if no_id else 'brak'} '{no_name}'"
-                print(message)
+                
                 log_debug(message)
 
         # Dodajmy sekcję identyfikującą problematyczne elementy
@@ -855,47 +711,63 @@ class XMIActivityGenerator:
         
         # Wyświetlanie problemów
         if problematic_nodes:
-            print("\n=== PROBLEMATYCZNE ELEMENTY ===")
+            
             log_debug("\n=== PROBLEMATYCZNE ELEMENTY ===")
             for node in problematic_nodes:
-                print(f"  * {node['info']}")
+                
                 log_debug(f"  * {node['info']}")
         
 
     def _handle_control(self, item, parent, stack, prev_id, partition):
-        """Obsługuje węzły kontrolne (start/stop/end)."""
+        """Obsługuje węzły kontrolne z ulepszonym zarządzaniem Final."""
         action = item['action']
-        node_type_map = {'start': 'uml:InitialNode', 'stop': 'uml:ActivityFinalNode', 'end': 'uml:ActivityFinalNode'}
-        name_map = {'start': 'Initial', 'stop': 'Final', 'end': 'Final'}
         
-        node_id = self._add_node(parent, node_type_map[action], name_map[action], partition)
+        if action == 'start':
+            node_id = self._add_node(parent, 'uml:InitialNode', 'Initial', partition)
+            self.diagram_objects.append({
+                'id': node_id,
+                'type': 'InitialNode'
+            })
+            return {'id': node_id, 'transition': True}
         
-        # Dodaj element do listy obiektów diagramu
-        self.diagram_objects.append({
-            'id': node_id,
-            'type': node_type_map[action].replace('uml:', '')  # Usuń prefiks uml:
-        })
-        
-        # Dla węzła końcowego nie tworzymy przejścia wychodzącego
-        is_terminal = action in ('stop', 'end')
-        
-        return {'id': node_id, 'transition': not is_terminal}
+        elif action in ['end', 'stop']:
+            existing_final = None
+            for node_id, node in self.id_map.items():
+                if node.attrib.get('xmi:type') == 'uml:ActivityFinalNode':
+                    # Sprawdź czy ten Final nie ma zbyt wielu połączeń
+                    incoming_count = sum(1 for t in self.transitions if t['target_id'] == node_id)
+                    if incoming_count < 4:  # Maksymalnie 4 połączenia na Final
+                        existing_final = node_id
+                        break
+            
+            if existing_final:
+                log_debug(f"Używam istniejącego węzła końcowego: {existing_final[-6:]}")
+                return {'id': existing_final, 'transition': False}
+            else:
+                # Utwórz nowy węzeł końcowy tylko jeśli potrzebny
+                node_id = self._add_node(parent, 'uml:ActivityFinalNode', 'Final', partition)
+                self.diagram_objects.append({
+                    'id': node_id,
+                    'type': 'ActivityFinalNode'
+                })
+                log_debug(f"Utworzono nowy węzeł końcowy: {node_id[-6:]}")
+                return {'id': node_id, 'transition': False}
 
     def _debug_diagram_objects(self):
         """Wyświetla informacje o elementach dodanych do diagramu."""
         if not self.debug_options.get('elements', False):
             return
             
-        print(f"\n--- Elementy diagramu ({len(self.diagram_objects)}) ---")
+        
         log_debug(f"\n--- Elementy diagramu ({len(self.diagram_objects)}) ---")
         for obj in self.diagram_objects:
             if isinstance(obj, dict):
                 obj_id = obj.get('id', 'brak ID')
                 obj_type = obj.get('type', 'nieznany typ')
-                print(f" - {obj_type}: {obj_id[-6:]}")
+                
                 log_debug(f" - {obj_type}: {obj_id[-6:]}")
             else:
-                print(f" - {obj}")
+            
                 log_debug(f" - {obj}")
 
     def _handle_activity(self, item, parent, stack, prev_id, partition):
@@ -922,7 +794,7 @@ class XMIActivityGenerator:
             
             if node_partition == partition_id and ('JoinNode' in node_type or 'MergeNode' in node_type):
                 if self.debug_options.get('processing', False):
-                    print(f"Znaleziono cel dla brakującej gałęzi: {node_id[-6:]} [{node_type}]")
+                    
                     log_debug(f"Znaleziono cel dla brakującej gałęzi: {node_id[-6:]} [{node_type}]")
                 return node_id
         
@@ -933,7 +805,7 @@ class XMIActivityGenerator:
             
             if node_partition == partition_id and 'ActivityFinalNode' in node_type:
                 if self.debug_options.get('processing', False):
-                    print(f"Znaleziono węzeł końcowy dla brakującej gałęzi: {node_id[-6:]}")
+                    
                     log_debug(f"Znaleziono węzeł końcowy dla brakującej gałęzi: {node_id[-6:]}")
                 return node_id
         
@@ -941,14 +813,14 @@ class XMIActivityGenerator:
         for node_id, node in self.id_map.items():
             if 'ActivityFinalNode' in node.attrib.get('xmi:type', ''):
                 if self.debug_options.get('processing', False):
-                    print(f"Znaleziono dowolny węzeł końcowy dla brakującej gałęzi: {node_id[-6:]}")
+                    
                     log_debug(f"Znaleziono dowolny węzeł końcowy dla brakującej gałęzi: {node_id[-6:]}")
                 return node_id
         
         # Jeśli nie znaleziono odpowiedniego celu, zwróć None
         # W takim przypadku _ensure_complete_decision_branches utworzy nowy węzeł końcowy
         if self.debug_options.get('processing', False):
-            print("Nie znaleziono odpowiedniego celu dla brakującej gałęzi")
+            
             log_debug("Nie znaleziono odpowiedniego celu dla brakującej gałęzi")
         return None
 
@@ -981,46 +853,76 @@ class XMIActivityGenerator:
                         # Dodaj przejście
                         self._add_transition(parent_activity, node_id, target_id, 'nie')
                         log_debug(f"Dodano brakującą gałąź 'nie' dla decyzji {node_id[-6:]}")
+
+
+    def _determine_branch_type(self, node_id, decision_id, graph):
+        """Określa typ gałęzi (tak/nie) dla danego węzła po decyzji."""
+        # Znajdź przejście od decyzji do tego węzła
+        for source_id, target_id in graph['edges']:
+            if source_id == decision_id and target_id == node_id:
+                # Sprawdź, czy to przejście ma etykietę
+                for trans in self.transitions:
+                    if trans['source_id'] == source_id and trans['target_id'] == target_id:
+                        guard = trans.get('name', '').lower()
+                        if 'tak' in guard:
+                            return 'yes'
+                        elif 'nie' in guard:
+                            return 'no'
+        
+        # Jeśli nie znaleziono etykiety, spróbuj określić na podstawie innych informacji
+        # (np. kolejności w flow, dodatkowych atrybutów)
+        for i, item in enumerate(self.parsed_data['flow']):
+            if item.get('id') == node_id:
+                # Sprawdź, czy to element po decision_else
+                if i > 0 and self.parsed_data['flow'][i-1].get('type') == 'decision_else':
+                    return 'no'
+        
+        # Domyślnie zwróć 'yes' (gałąź "tak")
+        return 'yes'
     
     def _handle_decision_start(self, item, parent, stack, prev_id, partition):
-        """Obsługuje początek bloku decyzyjnego."""
+        """Zwraca etykietę 'tak' dla NASTĘPNEGO przejścia"""
         node_id = self._add_node(parent, 'uml:DecisionNode', item.get('condition', 'Decision'), partition)
         
-        # Dodaj do listy obiektów diagramu
+        decision_level = len([s for s in stack if s.get('type') == 'decision']) + 1
+        
         self.diagram_objects.append({
             'id': node_id,
             'type': 'DecisionNode',
             'name': item.get('condition', 'Decision'),
-            'parser_id': item.get('id')  # Zapisz oryginalny ID z parsera
+            'parser_id': item.get('id')
         })
         
-        # Dodaj na stos informację o decyzji z inicjalizacją branch_ends
         decision_data = {
             'type': 'decision',
             'id': node_id,
-            'missing_else': item.get('missing_else', False),  # Oznaczenie czy brakuje gałęzi else
+            'decision_level': decision_level,
+            'missing_else': item.get('missing_else', False),
             'parser_id': item.get('id'),
-            'branch_ends': []  # Inicjalizacja pustej listy dla branch_ends
+            'branch_ends': [],
+            'has_else': False,
+            'then_label': item.get('then_label', 'tak'),
+            'else_label': 'nie'
         }
         stack.append(decision_data)
-        
-        # Zapisz informację o gałęzi 'then' jeśli istnieje
-        if 'then_label' in item:
-            decision_data['then_label'] = item['then_label']
-        
-        return {'id': node_id}
+
+        return {
+            'id': node_id, 
+            'transition': True,
+        }
 
     def _handle_decision_else(self, item, parent, stack, prev_id, partition):
-        """Obsługuje element else w bloku decyzyjnym."""
+        """POPRAWIONA: Zwraca etykietę 'nie' dla NASTĘPNEGO przejścia"""
         if stack and stack[-1]['type'] == 'decision':
             decision_data = stack[-1]
             decision_data['has_else'] = True
-            decision_data['else_label'] = item.get('else_label', 'nie')
             
-            # Nie tworzymy nowego węzła, tylko przechodzimy do następnej sekcji
-            return {'id': None, 'transition': False}
+            return {
+                'id': decision_data['id'],  # Istniejący węzeł decyzyjny
+                'transition': False,        # Nie twórz przejścia
+                'next_label': item.get('else_label', 'nie')  # ← Etykieta dla następnego przejścia!
+            }
         
-        log_warning("Znaleziono 'else' bez pasującego bloku decyzyjnego")
         return {'id': prev_id, 'transition': False}
 
     def _handle_fork_start(self, item, parent, stack, prev_id, partition):
@@ -1203,53 +1105,66 @@ class XMIActivityGenerator:
         
         return node_id
     
-    def _add_transition(self, parent_activity: ET.Element, source_id: str, target_id: str, name: str = ""):
-        """Dodaje przejście (ControlFlow) między dwoma węzłami."""
-        if not source_id or not target_id: return
-
-        # Dodaj walidację, aby zapobiec tworzeniu przejść od elementu do siebie samego
-        if source_id == target_id:
-            if self.debug_options.get('transitions', False):
-                log_warning(f"Zablokowano próbę utworzenia przejścia od {source_id[-6:]} do samego siebie")
+    def _add_transition(self, parent, source_id, target_id, name=""):
+        """Dodaje przejście z rozszerzoną walidacją logiczności."""
+        
+        # Pobierz węzły źródłowy i docelowy
+        source_node = self.id_map.get(source_id)
+        target_node = self.id_map.get(target_id)
+        
+        if source_node is None or target_node is None:
             return
-
+        
+        source_type = source_node.attrib.get('xmi:type')
+        target_type = target_node.attrib.get('xmi:type')
+        
+        # KRYTYCZNA WALIDACJA LOGICZNOŚCI UML
+        
+        # 1. ActivityFinalNode NIE MOŻE mieć przejść wychodzących
+        if source_type == 'uml:ActivityFinalNode':
+            log_error(f"BŁĄD UML: ActivityFinalNode {source_id[-6:]} nie może mieć przejść wychodzących do {target_id[-6:]}")
+            return
+        
+        # 2. InitialNode NIE MOŻE mieć przejść przychodzących (oprócz pierwszego)
+        if target_type == 'uml:InitialNode':
+            existing_incoming = sum(1 for t in self.transitions if t['target_id'] == target_id)
+            if existing_incoming > 0:
+                log_error(f"BŁĄD UML: InitialNode {target_id[-6:]} nie może mieć więcej niż jedno przejście przychodzące")
+                return
+        
+        # 3. Sprawdź duplikaty
+        existing = any(t['source_id'] == source_id and t['target_id'] == target_id 
+                    for t in self.transitions)
+        if existing:
+            log_debug(f"Pomijam duplikat przejścia: {source_id[-6:]} -> {target_id[-6:]}")
+            return
+        
+        # 4. Sprawdź samo-połączenia
+        if source_id == target_id:
+            log_warning(f"UWAGA: Samo-połączenie węzła {source_id[-6:]}")
+            return
+        
+        # 5. Dodatkowa walidacja dla decision_else
+        if hasattr(self, '_processing_decision_else') and self._processing_decision_else:
+            log_debug(f"Przetwarzanie gałęzi NIE dla decyzji: {source_id[-6:]} → {target_id[-6:]}")
+            self._processing_decision_else = False  # Reset flagi
+        
+        # Kontynuuj z tworzeniem przejścia...
         transition_id = self._generate_ea_id("EAID")
         attrs = {
             'xmi:type': 'uml:ControlFlow', 
             'xmi:id': transition_id, 
             'source': source_id, 
             'target': target_id,
-            'visibility': 'public'  # Dodany atrybut visibility
+            'visibility': 'public'
         }
         if name:
             attrs['name'] = name
-            guard = ET.SubElement(parent_activity, 'ownedRule', {'xmi:id': self._generate_ea_id("EAID")})
-            ET.SubElement(guard, 'specification', {
-                'xmi:type': 'uml:LiteralString', 
-                'value': name, 
-                'xmi:id': self._generate_ea_id("EAID")
-            })
-            attrs['guard'] = guard.attrib['xmi:id']
 
-        edge = ET.SubElement(parent_activity, 'edge', self._sanitize_xml_attrs(attrs))
+        edge = ET.SubElement(parent, 'edge', self._sanitize_xml_attrs(attrs))
         
-        # Dodaj referencje do source i target (wzorzec EA)
-        source_node = self.id_map[source_id]
-        target_node = self.id_map[target_id]
-        
-        # Sprawdź czy to przejście między torami
-        source_element = self._find_element_by_id(source_id)
-        target_element = self._find_element_by_id(target_id)
-        
-        source_partition = source_element.get('inPartition') if source_element is not None else None
-        target_partition = target_element.get('inPartition') if target_element is not None else None
-        
-        cross_swimlane = source_partition != target_partition and source_partition and target_partition
-
-        # Dodaj odniesienie do wychodzących (outgoing) dla źródła
+        # Dodaj referencje do węzłów
         ET.SubElement(source_node, 'outgoing', {'xmi:idref': transition_id})
-        
-        # Dodaj odniesienie do przychodzących (incoming) dla celu
         ET.SubElement(target_node, 'incoming', {'xmi:idref': transition_id})
         
         self.transitions.append({
@@ -1257,18 +1172,10 @@ class XMIActivityGenerator:
             'source_id': source_id, 
             'target_id': target_id, 
             'name': name,
-            'cross_swimlane': cross_swimlane  # Dodaj informację o przejściu międzytorowym
+            'cross_swimlane': False
         })
         
-        # Poprawka: odwołanie do zmiennej edge zamiast transition
-        if cross_swimlane:
-            # Dodaj specjalny styl dla przejść między torami
-            style_element = ET.SubElement(edge, 'style')  # Użyj edge zamiast transition
-            style_element.text = 'cross-swimlane'
-
-        if self.debug_options.get('transitions', False):
-            print(f"  ↳ Dodano przejście: z {source_id[-4:]} do {target_id[-4:]} [etykieta: '{name}']")
-            log_debug(f"  ↳ Dodano przejście: z {source_id[-4:]} do {target_id[-4:]} [etykieta: '{name}']")
+        log_debug(f"✅ Utworzono poprawne przejście: {source_id[-6:]} → {target_id[-6:]} ['{name}']")
 
     def _find_element_by_id(self, element_id):
         """Znajduje element XML na podstawie jego ID."""
@@ -1289,9 +1196,11 @@ class XMIActivityGenerator:
         if item_type == 'decision_start':
             return item.get('then_label', 'tak')
         
-        if item_type == 'decision_else':
-            return item.get('else_label', 'nie')
-            
+        if structure_stack:
+            last_in_stack = structure_stack[-1]
+            if last_in_stack.get('type') == 'decision' and last_in_stack.get('has_else'):
+                return last_in_stack.get('else_label', 'nie')
+        
         # Dla innych typów nie ustawiamy etykiety warunku
         return ""
 
@@ -1311,7 +1220,7 @@ class XMIActivityGenerator:
             
             self.partitions[name] = partition
             self.diagram_objects.append({'id': partition_id, 'type': 'ActivityPartition'})
-            print(f"🏊 Utworzono tor (partition): {name}")
+            log_debug(f"🏊 Utworzono tor (partition): {name}")
 
     def _create_document_root(self) -> ET.Element:
         """Tworzy główny element dokumentu XMI."""
@@ -1481,6 +1390,90 @@ class XMIActivityGenerator:
         }
         return ntype_map.get(uml_type, '0')
     
+    def _verify_xmi_positions(self):
+            """Weryfikuje rzeczywiste pozycje elementów w XMI względem ich poziomów/kolumn."""
+            if not self.debug_options.get('positioning', False):
+                return
+                
+            log_debug(f"\n🔍 WERYFIKACJA POZYCJI XMI vs LOGIKA:")
+            
+            # Zbierz informacje o decyzjach i ich gałęziach
+            decisions = {}
+            
+            for parser_id, xmi_id in self.parser_id_to_xmi_id.items():
+                # Sprawdź czy to decyzja
+                if xmi_id in self.id_map:
+                    node = self.id_map[xmi_id]
+                    if node.attrib.get('xmi:type') == 'uml:DecisionNode':
+                        decisions[xmi_id] = {
+                            'parser_id': parser_id,
+                            'name': node.attrib.get('name', 'unnamed'),
+                            'yes_branches': [],
+                            'no_branches': []
+                        }
+            
+            # Znajdź gałęzie dla każdej decyzji
+            for trans in self.transitions:
+                source_id = trans['source_id']
+                target_id = trans['target_id']
+                guard = trans.get('name', '')
+                
+                if source_id in decisions:
+                    target_parser_id = None
+                    for p_id, x_id in self.parser_id_to_xmi_id.items():
+                        if x_id == target_id:
+                            target_parser_id = p_id
+                            break
+                    
+                    if target_parser_id:
+                        branch_info = {
+                            'parser_id': target_parser_id,
+                            'xmi_id': target_id,
+                            'guard': guard
+                        }
+                        
+                        if guard == 'tak':
+                            decisions[source_id]['yes_branches'].append(branch_info)
+                        elif guard == 'nie':
+                            decisions[source_id]['no_branches'].append(branch_info)
+            
+            # Analizuj pozycje
+            for decision_xmi_id, decision_info in decisions.items():
+                decision_parser_id = decision_info['parser_id']
+                decision_name = decision_info['name']
+                
+                log_debug(f"\n🔹 DECYZJA: {decision_name} (XMI: {decision_xmi_id[-6:]}, Parser: {decision_parser_id})")
+                
+                
+                # Pozycja decyzji
+                if hasattr(self, 'layout_manager') and hasattr(self.layout_manager, 'element_positions'):
+                    if decision_parser_id in self.layout_manager.element_positions:
+                        dec_pos = self.layout_manager.element_positions[decision_parser_id]
+                        
+                        log_debug(f"   Decyzja: poziom={dec_pos['row']}, kolumna={dec_pos['column']}, X={dec_pos['x']}, Y={dec_pos['y']}")
+                        
+                        # Sprawdź gałęzie TAK
+                        log_debug(f"   Gałęzie TAK ({len(decision_info['yes_branches'])}):")
+                        for branch in decision_info['yes_branches']:
+                            if branch['parser_id'] in self.layout_manager.element_positions:
+                                br_pos = self.layout_manager.element_positions[branch['parser_id']]
+                                relative_x = "LEWO" if br_pos['x'] < dec_pos['x'] else "PRAWO" if br_pos['x'] > dec_pos['x'] else "ŚRODEK"
+                                relative_y = "WYŻEJ" if br_pos['y'] < dec_pos['y'] else "NIŻEJ" if br_pos['y'] > dec_pos['y'] else "TEN SAM"
+                                
+                                log_debug(f"     - {branch['parser_id']}: poziom={br_pos['row']}, kolumna={br_pos['column']}, X={br_pos['x']} ({relative_x}), Y={br_pos['y']} ({relative_y})")
+                                
+                        
+                        # Sprawdź gałęzie NIE
+                        log_debug(f"   Gałęzie NIE ({len(decision_info['no_branches'])}):")
+                        for branch in decision_info['no_branches']:
+                            if branch['parser_id'] in self.layout_manager.element_positions:
+                                br_pos = self.layout_manager.element_positions[branch['parser_id']]
+                                relative_x = "LEWO" if br_pos['x'] < dec_pos['x'] else "PRAWO" if br_pos['x'] > dec_pos['x'] else "ŚRODEK"
+                                relative_y = "WYŻEJ" if br_pos['y'] < dec_pos['y'] else "NIŻEJ" if br_pos['y'] > dec_pos['y'] else "TEN SAM"
+                                
+                                log_debug(f"     - {branch['parser_id']}: poziom={br_pos['row']}, kolumna={br_pos['column']}, X={br_pos['x']} ({relative_x}), Y={br_pos['y']} ({relative_y})")
+                                
+
     def _get_local_id(self, obj_id):
         """Generuje lokalny identyfikator dla Enterprise Architect na podstawie ID elementu."""
         # W EA lokalny ID to zwykle liczbowy identyfikator
@@ -1735,7 +1728,7 @@ class XMIActivityGenerator:
                     
 
     def _create_diagrams_section(self, extension: ET.Element, diagram_name: str):
-        """Tworzy sekcję diagram zawierającą informacje o diagramie aktywności."""
+        """POPRAWIONA metoda z przekazywaniem wszystkich pozycji do XMI."""
         if not self.diagram_id:
             self.diagram_id = self._generate_ea_id("EAID")
             
@@ -1746,7 +1739,7 @@ class XMIActivityGenerator:
             'type': 'Activity',
             'diagramType': 'ActivityDiagram'
         })
-            
+        
         # Model diagramu
         ET.SubElement(diagram, 'model', self._sanitize_xml_attrs({
             'package': self.package_id,
@@ -1795,71 +1788,187 @@ class XMIActivityGenerator:
             'modified': current_time
         })
         
-        # Elementy diagramu - tworzę tylko jedną sekcję elements
+        # POPRAWKA: Elementy diagramu - przekaż pozycje dla WSZYSTKICH elementów
         elements = ET.SubElement(diagram, 'elements')
+        seq_no = 0
         
-        # Tworzę manager layoutu
-        layout_manager = self._create_layout_manager()
+        if self.debug_options.get('positioning', False):
+            
+            log_debug(f"\n📍 DODAWANIE ELEMENTÓW DO XMI:")
         
-        # Najpierw dodaję tory (swimlanes) - ważne dla poprawnego układu
+        # KROK 1: Najpierw dodaj tory (swimlanes)
         for i, (name, partition_id) in enumerate(self.swimlane_ids.items()):
-        # Pobierz geometrię toru z layoutManagera
-            lane_geom = layout_manager.swimlanes_geometry.get(partition_id, {})
-            left = lane_geom.get('x', 100 + i * 280)
-            width = lane_geom.get('width', 250)
+            if hasattr(self, 'layout_manager') and hasattr(self.layout_manager, 'swimlanes_geometry'):
+                lane_geom = self.layout_manager.swimlanes_geometry.get(partition_id, {})
+                left = lane_geom.get('x', 100 + i * 280)
+                width = lane_geom.get('width', 250)
+                height = lane_geom.get('height', 1050)
+                top = lane_geom.get('y', 100)
+            else:
+                # Fallback pozycje
+                left = 100 + i * 280
+                width = 250
+                height = 1050
+                top = 100
+            
             right = left + width
+            bottom = top + height
             
             ET.SubElement(elements, 'element', self._sanitize_xml_attrs({
                 'subject': partition_id,
-                'seqno': str(i),
-                'geometry': f"Left={left};Top=100;Right={right};Bottom=1150;",
+                'seqno': str(seq_no),
+                'geometry': f"Left={left};Top={top};Right={right};Bottom={bottom};",
                 'style': "LineColor=15461355;FillColor=14993154;LineWidth=1;BorderStyle=0;VPartition=1;"
             }))
-        
-        # Sortowanie elementów dla lepszego układu
-        sorted_objects = []
-        
-        # Dodaję najpierw węzły początkowe i końcowe
-        for obj_id in self.diagram_objects:
-            element_id = obj_id.get('id') if isinstance(obj_id, dict) else obj_id
-            if element_id in self.id_map:
-                node = self.id_map[element_id]
-                if 'xmi:type' in node.attrib and ('InitialNode' in node.attrib['xmi:type'] or 'ActivityFinalNode' in node.attrib['xmi:type']):
-                    sorted_objects.append(element_id)
-        
-        # Dodaję węzły decyzyjne, fork i join
-        for obj_id in self.diagram_objects:
-            element_id = obj_id.get('id') if isinstance(obj_id, dict) else obj_id
-            if element_id in self.id_map and element_id not in sorted_objects:
-                node = self.id_map[element_id]
-                if 'xmi:type' in node.attrib and ('DecisionNode' in node.attrib['xmi:type'] or 'ForkNode' in node.attrib['xmi:type'] or 'JoinNode' in node.attrib['xmi:type'] or 'MergeNode' in node.attrib['xmi:type']):
-                    sorted_objects.append(element_id)
-        
-        # Dodaję pozostałe elementy
-        for obj_id in self.diagram_objects:
-            element_id = obj_id.get('id') if isinstance(obj_id, dict) else obj_id
-            if element_id and element_id not in sorted_objects and element_id in self.id_map:
-                sorted_objects.append(element_id)
-        
-        # Teraz dodaję wszystkie elementy diagramu z ich geometrią
-        seq_no = len(self.swimlane_ids)  # Zaczynam numerację od liczby torów
-        for element_id in sorted_objects:
-            if not element_id or element_id not in self.id_map:
-                continue
-            
-            node = self.id_map[element_id]
-            position = layout_manager.get_position_for_element(node)
-            element_style = self._get_style_for_element(node)
-            
-            ET.SubElement(elements, 'element', self._sanitize_xml_attrs({
-                'subject': element_id,
-                'seqno': str(seq_no),
-                'geometry': position,
-                'style': element_style
-            }))
             seq_no += 1
+            
+            if self.debug_options.get('positioning', False):
+                
+                log_debug(f"   🏊 Tor {name}: Left={left}, Top={top}, Right={right}, Bottom={bottom}")
+        
+        # KROK 2: Dodaj WSZYSTKIE elementy z diagram_objects z pozycjami
+        for obj in self.diagram_objects:
+            if isinstance(obj, dict):
+                node_id = obj.get('id')
+                obj_type = obj.get('type', 'unknown')
+                
+                if node_id and node_id in self.id_map:
+                    node = self.id_map[node_id]
+                    
+                    # POPRAWKA: Użyj _get_element_geometry zamiast nieistniejącej metody
+                    position = self._get_element_geometry(node_id, obj_type)
+                    
+                    # Tylko dodaj element jeśli mamy pozycję
+                    if position and position != "Left=0;Top=0;Right=0;Bottom=0;":
+                        # Określ styl na podstawie typu elementu
+                        style = self._get_element_style_from_type(obj_type, node)
+                        
+                        # Dodaj element do diagramu
+                        element_el = ET.SubElement(elements, 'element', self._sanitize_xml_attrs({
+                            'subject': node_id,
+                            'seqno': str(seq_no),
+                            'geometry': position,
+                            'style': style
+                        }))
+                        seq_no += 1
+                        
+                        if self.debug_options.get('positioning', False):
+                            log_debug(f"   ✅ Dodano {obj_type} {node_id[-6:]}: {position}")
+                    else:
+                        if self.debug_options.get('positioning', False):
+                            log_debug(f"   ❌ Pominięto {obj_type} {node_id[-6:]}: brak pozycji")
+        
+        # KROK 3: Dodaj pozostałe elementy z id_map
+        added_ids = {obj.get('id') for obj in self.diagram_objects if isinstance(obj, dict) and obj.get('id')}
+        added_ids.update(self.swimlane_ids.values())
+        
+        for node_id, node in self.id_map.items():
+            if node_id not in added_ids:
+                # POPRAWKA: Użyj _get_element_geometry
+                node_type = node.attrib.get('xmi:type', '').replace('uml:', '')
+                position = self._get_element_geometry(node_id, node_type)
+                
+                if position and position != "Left=0;Top=0;Right=0;Bottom=0;":
+                    style = self._get_style_for_element(node)
+                    
+                    ET.SubElement(elements, 'element', self._sanitize_xml_attrs({
+                        'subject': node_id,
+                        'seqno': str(seq_no),
+                        'geometry': position,
+                        'style': style
+                    }))
+                    seq_no += 1                    
+                    if self.debug_options.get('positioning', False):
+                        
+                        log_debug(f"   📎 Dodano dodatkowy element {node_id[-6:]}: {position}")
+        
+        # KROK 4: Dodaj linki diagramu
+        self._add_diagram_links(diagram)
+        
+        if self.debug_options.get('positioning', False):
+            
+            log_debug(f"✅ Zakończono dodawanie elementów: {seq_no} elementów w XMI")
         
         return diagram
+
+    def _get_element_dimensions_from_type(self, obj_type):
+        """Zwraca wymiary elementu na podstawie jego typu."""
+        dimensions = {
+            'InitialNode': (25, 25),        # ← POŁOWA z 50×50
+            'ActivityFinalNode': (25, 25),  # ← POŁOWA z 50×50
+            'DecisionNode': (40, 40),       # ← POŁOWA z 80×80
+            'MergeNode': (40, 40),          # ← POŁOWA z 80×80
+            'ForkNode': (100, 10),          # ← POŁOWA z 200×20
+            'JoinNode': (100, 10),          # ← POŁOWA z 200×20
+            'UML_ActivityNode': (100, 40),  # ← POŁOWA z 200×80
+            'Comment': (80, 40),            # ← POŁOWA z 160×80
+            'ActivityPartition': (125, 500) # ← POŁOWA z 250×1000
+        }
+        return dimensions.get(obj_type, (100, 40))  # ← POŁOWA z 200×80
+
+    def _get_element_style_from_type(self, obj_type, node):
+        """Zwraca styl elementu na podstawie typu z obj_type."""
+        node_name = node.attrib.get('name', '').lower()
+        
+        if obj_type == 'InitialNode':
+            return "BorderColor=-1;BorderWidth=-1;BColor=0;FontColor=-1;BorderWidth=0;Shape=Circle;"
+        elif obj_type == 'ActivityFinalNode':
+            return "BorderColor=-1;BorderWidth=-1;BColor=0;FontColor=-1;BorderWidth=1;Shape=Circle;"
+        elif obj_type in ['DecisionNode', 'MergeNode']:
+            return "BorderColor=-1;BorderWidth=-1;BColor=16777062;FontColor=-1;Shape=Diamond;"
+        elif obj_type in ['ForkNode', 'JoinNode']:
+            return "BorderColor=-1;BorderWidth=-1;BColor=0;FontColor=-1;LineWidth=3;Shape=Rectangle;"
+        elif obj_type == 'Comment':
+            return "BorderColor=-1;BorderWidth=-1;BColor=16777215;FontColor=-1;BorderStyle=Dashed;"
+        elif obj_type == 'UML_ActivityNode':
+            # Kolorowanie na podstawie nazwy
+            if 'pozytywny' in node_name:
+                return "BorderColor=-1;BorderWidth=-1;BColor=8454143;FontColor=-1;BorderRadius=10;"
+            elif 'negatywny' in node_name or 'błąd' in node_name or 'blad' in node_name:
+                return "BorderColor=-1;BorderWidth=-1;BColor=5263615;FontColor=-1;BorderRadius=10;"
+            elif 'wizualn' in node_name:
+                return "BorderColor=-1;BorderWidth=-1;BColor=42495;FontColor=-1;BorderRadius=10;"
+            else:
+                return "BorderColor=-1;BorderWidth=-1;BColor=13434828;FontColor=-1;BorderRadius=10;"
+        else:
+            # Domyślny styl
+            return "BorderColor=-1;BorderWidth=-1;BColor=16777215;FontColor=-1;"
+
+    def _get_element_style(self, obj_id):
+        """Zwraca styl elementu na podstawie jego typu."""
+        if obj_id in self.id_map and 'xmi:type' in self.id_map[obj_id].attrib:
+            uml_type = self.id_map[obj_id].attrib['xmi:type']
+            
+            if 'uml:InitialNode' in uml_type or 'uml:ActivityFinalNode' in uml_type:
+                return "BorderColor=-1;BorderWidth=-1;BColor=0;FontColor=-1;BorderWidth=1;Shape=Circle;"
+            elif 'uml:DecisionNode' in uml_type:
+                return "BorderColor=-1;BorderWidth=-1;BColor=16777062;FontColor=-1;Shape=Diamond;"
+            elif 'uml:Action' in uml_type:
+                return "BorderColor=-1;BorderWidth=-1;BColor=13434828;FontColor=-1;BorderRadius=10;"
+            elif 'uml:Comment' in uml_type:
+                return "BorderColor=-1;BorderWidth=-1;BColor=16777215;FontColor=-1;BorderStyle=Dashed;"
+        
+        # Domyślny styl
+        return "BorderColor=-1;BorderWidth=-1;BColor=16777215;FontColor=-1;"
+
+    def _add_diagram_links(self, diagram):
+        """Dodaje linki między elementami na diagramie."""
+        diagramlinks = ET.SubElement(diagram, 'diagramlinks')
+        
+        # Dodaj link dla każdego przejścia
+        for trans in self.transitions:
+            connector_id = trans['id']
+            link = ET.SubElement(diagramlinks, 'diagramlink', {
+                'connectorID': connector_id,
+                'hidden': 'false'
+            })
+            
+            # Dodaj styl dla linku
+            style_value = ""
+            if trans.get('cross_swimlane', False):
+                style_value = "mode=3;routestyle=1;"
+                
+            ET.SubElement(link, 'style', {'value': style_value})
 
     def _get_style_for_element(self, node):
         """Zwraca styl CSS dla elementu diagramu z uwzględnieniem kolorów z PlantUML."""
@@ -1895,15 +2004,163 @@ class XMIActivityGenerator:
         return style
 
     def _create_layout_manager(self):
-        """Tworzy i zwraca instancję managera layoutu."""
-        # Przekaż ID wszystkich torów oraz mapę ID do LayoutManager
-        layout_manager = LayoutManager(
-            self.swimlane_ids, 
-            transitions=self.transitions,
-            id_map=self.id_map,
-            debug_positioning=self.debug_options.get('positioning', False)
-        )
+        """Tworzy najlepszy dostępny Layout Manager"""
+        
+        if self.debug_options.get('positioning', False):
+            log_debug("🔧 Wybór Layout Managera...")
+        
+        # PRIORYTET 1: Nowy GraphLayoutManager (jeśli dostępny)
+        if GRAPH_LAYOUT_AVAILABLE:
+            try:
+                layout_manager = GraphLayoutManager(debug=self.debug_options.get('positioning', False))
+                
+                if self.debug_options.get('positioning', False):
+                    log_debug("✅ Użyto GraphLayoutManager (NetworkX)")
+                
+                # Dodaj metody kompatybilności
+                self._add_compatibility_methods(layout_manager)
+                return layout_manager
+                
+            except Exception as e:
+                if self.debug_options.get('positioning', False):
+                    log_debug(f"❌ Błąd GraphLayoutManager: {e}")
+        
+        # PRIORYTET 2: Stary LayoutManager (jeśli dostępny)
+        if OLD_LAYOUT_AVAILABLE:
+            try:
+                layout_manager = LayoutManager(debug=self.debug_options.get('positioning', False))
+                
+                if self.debug_options.get('positioning', False):
+                    log_debug("✅ Użyto starego LayoutManager")
+                
+                # Dodaj metody kompatybilności
+                self._add_compatibility_methods(layout_manager)
+                return layout_manager
+                
+            except Exception as e:
+                if self.debug_options.get('positioning', False):
+                    log_debug(f"❌ Błąd starego LayoutManager: {e}")
+        
+        # PRIORYTET 3: Awaryjny Layout Manager
+        if self.debug_options.get('positioning', False):
+            log_debug("⚠️ Tworzę awaryjny Layout Manager")
+        
+        return self._create_emergency_layout_manager()
+
+    def _add_compatibility_methods(self, layout_manager):
+        """Dodaje brakujące metody dla kompatybilności"""
+        
+        if not hasattr(layout_manager, 'update_swimlane_geometry'):
+            def update_swimlane_geometry():
+                if self.debug_options.get('positioning', False):
+                    log_debug("🏊 update_swimlane_geometry - placeholder")
+                
+                # Ustaw geometrie torów
+                if not hasattr(layout_manager, 'swimlanes_geometry'):
+                    layout_manager.swimlanes_geometry = {}
+                
+                for i, (name, partition_id) in enumerate(self.swimlane_ids.items()):
+                    layout_manager.swimlanes_geometry[partition_id] = {
+                        'x': 100 + i * 280,
+                        'y': 50, 
+                        'width': 250,
+                        'height': 1000
+                    }
+            
+            layout_manager.update_swimlane_geometry = update_swimlane_geometry
+        
+        if not hasattr(layout_manager, 'swimlanes_geometry'):
+            layout_manager.swimlanes_geometry = {}
+        
+        if not hasattr(layout_manager, 'element_positions'):
+            layout_manager.element_positions = {}
+
+    def _create_emergency_layout_manager(self):
+        """Tworzy awaryjny layout manager jako ostateczna deska ratunku"""
+        
+        class EmergencyLayoutManager:
+            def __init__(self, debug=False):
+                self.debug = debug
+                self.element_positions = {}
+                self.swimlanes_geometry = {}
+                
+            def analyze_diagram_structure(self, parsed_data):
+                """Awaryjny layout - inteligentny 3-kolumnowy układ"""
+                
+                if self.debug:
+                    log_debug(f"🚨 AWARYJNY LAYOUT dla {len(parsed_data.get('flow', []))} elementów")
+                
+                positions = {}
+                
+                # Pozycje kolumn
+                left_x, center_x, right_x = 200, 675, 1200
+                
+                for i, element in enumerate(parsed_data.get('flow', [])):
+                    element_id = element.get('id')
+                    element_type = element.get('type', 'activity')
+                    element_name = element.get('text', '').lower()
+                    
+                    if element_id:
+                        # Inteligentne przypisanie kolumn
+                        if 'błąd' in element_name or 'negatywn' in element_name:
+                            if 'składni' in element_name or 'wizualn' in element_name:
+                                col_x = left_x    # Błędy składni/wizualne → lewa
+                            else:
+                                col_x = right_x   # Błędy generowania → prawa
+                        elif element_type in ['control'] and 'start' in element.get('action', ''):
+                            col_x = center_x      # START → środek
+                        elif element_type in ['control'] and element.get('action') in ['end', 'stop']:
+                            col_x = center_x      # END → środek  
+                        elif element_type == 'decision_start':
+                            col_x = center_x      # Decyzje → środek
+                        else:
+                            col_x = center_x      # Główna ścieżka → środek
+                        
+                        # Oblicz wysokość
+                        y = 100 + i * 120
+                        
+                        positions[element_id] = {
+                            'x': col_x,
+                            'y': y,
+                            'width': 50 if element_type == 'control' else 140,
+                            'height': 50 if element_type == 'control' else 60,
+                            'row': i,
+                            'column': 0 if col_x == left_x else 1 if col_x == center_x else 2
+                        }
+                
+                grid = {'columns': 3, 'rows': len(positions)}
+                
+                if self.debug:
+                    log_debug(f"✅ Awaryjny layout: {len(positions)} pozycji w 3 kolumnach")
+                
+                return positions, grid
+                
+            def update_swimlane_geometry(self):
+                """Ustaw geometrie torów"""
+                partition_ids = getattr(self, '_partition_ids', {})
+                for i, (name, partition_id) in enumerate(partition_ids.items()):
+                    self.swimlanes_geometry[partition_id] = {
+                        'x': 100 + i * 280,
+                        'y': 50,
+                        'width': 250, 
+                        'height': 1000
+                    }
+        
+        layout_manager = EmergencyLayoutManager(debug=self.debug_options.get('positioning', False))
+        
+        # Przekaż informacje o torach
+        if hasattr(self, 'swimlane_ids'):
+            layout_manager._partition_ids = self.swimlane_ids
+        
         return layout_manager
+
+    def set_parser_mapping(self, parser_id_to_xmi_id):
+        """Ustawia mapowanie między parser_id a xmi_id."""
+        self.parser_id_to_xmi_id = parser_id_to_xmi_id
+        
+        if self.debug_options.get('positioning', False):
+            
+            log_debug(f"📋 Mapowanie parser→XMI ustawione: {len(parser_id_to_xmi_id)} elementów")
 
     def _sanitize_tree(self, element):
         """Sanityzuje wszystkie atrybuty w całym drzewie XML rekurencyjnie."""
@@ -1918,11 +2175,303 @@ class XMIActivityGenerator:
         for child in element:
             self._sanitize_tree(child)
 
+    def _get_element_geometry(self, element_id, element_type):
+        """KOMPLETNA NAPRAWIONA METODA: Używa pozycji z GraphLayoutManager z fallback"""
+        
+        if self.debug_options.get('positioning', False):
+            log_debug(f"🎯 Pobieranie geometrii dla {element_id[-6:]}: typ={element_type}")
+        
+        # ============================================================================
+        # METODA 1: GŁÓWNA - Sprawdź w element_positions z GraphLayoutManager
+        # ============================================================================
+        if (hasattr(self, 'layout_manager') and 
+            hasattr(self.layout_manager, 'element_positions')):
+            
+            # POPRAWKA: Szukaj po element_id bezpośrednio (bez mapowania parser→XMI)
+            layout_positions = self.layout_manager.element_positions
+            
+            if self.debug_options.get('positioning', False):
+                log_debug(f"   Layout ma {len(layout_positions)} pozycji")
+                
+            # Metoda A: Szukaj bezpośrednio po element_id
+            if element_id in layout_positions:
+                pos = layout_positions[element_id]
+                geometry = f"Left={pos['x']};Top={pos['y']};Right={pos['x'] + pos['width']};Bottom={pos['y'] + pos['height']};"
+                
+                if self.debug_options.get('positioning', False):
+                    log_debug(f"✅ ZNALEZIONO BEZPOŚREDNIO w layout: {element_id[-6:]} → {geometry}")
+                
+                return geometry
+            
+            # Metoda B: Szukaj przez mapowanie parser_id → xmi_id
+            if hasattr(self, 'parser_id_to_xmi_id'):
+                parser_id = None
+                for p_id, x_id in self.parser_id_to_xmi_id.items():
+                    if x_id == element_id:
+                        parser_id = p_id
+                        break
+                
+                if parser_id and parser_id in layout_positions:
+                    pos = layout_positions[parser_id]
+                    geometry = f"Left={pos['x']};Top={pos['y']};Right={pos['x'] + pos['width']};Bottom={pos['y'] + pos['height']};"
+                    
+                    if self.debug_options.get('positioning', False):
+                        log_debug(f"✅ ZNALEZIONO PRZEZ MAPOWANIE: {element_id[-6:]} ← {parser_id} → {geometry}")
+                    
+                    return geometry
+            
+            # Metoda C: Szukaj po częściowym dopasowaniu ID
+            for layout_id, pos in layout_positions.items():
+                if (layout_id.endswith(element_id[-8:]) or 
+                    element_id.endswith(layout_id[-8:]) or
+                    layout_id == f"id_{element_id[-8:]}"):
+                    
+                    geometry = f"Left={pos['x']};Top={pos['y']};Right={pos['x'] + pos['width']};Bottom={pos['y'] + pos['height']};"
+                    
+                    if self.debug_options.get('positioning', False):
+                        log_debug(f"✅ ZNALEZIONO PRZEZ DOPASOWANIE: {element_id[-6:]} ≈ {layout_id} → {geometry}")
+                    
+                    return geometry
+            
+            if self.debug_options.get('positioning', False):
+                log_debug(f"   ❌ Nie znaleziono pozycji dla {element_id[-6:]} w {len(layout_positions)} pozycjach")
+                log_debug(f"   Dostępne klucze: {list(layout_positions.keys())[:5]}...")
+  
+        # ============================================================================
+        # METODA 2: FALLBACK - Physical positions (stary LayoutManager)
+        # ============================================================================
+        if (hasattr(self, 'layout_manager') and 
+            hasattr(self.layout_manager, 'physical_positions') and 
+            element_id in self.layout_manager.physical_positions):
+            
+            pos = self.layout_manager.physical_positions[element_id]
+            geometry = f"Left={pos.x};Top={pos.y};Right={pos.x + pos.width};Bottom={pos.y + pos.height};"
+            
+            if self.debug_options.get('positioning', False):
+                log_debug(f"✅ UŻYTO physical_positions dla {element_id[-6:]}: {geometry}")
+            
+            return geometry
+        
+        # ============================================================================
+        # METODA 3: INTELIGENTNY FALLBACK - Na podstawie nazwy i typu elementu
+        # ============================================================================
+        if element_id in self.id_map:
+            node = self.id_map[element_id]
+            node_name = node.attrib.get('name', '').lower()
+            
+            # POZYCJONOWANIE na podstawie typu i nazwy elementu:
+            if element_type in ['InitialNode', 'control'] and 'start' in str(node.attrib.get('action', '')).lower():
+                # START - środek, góra
+                x, y = 675, 100
+                width, height = 50, 50
+                
+            elif element_type in ['ActivityFinalNode', 'control'] and any(action in str(node.attrib.get('action', '')).lower() for action in ['end', 'stop', 'final']):
+                # END - środek, dół
+                x, y = 675, 900
+                width, height = 50, 50
+                
+            elif element_type in ['DecisionNode', 'decision_start']:
+                # DECYZJE - środek, różne wysokości w zależności od nazwy
+                if 'składni' in node_name or 'składniowo' in node_name or 'syntax' in node_name:
+                    x, y = 675, 200  # Pierwsza decyzja - sprawdzanie składni
+                elif 'generowania' in node_name or 'wygenerowany' in node_name or 'generate' in node_name:
+                    x, y = 675, 400  # Druga decyzja - sprawdzanie generowania
+                elif 'zgodny' in node_name or 'oczekiwaniami' in node_name or 'wizualn' in node_name:
+                    x, y = 675, 600  # Trzecia decyzja - sprawdzanie zgodności/wizualne
+                else:
+                    # Inne decyzje - rozłóż równomiernie
+                    decision_hash = hash(node_name) % 5
+                    x, y = 675, 250 + decision_hash * 150
+                width, height = 80, 80
+                
+            elif 'pozytywny' in node_name or 'sukces' in node_name or 'positive' in node_name:
+                # TESTY POZYTYWNE - główna ścieżka (środek)
+                if 'zapisanie sukcesu' in node_name or 'save success' in node_name:
+                    x, y = 675, 850   # Na końcu głównej ścieżki
+                else:
+                    x, y = 675, 750   # Potwierdzenie pozytywne
+                width, height = 140, 60
+                
+            elif 'negatywny' in node_name or 'błąd' in node_name or 'blad' in node_name or 'error' in node_name:
+                # TESTY NEGATYWNE - rozdziel według typu błędu
+                if 'składni' in node_name or 'syntax' in node_name:
+                    # Błędy składni - LEWA strona
+                    if 'raportowanie' in node_name:
+                        x, y = 200, 400   # Raportowanie błędów składni
+                    elif 'zapisanie' in node_name:
+                        x, y = 200, 500   # Zapisanie błędów składni
+                    else:
+                        x, y = 200, 300   # Wykrycie błędów składni
+                        
+                elif 'generowania' in node_name or 'generate' in node_name:
+                    # Błędy generowania - PRAWA strona
+                    if 'raportowanie' in node_name:
+                        x, y = 1200, 600  # Raportowanie błędów generowania
+                    elif 'zapisanie' in node_name:
+                        x, y = 1200, 700  # Zapisanie błędów generowania
+                    else:
+                        x, y = 1200, 500  # Wykrycie błędów generowania
+                        
+                elif 'wizualn' in node_name or 'visual' in node_name:
+                    # Błędy wizualne - LEWA strona (razem z błędami składni)
+                    if 'raportowanie' in node_name:
+                        x, y = 200, 800   # Raportowanie błędów wizualnych
+                    elif 'zapisanie' in node_name:
+                        x, y = 200, 900   # Zapisanie błędów wizualnych
+                    else:
+                        x, y = 200, 700   # Wykrycie błędów wizualnych
+                else:
+                    # Inne błędy - LEWA strona domyślnie
+                    x, y = 200, 600
+                    
+                width, height = 140, 60
+                
+            elif 'raportowanie' in node_name or 'report' in node_name:
+                # RAPORTOWANIE - kontynuacja gałęzi błędów
+                if 'składni' in node_name:
+                    x, y = 200, 400   # Po błędach składni (lewa)
+                elif 'generowania' in node_name:
+                    x, y = 1200, 600  # Po błędach generowania (prawa)
+                elif 'wizualn' in node_name:
+                    x, y = 200, 800   # Po błędach wizualnych (lewa)
+                else:
+                    x, y = 400, 700   # Środek dla niespecyficznych raportów
+                width, height = 140, 60
+                
+            elif 'zapisanie' in node_name or 'save' in node_name:
+                # ZAPISANIE WYNIKÓW - końcowe akcje w każdej gałęzi
+                if 'sukces' in node_name or 'success' in node_name:
+                    x, y = 675, 850   # Sukces - główna ścieżka (środek)
+                elif 'składni' in node_name:
+                    x, y = 200, 500   # Błędy składni (lewa)
+                elif 'generowania' in node_name:
+                    x, y = 1200, 700  # Błędy generowania (prawa)
+                elif 'wizualny' in node_name:
+                    x, y = 200, 900   # Błędy wizualne (lewa)
+                else:
+                    x, y = 500, 800   # Inne zapisanie
+                width, height = 140, 60
+                
+            elif 'rozpoczęcie' in node_name or 'start' in node_name:
+                # ROZPOCZĘCIE - główna ścieżka, na początku akcji
+                x, y = 675, 160
+                width, height = 140, 60
+                
+            elif 'wprowadzenie' in node_name or 'input' in node_name:
+                # WPROWADZENIE - główna ścieżka
+                x, y = 675, 250
+                width, height = 140, 60
+                
+            elif 'weryfikacja' in node_name or 'verify' in node_name:
+                # WERYFIKACJA - główna ścieżka
+                x, y = 675, 650
+                width, height = 140, 60
+                
+            elif element_type in ['MergeNode', 'JoinNode']:
+                # MERGE/JOIN - środek, automatyczne pozycjonowanie
+                x, y = 675, 800
+                width, height = 60, 20
+                
+            elif element_type in ['ForkNode']:
+                # FORK - środek
+                x, y = 675, 450
+                width, height = 60, 20
+                
+            elif element_type == 'Comment':
+                # NOTATKI - z boku, nie przeszkadzają
+                x, y = 50, 300 + hash(element_id) % 6 * 100
+                width, height = 120, 60
+                
+            else:
+                # POZOSTAŁE AKTYWNOŚCI - główna ścieżka (środek)
+                # Użyj hash nazwy dla deterministycznego, ale różnego pozycjonowania
+                y_offset = hash(node_name) % 8 * 80
+                x, y = 675, 300 + y_offset
+                width, height = 140, 60
+            
+            geometry = f"Left={x};Top={y};Right={x + width};Bottom={y + height};"
+            
+            if self.debug_options.get('positioning', False):
+                log_debug(f"🧠 POZYCJA INTELIGENTNA dla {element_id[-6:]} '{node_name[:25]}': {geometry}")
+            
+            return geometry
+        
+        # ============================================================================
+        # METODA 4: POZYCJONOWANIE na podstawie tylko typu elementu
+        # ============================================================================
+        if element_type in ['InitialNode', 'ActivityFinalNode']:
+            # START/END - małe kółka
+            x = 675
+            y = 100 if 'Initial' in element_type else 950
+            width, height = 25, 25  # ← POŁOWA z 50×50
+            
+        elif element_type in ['DecisionNode', 'MergeNode']:
+            # Decyzje i merge - mniejsze romby
+            y_offset = hash(element_id) % 5 * 150
+            x, y = 660, 280 + y_offset
+            width, height = 40, 40  # ← POŁOWA z 80×80
+            
+        elif element_type in ['Action', 'UML_ActivityNode', 'activity']:
+            # Aktywności - prostokąty o różnych szerokościach (ZMNIEJSZONE!)
+            y_offset = hash(element_id) % 10 * 80
+            
+            # Sprawdź długość nazwy dla określenia szerokości
+            if element_id in self.id_map:
+                name = self.id_map[element_id].attrib.get('name', '')
+                if len(name) > 40:
+                    width = 148  # ← POŁOWA z 296
+                elif len(name) > 25:
+                    width = 120  # ← POŁOWA z 240
+                else:
+                    width = 100  # ← POŁOWA z 200
+            else:
+                width = 100
+                
+            x, y = 500, 200 + y_offset
+            height = 40  # ← POŁOWA z 80
+            
+        elif element_type in ['ForkNode', 'JoinNode']:
+            # Fork/Join jako poziome linie (ZMNIEJSZONE!)
+            y_offset = hash(element_id) % 3 * 120
+            x, y = 650, 400 + y_offset
+            width, height = 100, 10  # ← POŁOWA z 200×20
+            
+        elif element_type == 'Comment':
+            # Notatki (ZMNIEJSZONE!)
+            y_offset = hash(element_id) % 4 * 100
+            x, y = 1200, 200 + y_offset
+            width, height = 80, 40  # ← POŁOWA z 160×80
+            
+        else:
+            # Fallback - środek diagramu z losowym offsetem
+            x_offset = hash(element_id) % 3 * 100 - 100  # -100 do +100
+            y_offset = hash(element_id) % 12 * 80
+            x, y = 600 + x_offset, 200 + y_offset
+            width, height = 140, 60
+        
+        geometry = f"Left={x};Top={y};Right={x + width};Bottom={y + height};"
+        
+        if self.debug_options.get('positioning', False):
+            log_debug(f"⚠️ POZYCJA TYPU dla {element_id[-6:]} typ {element_type}: {geometry}")
+        
+        return geometry
+
+        # ============================================================================
+        # METODA 5: OSTATECZNY FALLBACK (nie powinno się zdarzyć)
+        # ============================================================================
+        # Ten kod jest nieosiągalny po poprzednich return, ale pozostawiam dla bezpieczeństwa
+        geometry = "Left=350;Top=100;Right=490;Bottom=160;"
+        
+        if self.debug_options.get('positioning', False):
+            log_debug(f"❌ OSTATECZNY FALLBACK dla {element_id[-6:]}: {geometry}")
+        
+        return geometry
+
     def _format_xml(self, root: ET.Element) -> str:
         """Poprawia nagłówek i formatuje XML do czytelnej postaci."""
         # Debugowanie - znajdź wszystkie wartości None przed serializacją
         if self.debug_options.get('xml', False):
-            print("Sprawdzanie wartości None w drzewie XML...")
+            
             log_debug("Sprawdzanie wartości None w drzewie XML...")
             self._debug_find_none_values(root)
         
@@ -1938,7 +2487,7 @@ class XMIActivityGenerator:
 if __name__ == '__main__':
     import argparse
     import os
-    from plantuml_activity_parser import PlantUMLActivityParser
+    from utils.plantuml.plantuml_activity_parser import PlantUMLActivityParser
     from datetime import datetime
     
     setup_logger('xmi_activity_generator.log')
@@ -2012,16 +2561,16 @@ if __name__ == '__main__':
             puml_content = f.read()
         
         # Wyświetl informacje o uruchamianiu
-        print(f"🔍 Przetwarzanie pliku: {args.input_file}")
-        print(f"📊 Nazwa diagramu: {diagram_name}")
+        log_debug(f"🔍 Przetwarzanie pliku: {args.input_file}")
+        log_debug(f"📊 Nazwa diagramu: {diagram_name}")
         
         # Parsowanie PlantUML bezpośrednio
-        print("🔄 Parsowanie kodu PlantUML...")
+        log_debug("🔄 Parsowanie kodu PlantUML...")
         parser = PlantUMLActivityParser(puml_content, parser_debug_options)
         parsed_data = parser.parse()
         
         # Generowanie XMI
-        print("🔄 Generowanie XMI...")
+        log_debug("🔄 Generowanie XMI...")
         generator = XMIActivityGenerator(author="Generator XMI", debug_options=generator_debug_options)
         xml_content = generator.generate_activity_diagram(diagram_name, parsed_data)
         
@@ -2029,11 +2578,11 @@ if __name__ == '__main__':
         with open(output_filename, 'w', encoding='utf-8') as f:
             f.write(xml_content)
         
-        print(f"\n✅ Gotowe! Diagram XMI zapisany do pliku: {output_filename}")
+        log_debug(f"\n✅ Gotowe! Diagram XMI zapisany do pliku: {output_filename}")
         
     except FileNotFoundError:
-        print(f"❌ Błąd: Nie znaleziono pliku {args.input_file}")
+        log_debug(f"❌ Błąd: Nie znaleziono pliku {args.input_file}")
     except Exception as e:
-        print(f"❌ Wystąpił błąd: {e}")
+        log_debug(f"❌ Wystąpił błąd: {e}")
         import traceback
         traceback.print_exc()
