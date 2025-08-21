@@ -2,9 +2,19 @@ import re
 import pprint
 import uuid
 from datetime import datetime
-from logger_utils import log_debug, log_info, log_error, log_exception, log_warning, setup_logger
 import unittest
+import sys
 import os
+
+parent_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
+sys.path.append(parent_dir)
+try:
+    from logger_utils import log_debug, log_info, log_error, log_exception, log_warning, setup_logger
+except ImportError as e:
+        MODULES_LOADED = False
+        print(f"Import error: {e}")
+        sys.exit(1)
+
 
 setup_logger("plantuml_activity_parser.log")
 
@@ -42,16 +52,18 @@ class PlantUMLActivityParser:
 
     def parse(self):
         """
-        Główna metoda parsująca, która analizuje kod linia po linii.
+        Główna metoda parsująca z prawidłowym formatem logical_connections
         """
         if self.debug_options.get('parsing'):
             log_debug("Rozpoczynam parsowanie kodu PlantUML")
-            print("Rozpoczynam parsowanie kodu PlantUML")
         
         lines = self.code.strip().split('\n')
         
         # Stos do śledzenia zagnieżdżonych struktur (if, while, fork)
         structure_stack = []
+
+        # Lista połączeń logicznych dla GraphLayoutManager
+        self.logical_connections = []  # Dodaj jako atrybut klasy
 
         # Rejestr połączeń - do debugowania i weryfikacji poprawności
         connections = []
@@ -64,7 +76,6 @@ class PlantUMLActivityParser:
 
             if self.debug_options.get('parsing'):
                 log_debug(f"Przetwarzanie linii {line_num}: {line}")
-                print(f"Przetwarzanie linii {line_num}: {line}")
 
             # Parsowanie tytułu
             if line.startswith('title'):
@@ -73,7 +84,6 @@ class PlantUMLActivityParser:
                     self.title = match.group(1).strip()
                     if self.debug_options.get('parsing'):
                         log_debug(f"Znaleziono tytuł: {self.title}")
-                        print(f"Znaleziono tytuł: {self.title}")
                     continue
 
             # Parsowanie swimlane
@@ -94,12 +104,37 @@ class PlantUMLActivityParser:
                     
                     if self.debug_options.get('parsing'):
                         log_debug(f"Dodano swimlane: {swimlane_name}")
-                        print(f"Dodano swimlane: {swimlane_name}")
                     
-                    # Rejestracja elementu do debugowania połączeń
+                    # NAPRAWA: Rejestracja z logical_connections
+                    self._register_logical_connection(last_element, element, "")
                     self._register_connection(last_element, element, connections)
                     last_element = element
                     continue
+            
+            # Parsowanie aktywności z kolorami (#Kolor:tekst;)
+            color_activity_match = re.match(r'^#([A-Za-z0-9]+):([^;]+);$', line)
+            if color_activity_match:
+                color = color_activity_match.group(1).strip()
+                activity_text = color_activity_match.group(2).strip()
+                element = {
+                    'type': 'activity',
+                    'text': activity_text,
+                    'color': color,
+                    'swimlane': self.current_swimlane,
+                    'id': self._generate_id()
+                }
+                self.flow.append(element)
+                if self.current_swimlane and self.current_swimlane in self.swimlanes:
+                    self.swimlanes[self.current_swimlane]['activities'].append(element)
+                
+                if self.debug_options.get('parsing'):
+                    log_debug(f"Dodano aktywność z kolorem {color}: {activity_text} w {self.current_swimlane or 'bez swimlane'}")
+                
+                self._register_logical_connection(last_element, element, "")
+                self._register_connection(last_element, element, connections, label="")
+                
+                last_element = element
+                continue
 
             # Parsowanie aktywności - podstawowe
             if line.startswith(':') and line.endswith(';'):
@@ -116,10 +151,10 @@ class PlantUMLActivityParser:
                 
                 if self.debug_options.get('parsing'):
                     log_debug(f"Dodano aktywność: {activity_text} w {self.current_swimlane or 'bez swimlane'}")
-                    print(f"Dodano aktywność: {activity_text} w {self.current_swimlane or 'bez swimlane'}")
                 
-                # Rejestracja elementu do debugowania połączeń
-                self._register_connection(last_element, element, connections)
+                self._register_logical_connection(last_element, element, "")
+                self._register_connection(last_element, element, connections, label="")
+                
                 last_element = element
                 continue
 
@@ -135,10 +170,10 @@ class PlantUMLActivityParser:
                 
                 if self.debug_options.get('parsing'):
                     log_debug(f"Dodano element kontrolny: {line} w {self.current_swimlane or 'bez swimlane'}")
-                    print(f"Dodano element kontrolny: {line} w {self.current_swimlane or 'bez swimlane'}")
                 
-                # Rejestracja elementu do debugowania połączeń
-                self._register_connection(last_element, element, connections)
+                self._register_logical_connection(last_element, element, "")
+                self._register_connection(last_element, element, connections, label="")
+                
                 last_element = element
                 continue
 
@@ -153,23 +188,25 @@ class PlantUMLActivityParser:
                     'then_label': then_label.strip(),
                     'swimlane': self.current_swimlane,
                     'id': decision_id,
-                    'needs_else': True  # Flaga wskazująca, że decyzja wymaga gałęzi else
+                    'needs_else': True
                 }
                 self.flow.append(element)
+                
                 structure_stack.append({
                     'type': 'decision',
-                    'id': len(self.flow) - 1,  # Indeks w liście flow
+                    'decision_id': decision_id,
                     'element': element,
                     'has_else': False,
-                    'decision_id': decision_id
+                    'then_label': then_label.strip()  # ✅ ZAPAMIĘTAJ etykietę "tak"
                 })
                 
-                if self.debug_options.get('decisions'):
-                    log_debug(f"Rozpoczęto blok decyzyjny: [{condition}] z gałęzią 'then': {then_label}")
-                    print(f"Rozpoczęto blok decyzyjny: [{condition}] z gałęzią 'then': {then_label}")
+                # ✅ POPRAWKA: Normalne połączenie WCHODZĄCE (BEZ etykiety)
+                self._register_logical_connection(last_element, element, "")
+                self._register_connection(last_element, element, connections, label="")
                 
-                # Rejestracja elementu do debugowania połączeń
-                self._register_connection(last_element, element, connections, label=then_label)
+                if self.debug_options.get('decisions'):
+                    log_debug(f"Dodano decyzję: '{condition}' z etykietą 'tak': '{then_label.strip()}'")
+                
                 last_element = element
                 continue
 
@@ -178,7 +215,7 @@ class PlantUMLActivityParser:
             if else_match:
                 else_label = else_match.group(1).strip()
                 
-                # Oznacz w strukturze stosu, że mamy else
+                # Znajdź decision_start na stosie
                 decision_id = None
                 if structure_stack and structure_stack[-1]['type'] == 'decision':
                     structure_stack[-1]['has_else'] = True
@@ -191,23 +228,25 @@ class PlantUMLActivityParser:
                     'else_label': else_label,
                     'swimlane': self.current_swimlane,
                     'id': self._generate_id(),
-                    'decision_id': decision_id  # Powiązanie z decyzją
+                    'decision_id': decision_id  
                 }
                 self.flow.append(element)
                 
-                if self.debug_options.get('decisions'):
-                    log_debug(f"Dodano gałąź 'else': {else_label}")
-                    print(f"Dodano gałąź 'else': {else_label}")
+                # Etykieta "nie" zostanie dodana w post-processing
+                if structure_stack and structure_stack[-1]['type'] == 'decision':
+                    decision_element = structure_stack[-1]['element']
+                    self._register_logical_connection(decision_element, element, "")  # ← Puste!
                 
-                # Dla else nie rejestrujemy standardowego połączenia,
-                # to jest specjalny element strukturalny
+                if self.debug_options.get('decisions'):
+                    log_debug(f"Dodano gałąź 'else': {else_label} dla decyzji {decision_id[-6:] if decision_id else 'UNKNOWN'}")
+                
                 last_element = element
                 continue
 
             # Parsowanie endif
             if line == 'endif':
-                if structure_stack:
-                    decision_info = structure_stack.pop()
+                if structure_stack and structure_stack[-1]['type'] == 'decision':
+                    decision_info = structure_stack.pop()  # ✅ Usuń ze stosu
                     has_else = decision_info.get('has_else', False)
                     decision_id = decision_info.get('decision_id')
                     
@@ -215,21 +254,23 @@ class PlantUMLActivityParser:
                         'type': 'decision_end',
                         'swimlane': self.current_swimlane,
                         'id': self._generate_id(),
-                        'decision_id': decision_id,  # Powiązanie z decision_start
-                        'has_else': has_else         # Informacja, czy ta decyzja miała gałąź else
+                        'decision_id': decision_id,
+                        'has_else': has_else
                     }
                     self.flow.append(element)
                     
                     if self.debug_options.get('decisions'):
-                        log_debug(f"Zakończono blok decyzyjny, miał gałąź else: {has_else}")
-                        print(f"Zakończono blok decyzyjny, miał gałąź else: {has_else}")
+                        log_debug(f"Zakończono blok decyzyjny {decision_id[-6:]}, miał gałąź else: {has_else}")
                     
-                    # Rejestracja elementu do debugowania połączeń
+                    # Rejestracja połączenia
+                    self._register_logical_connection(last_element, element, "")
                     self._register_connection(last_element, element, connections)
                     last_element = element
+                else:
+                    log_warning("Znaleziono 'endif' bez pasującego 'if'")
                 continue
 
-            # Parsowanie fork/join
+            # Parsowanie fork/join (bez zmian - działają dobrze)
             if line == 'fork':
                 fork_id = self._generate_id()
                 element = {
@@ -242,16 +283,16 @@ class PlantUMLActivityParser:
                     'type': 'fork',
                     'id': len(self.flow) - 1,
                     'element': element,
-                    'branches': 1,  # Licznik gałęzi
+                    'branches': 1,
                     'fork_id': fork_id,
-                    'branch_elements': []  # Lista elementów w bieżącej gałęzi
+                    'branch_elements': []
                 })
                 
                 if self.debug_options.get('structure'):
                     log_debug(f"Rozpoczęto blok fork (ID: {fork_id})")
-                    print(f"Rozpoczęto blok fork (ID: {fork_id})")
                 
-                # Rejestracja elementu do debugowania połączeń
+                # NAPRAWA: Rejestracja z logical_connections
+                self._register_logical_connection(last_element, element, "")
                 self._register_connection(last_element, element, connections)
                 last_element = element
                 continue
@@ -259,12 +300,10 @@ class PlantUMLActivityParser:
             if line == 'fork again':
                 fork_id = None
                 if structure_stack and structure_stack[-1]['type'] == 'fork':
-                    # Zapisz elementy poprzedniej gałęzi
                     branch_elements = structure_stack[-1].get('branch_elements', [])
                     if branch_elements:
                         structure_stack[-1]['branches_data'] = structure_stack[-1].get('branches_data', []) + [branch_elements]
                     
-                    # Zresetuj dla nowej gałęzi
                     structure_stack[-1]['branch_elements'] = []
                     structure_stack[-1]['branches'] += 1
                     fork_id = structure_stack[-1]['fork_id']
@@ -275,16 +314,14 @@ class PlantUMLActivityParser:
                     'type': 'fork_again',
                     'swimlane': self.current_swimlane,
                     'id': self._generate_id(),
-                    'fork_id': fork_id  # Powiązanie z fork_start
+                    'fork_id': fork_id
                 }
                 self.flow.append(element)
                 
                 if self.debug_options.get('structure'):
                     log_debug(f"Dodano gałąź fork dla {fork_id}")
-                    print(f"Dodano gałąź fork dla {fork_id}")
                 
-                # Dla fork_again nie rejestrujemy standardowego połączenia,
-                # to jest specjalny element strukturalny
+                # Dla fork_again nie rejestrujemy standardowego połączenia
                 last_element = element
                 continue
 
@@ -295,7 +332,6 @@ class PlantUMLActivityParser:
                 
                 if structure_stack:
                     fork_info = structure_stack.pop()
-                    # Zapisz elementy ostatniej gałęzi
                     branch_elements = fork_info.get('branch_elements', [])
                     if branch_elements:
                         fork_info['branches_data'] = fork_info.get('branches_data', []) + [branch_elements]
@@ -309,21 +345,21 @@ class PlantUMLActivityParser:
                     'type': 'fork_end',
                     'swimlane': self.current_swimlane,
                     'id': join_id,
-                    'fork_id': fork_id,  # Powiązanie z fork_start
+                    'fork_id': fork_id,
                     'branches_count': branches
                 }
                 self.flow.append(element)
                 
                 if self.debug_options.get('structure'):
                     log_debug(f"Zakończono blok fork (ID: {fork_id}), liczba gałęzi: {branches}, join ID: {join_id}")
-                    print(f"Zakończono blok fork (ID: {fork_id}), liczba gałęzi: {branches}, join ID: {join_id}")
                 
-                # Rejestracja elementu do debugowania połączeń
+                # NAPRAWA: Rejestracja z logical_connections
+                self._register_logical_connection(last_element, element, "")
                 self._register_connection(last_element, element, connections)
                 last_element = element
                 continue
 
-            # Parsowanie notatek
+            # Parsowanie notatek (bez zmian)
             note_match = re.match(r'^note\s+(left|right|top|bottom)\s*:\s*(.*)$', line)
             if note_match:
                 position, text = note_match.groups()
@@ -338,9 +374,8 @@ class PlantUMLActivityParser:
                 
                 if self.debug_options.get('parsing'):
                     log_debug(f"Dodano notatkę: {text[:30]}... ({position})")
-                    print(f"Dodano notatkę: {text[:30]}... ({position})")
                 
-                # Notatki nie uczestniczą w przepływie, więc nie aktualizujemy last_element
+                # Notatki nie uczestniczą w przepływie
                 continue
 
         # Wykonaj post-processing
@@ -349,12 +384,181 @@ class PlantUMLActivityParser:
         # Po zakończeniu parsowania, sprawdź i zaloguj statystyki i problemy
         self._debug_parser_results(connections)
 
-        return {
+        # KLUCZOWA NAPRAWA: Zwróć dane w formacie oczekiwanym przez GraphLayoutManager
+        result = {
             'title': self.title,
             'swimlanes': self.swimlanes,
-            'flow': self.flow
+            'flow': self.flow,
+            'logical_connections': self.logical_connections,  # ✅ DODANE!
+            'relationships': self._convert_logical_to_relationships()  # ✅ DODANE!
         }
+        
+        # DEBUG: Pokaż statystyki połączeń
+        if self.debug_options.get('connections'):
+            log_debug(f"\n=== FINALNE STATYSTYKI POŁĄCZEŃ ===")
+            log_debug(f"  logical_connections: {len(self.logical_connections)}")
+            log_debug(f"  relationships: {len(result['relationships'])}")
+
+        return result
     
+    def _assign_decision_labels(self):
+        """Przypisuje etykiety "tak" i "nie" do właściwych połączeń"""
+        
+        if self.debug_options.get('decisions'):
+            log_debug("🔧 Przypisywanie etykiet decision...")
+        
+        # Znajdź wszystkie decision_start
+        for i, element in enumerate(self.flow):
+            if element['type'] != 'decision_start':
+                continue
+                
+            decision_id = element['id']
+            then_label = element.get('then_label', 'tak')
+            
+            if self.debug_options.get('decisions'):
+                log_debug(f"   🎯 Przetwarzanie decyzji {decision_id[-6:]}: '{element.get('condition', '')}'")
+            
+            # ✅ POPRAWKA: Znajdź decision_else w CAŁYM flow[], nie przerywaj na decision_end
+            else_element = None
+            else_label = 'nie'
+            
+            # NOWA LOGIKA: Przeszukaj cały flow[] szukając decision_else z tym decision_id
+            for j, flow_element in enumerate(self.flow):
+                if (flow_element['type'] == 'decision_else' and 
+                    flow_element.get('decision_id') == decision_id):
+                    else_element = flow_element
+                    else_label = else_element.get('else_label', 'nie')
+                    
+                    if self.debug_options.get('decisions'):
+                        log_debug(f"   🔍 Znaleziono decision_else dla {decision_id[-6:]}: {else_element['id'][-6:]}")
+                    break
+            
+            # Jeśli nie znaleziono decision_else, poszukaj pierwszej aktywności po decision w gałęzi "nie"
+            if not else_element:
+                # Alternatywna strategia - znajdź pierwszą aktywność w gałęzi "nie"
+                for conn in self.logical_connections:
+                    if (conn['source_id'] == decision_id and 
+                        conn.get('label') == '' and  # Połączenie bez etykiety może być "nie"
+                        conn['target_id'] != element.get('then_target')):  # Nie jest to gałąź "tak"
+                        
+                        # Sprawdź czy cel to aktywność z "negatywnym" tekstem
+                        target_element = None
+                        for el in self.flow:
+                            if el.get('id') == conn['target_id']:
+                                target_element = el
+                                break
+                        
+                        if (target_element and target_element.get('type') == 'activity' and
+                            any(word in target_element.get('text', '').lower() 
+                                for word in ['negatywny', 'błąd', 'error'])):
+                            
+                            # Utwórz "wirtualny" decision_else
+                            else_element = {'id': conn['target_id'], 'virtual': True}
+                            else_label = 'nie'
+                            
+                            if self.debug_options.get('decisions'):
+                                log_debug(f"   🔍 Znaleziono wirtualną gałąź 'nie' dla {decision_id[-6:]}: {conn['target_id'][-6:]}")
+                            break
+            
+            # Znajdź pierwszą aktywność po decision_start (dla etykiety "tak")
+            next_activity = None
+            for j in range(i + 1, len(self.flow)):
+                if self.flow[j]['type'] in ['activity', 'control']:
+                    next_activity = self.flow[j]
+                    break
+                elif self.flow[j]['type'] == 'decision_else':
+                    break
+            
+            # ✅ PRZYPISZ ETYKIETY DO LOGICAL_CONNECTIONS
+            
+            # 1. Etykieta "tak" do następnej aktywności
+            if next_activity:
+                for conn in self.logical_connections:
+                    if (conn['source_id'] == decision_id and 
+                        conn['target_id'] == next_activity['id']):
+                        conn['label'] = then_label
+                        conn['condition'] = then_label
+                        
+                        if self.debug_options.get('connections'):
+                            log_debug(f"      ✅ Przypisano etykietę '{then_label}' do: {decision_id[-6:]} → {next_activity['id'][-6:]}")
+                        break
+            
+            # 2. Etykieta "nie" do decision_else lub wirtualnej gałęzi
+            if else_element:
+                target_id = else_element['id']
+                
+                for conn in self.logical_connections:
+                    if (conn['source_id'] == decision_id and 
+                        conn['target_id'] == target_id):
+                        conn['label'] = else_label
+                        conn['condition'] = else_label
+                        
+                        if self.debug_options.get('connections'):
+                            log_debug(f"      ✅ Przypisano etykietę '{else_label}' do: {decision_id[-6:]} → {target_id[-6:]}")
+                        break
+            else:
+                # Jeśli nadal nie ma else_element, znajdź wszystkie wychodzące połączenia z decision
+                # i przypisz "nie" do tego, które nie ma etykiety "tak"
+                for conn in self.logical_connections:
+                    if (conn['source_id'] == decision_id and 
+                        conn.get('label') == ''):  # Puste połączenie
+                        
+                        # Sprawdź czy to nie jest już przypisane jako "tak"
+                        is_yes_branch = False
+                        if next_activity and conn['target_id'] == next_activity['id']:
+                            is_yes_branch = True
+                        
+                        if not is_yes_branch:
+                            conn['label'] = 'nie'
+                            conn['condition'] = 'nie'
+                            
+                            if self.debug_options.get('connections'):
+                                log_debug(f"      ✅ Przypisano etykietę 'nie' do pozostałego połączenia: {decision_id[-6:]} → {conn['target_id'][-6:]}")
+                            break
+
+    def _register_logical_connection(self, source, target, label=""):
+        """Nie pomijaj decision_else"""
+        if source and target:
+            # Pomijamy połączenia strukturalne (swimlanes)
+            if source.get('type') == 'swimlane' or target.get('type') == 'swimlane':
+                return
+            
+            # ✅ POPRAWKA: Pomijamy tylko fork_again (decision_else jest potrzebne!)
+            if target.get('type') in ['fork_again']:  # ← Usuń 'decision_else'!
+                return
+                
+            connection = {
+                'source_id': source['id'],
+                'target_id': target['id'],
+                'label': label.strip(),
+                'source_type': source.get('type'),
+                'target_type': target.get('type'),
+                'condition': label.strip() if label else ""
+            }
+            
+            self.logical_connections.append(connection)
+            
+            if self.debug_options.get('connections'):
+                source_desc = self._get_element_description(source)
+                target_desc = self._get_element_description(target)
+                log_debug(f"Połączenie LOGICZNE: {source_desc} → {target_desc} ['{label}']")
+
+    def _convert_logical_to_relationships(self):
+        """NOWA METODA: Konwertuje logical_connections na format relationships"""
+        relationships = []
+        
+        for conn in self.logical_connections:
+            relationships.append({
+                'from': conn['source_id'],
+                'to': conn['target_id'],
+                'condition': conn.get('label', ''),
+                'type': 'control_flow',
+                'source_type': conn.get('source_type', ''),
+                'target_type': conn.get('target_type', '')
+            })
+        
+        return relationships
+
     def _get_element_description(self, element):
         """Tworzy czytelny opis elementu do logowania."""
         if not element:
@@ -399,12 +603,15 @@ class PlantUMLActivityParser:
                     conn_type += " (między torami)"
                 
                 log_debug(f"Połączenie {conn_type}: {source_desc} → {target_desc}")
-                print(f"Połączenie {conn_type}: {source_desc} → {target_desc}")
     
     def post_process(self):
         """
         Funkcja wykonywana po parsowaniu w celu wykrycia i naprawy problemów.
         """
+
+        # ✅ NOWE: Przypisz etykiety decision PRZED innymi operacjami
+        self._assign_decision_labels()
+
         # Oznacz niekompletne decyzje (bez gałęzi else)
         self._mark_incomplete_decisions()
         
@@ -477,15 +684,12 @@ class PlantUMLActivityParser:
         # Statystyki
         stats = self.get_statistics()
         log_debug("\n=== STATYSTYKI PARSOWANIA ===")
-        print("\n=== STATYSTYKI PARSOWANIA ===")
         
         for key, value in stats.items():
             log_debug(f"  {key}: {value}")
-            print(f"  {key}: {value}")
             
         # Wykrywanie potencjalnych problemów
         log_debug("\n=== POTENCJALNE PROBLEMY ===")
-        print("\n=== POTENCJALNE PROBLEMY ===")
         
         # 1. Sprawdź niezamknięte bloki strukturalne
         decisions_start = len([x for x in self.flow if x['type'] == 'decision_start'])
@@ -496,12 +700,10 @@ class PlantUMLActivityParser:
         if decisions_start != decisions_end:
             msg = f"Niezgodność bloków decision: start={decisions_start}, end={decisions_end}"
             log_warning(msg)
-            print(f"⚠️ {msg}")
             
         if forks_start != forks_end:
             msg = f"Niezgodność bloków fork: start={forks_start}, end={forks_end}"
             log_warning(msg)
-            print(f"⚠️ {msg}")
             
         # 2. Sprawdź czy wszystkie decyzje mają gałęzie else
         decision_elements = [i for i, x in enumerate(self.flow) if x['type'] == 'decision_start']
@@ -523,7 +725,6 @@ class PlantUMLActivityParser:
                 condition = self.flow[idx].get('condition', 'unknown')
                 msg = f"Decyzja '{condition}' nie ma gałęzi 'else'"
                 log_warning(msg)
-                print(f"⚠️ {msg}")
                 # Zaznacz tę decyzję jako niekompletną
                 self.flow[idx]['missing_else'] = True
         
@@ -531,20 +732,16 @@ class PlantUMLActivityParser:
         transitions_between_swimlanes = [x for x in self.flow if x.get('cross_swimlane')]
         if transitions_between_swimlanes:
             log_debug(f"Wykryto {len(transitions_between_swimlanes)} przejść między torami")
-            print(f"Wykryto {len(transitions_between_swimlanes)} przejść między torami")
         
         # 4. Sprawdź poprawność połączeń
         if connections:
             log_debug("\n=== ZAREJESTROWANE POŁĄCZENIA ===")
-            print("\n=== ZAREJESTROWANE POŁĄCZENIA ===")
             
             logical_connections = [c for c in connections if not c.get('structural', False)]
             structural_connections = [c for c in connections if c.get('structural', False)]
             
             log_debug(f"  Połączenia logiczne: {len(logical_connections)}")
             log_debug(f"  Połączenia strukturalne: {len(structural_connections)}")
-            print(f"  Połączenia logiczne: {len(logical_connections)}")
-            print(f"  Połączenia strukturalne: {len(structural_connections)}")
             
             for i, conn in enumerate(connections):
                 source = conn['source']
@@ -558,7 +755,6 @@ class PlantUMLActivityParser:
                     conn_type += " (między torami)"
                 
                 log_debug(f"  {i+1}. [{conn_type}] {source_desc} → {target_desc}")
-                print(f"  {i+1}. [{conn_type}] {source_desc} → {target_desc}")
 
     def get_statistics(self):
         """Zwraca statystyki diagramu."""
@@ -584,10 +780,9 @@ class PlantUMLActivityParser:
         return stats
 
 # --- Przykład użycia ---
-# Na końcu pliku, w sekcji "if __name__ == '__main__':"
 if __name__ == '__main__':
     import argparse
-    
+    setup_logger('plantuml_activity_parser.log')
     # Konfiguracja parsera argumentów
     parser = argparse.ArgumentParser(description='Parser diagramów aktywności PlantUML')
     parser.add_argument('input_file', nargs='?', default='diagram_aktywnosci_PlantUML.puml',
@@ -618,7 +813,7 @@ if __name__ == '__main__':
     else:
         output_file = f'test_activity_{timestamp}.json'
     
-    setup_logger("plantuml_activity_parser.log")
+    #setup_logger("plantuml_activity_parser.log")
     
     try:
         with open(args.input_file, 'r', encoding='utf-8') as f:
@@ -628,7 +823,6 @@ if __name__ == '__main__':
         parser = PlantUMLActivityParser(plantuml_code, debug_options)
         parsed_data = parser.parse()
 
-        print("--- Wynik Parsowania ---")
         log_info("Rozpoczęto parsowanie diagramu aktywności PlantUML.")
         log_info(f"Parsowanie zakończone. Tytuł: {parsed_data['title']}")
         
@@ -637,7 +831,6 @@ if __name__ == '__main__':
 
         # Wyświetl statystyki
         stats = parser.get_statistics()
-        print("\n--- Statystyki ---")
         log_info("Wyświetlanie statystyk diagramu aktywności.")
         log_info(f"Statystyki: {stats}")
         pprint.pprint(stats)
@@ -646,16 +839,12 @@ if __name__ == '__main__':
         import json
         with open(output_file, 'w', encoding='utf-8') as f:
             json.dump(parsed_data, f, indent=2, ensure_ascii=False)
-        print(f"\nWynik zapisany do: {output_file}")
         log_info(f"Wynik zapisany do: {output_file}")
         
     except FileNotFoundError:
-        print(f"Nie znaleziono pliku: {args.input_file}")
         log_error(f"Nie znaleziono pliku: {args.input_file}")
-        print("Utwórz przykładowy plik PlantUML lub podaj poprawną ścieżkę.")
         log_info("Utwórz przykładowy plik PlantUML lub podaj poprawną ścieżkę.")
     except Exception as e:
-        print(f"Wystąpił błąd: {e}")
         log_exception(f"Wystąpił błąd: {e}")
         import traceback
         traceback.print_exc()
