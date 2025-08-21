@@ -279,12 +279,12 @@ class GraphLayoutManager:
         self.layers: List[List[Node]] = []
         
         # Parametry layoutu
-        self.canvas_width = 1400
-        self.canvas_height = 1000
-        self.margin_x = 100
-        self.margin_y = 80
-        self.layer_spacing = 120  # Odstęp między warstwami
-        self.node_spacing = 80    # Minimalny odstęp między węzłami
+        self.canvas_width = 1600      # ← było 1400, zwiększone o 200px
+        self.canvas_height = 1400     # ← było 1000, zwiększone o 400px
+        self.margin_x = 120           # ← było 100, zwiększone o 20px
+        self.margin_y = 100           # ← było 80, zwiększone o 20px
+        self.layer_spacing = 200      # ← było 120, zwiększone o 80px (67% więcej)
+        self.node_spacing = 150   
         
         # Wyniki
         self.element_positions = {}
