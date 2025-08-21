@@ -11,11 +11,23 @@ import tempfile
 from typing import List, Dict, Tuple
 from dataclasses import dataclass
 from dotenv import load_dotenv 
-from logger_utils import setup_logger, log_info, log_error, log_exception
+import sys
+import re 
+import os
+
+
+parent_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
+sys.path.append(parent_dir)
+try: 
+    from logger_utils import setup_logger, log_info, log_error, log_exception
+except ImportError as e:
+    MODULES_LOADED = False
+    print(f"Import error: {e}")
+    sys.exit(1)
 
 load_dotenv()
 
-plantuml_jar_path = os.getenv("PLANTUML_JAR_PATH", "plantuml.jar")
+plantuml_jar_path = os.getenv("PLANTUML_JAR_PATH", "utils/plantuml/plantuml.jar")
 plantuml_generator_type = os.getenv("PLANTUML_GENERATOR_TYPE", "local")
 plantuml_url = os.getenv("PLANTUML_URL", "https://www.plantuml.com/plantuml")
 
@@ -483,6 +495,7 @@ if __name__ == "__main__":
     import sys
     import argparse
     from datetime import datetime
+
 
     # Konfiguracja parsera argumentów
     parser = argparse.ArgumentParser(description="Narzędzie do obsługi diagramów PlantUML")
