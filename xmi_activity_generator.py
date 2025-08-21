@@ -392,75 +392,149 @@ class XMIActivityGenerator:
                 
                 source_id = special_source_id if special_source_id else previous_node_id
                 
-                # ✅ KLUCZOWA POPRAWKA: Specjalna logika dla etykiet "nie"
+                # ✅ KLUCZOWA POPRAWKA: ZAINICJALIZUJ transition_label NA POCZĄTKU
                 transition_label = ""
                 
-                if hasattr(self, 'parsed_data') and 'logical_connections' in self.parsed_data:
+                # ✅ SPRAWDŹ next_transition_label NAJPIERW
+                if next_transition_label:
+                    transition_label = next_transition_label
+                    next_transition_label = ""  # Reset
                     
-                    # METODA 1: Znajdź przez mapowanie parser_id
+                    if self.debug_options.get('transitions'):
+                        log_debug(f"   ✅ UŻYTO next_transition_label: '{transition_label}'")
+                
+                # ✅ JEŚLI BRAK ETYKIETY, SZUKAJ W LOGICAL_CONNECTIONS
+                if not transition_label and hasattr(self, 'parsed_data') and 'logical_connections' in self.parsed_data:
+                    
+                    # Znajdź parser_id dla źródła i celu
                     source_parser_id = None
                     target_parser_id = None
                     
-                    # Znajdź parser_id dla źródła przejścia
                     for p_id, x_id in self.parser_id_to_xmi_id.items():
                         if x_id == source_id:
                             source_parser_id = p_id
                         if x_id == current_node_id:
                             target_parser_id = p_id
                     
-                    # Szukaj etykiety w logical_connections
+                    if self.debug_options.get('transitions', False):
+                        log_debug(f"🔍 Szukam etykiety dla: {source_parser_id[-6:] if source_parser_id else 'None'} → {target_parser_id[-6:] if target_parser_id else 'None'}")
+                    
                     if source_parser_id and target_parser_id:
+                        
+                        # METODA 1: Bezpośrednie wyszukiwanie (dla etykiet "tak")
                         for conn in self.parsed_data['logical_connections']:
                             if (conn.get('source_id') == source_parser_id and 
                                 conn.get('target_id') == target_parser_id):
                                 transition_label = conn.get('label', '')
                                 
-                                if self.debug_options.get('connections') and transition_label:
-                                    log_debug(f"   🏷️ BEZPOŚREDNIE: '{transition_label}' dla {source_parser_id[-6:]} → {target_parser_id[-6:]}")
+                                if self.debug_options.get('transitions') and transition_label:
+                                    log_debug(f"   ✅ BEZPOŚREDNIA etykieta '{transition_label}' znaleziona")
                                 break
-                    
-                    # ✅ NOWA METODA 2: Specjalna logika dla etykiet "nie" przez decision_else
-                    if not transition_label and source_parser_id:
-                        # Sprawdź czy źródło to DecisionNode
-                        source_node = self.id_map.get(source_id)
-                        if source_node is not None and source_node.attrib.get('xmi:type') == 'uml:DecisionNode':
-                            
-                            # Znajdź decision_else dla tej decyzji i sprawdź czy prowadzi do current_node
-                            for conn in self.parsed_data['logical_connections']:
-                                # Szukamy: decision_start → decision_else z etykietą "nie"
-                                if (conn.get('source_id') == source_parser_id and 
-                                    conn.get('label') == 'nie'):
-                                    
-                                    decision_else_id = conn.get('target_id')
-                                    
-                                    # Teraz znajdź co jest PO decision_else
-                                    for conn2 in self.parsed_data['logical_connections']:
-                                        if conn2.get('source_id') == decision_else_id:
-                                            # Sprawdź czy cel tego połączenia to nasz current_node
-                                            if conn2.get('target_id') == target_parser_id:
+                        
+                        # METODA 2: Specjalne wyszukiwanie dla etykiet "nie" przez decision_else
+                        if not transition_label:
+                            # Sprawdź czy źródło to DecisionNode
+                            source_node = self.id_map.get(source_id)
+                            if source_node is not None and source_node.attrib.get('xmi:type') == 'uml:DecisionNode':
+                                
+                                if self.debug_options.get('transitions'):
+                                    log_debug(f"   🔍 Źródło to DecisionNode - szukam etykiety 'nie'")
+                                
+                                # Znajdź wszystkie połączenia "nie" z tej decyzji
+                                for conn in self.parsed_data['logical_connections']:
+                                    if (conn.get('source_id') == source_parser_id and 
+                                        conn.get('label') == 'nie'):
+                                        
+                                        decision_else_id = conn.get('target_id')
+                                        
+                                        if self.debug_options.get('transitions'):
+                                            log_debug(f"   🎯 Znaleziono decision_else: {decision_else_id[-6:]}")
+                                        
+                                        # Sprawdź czy decision_else prowadzi do naszego celu
+                                        for conn2 in self.parsed_data['logical_connections']:
+                                            if (conn2.get('source_id') == decision_else_id and 
+                                                conn2.get('target_id') == target_parser_id):
+                                                
                                                 transition_label = 'nie'
                                                 
-                                                if self.debug_options.get('connections'):
-                                                    log_debug(f"   🏷️ PRZEZ DECISION_ELSE: 'nie' dla {source_parser_id[-6:]} → {target_parser_id[-6:]}")
+                                                if self.debug_options.get('transitions'):
+                                                    log_debug(f"   ✅ PRZEZ DECISION_ELSE: etykieta 'nie' dla {source_parser_id[-6:]} → {target_parser_id[-6:]}")
                                                 break
-                                    
-                                    if transition_label:
-                                        break
-                    
-                    if not transition_label and current_node_id in self.id_map:
-                        current_node = self.id_map[current_node_id]
-                        current_name = current_node.attrib.get('name', '').lower()
+                                        
+                                        if transition_label:
+                                            break
                         
-                        # Jeśli cel to aktywność negatywna, a źródło to decyzja
-                        if (source_id in self.id_map and 
-                            self.id_map[source_id].attrib.get('xmi:type') == 'uml:DecisionNode' and
-                            ('negatywny' in current_name or 'błąd' in current_name or 'error' in current_name)):
+                        # METODA 3: Fallback - sprawdź czy cel ma "negatywną" nazwę
+                        if not transition_label:
+                            source_node = self.id_map.get(source_id)
+                            target_node = self.id_map.get(current_node_id)
                             
-                            transition_label = 'nie'
-                            
-                            if self.debug_options.get('connections'):
-                                log_debug(f"   🏷️ PRZEZ NAZWĘ: 'nie' dla decyzji → aktywność negatywna")
+                            if (source_node is not None and source_node.attrib.get('xmi:type') == 'uml:DecisionNode' and 
+                                target_node is not None and target_node.attrib.get('name', '')):
+                                
+                                target_name = target_node.attrib.get('name', '').lower()
+                                
+                                # Sprawdź czy nazwa sugeruje gałąź "nie"
+                                negative_keywords = ['nieudana', 'zablokowane', 'błąd', 'error', 'przekazanie', 'ponowne']
+                                
+                                if any(keyword in target_name for keyword in negative_keywords):
+                                    transition_label = 'nie'
+                                    
+                                    if self.debug_options.get('transitions'):
+                                        log_debug(f"   ✅ PRZEZ NAZWĘ: etykieta 'nie' dla decyzji → '{target_name}'")
+                        
+                        # ✅ METODA 4: INTELIGENTNE WYKRYWANIE "NIE" - jeśli decyzja ma "tak", reszta to "nie"
+                        if not transition_label:
+                            source_node = self.id_map.get(source_id)
+                            if source_node is not None and source_node.attrib.get('xmi:type') == 'uml:DecisionNode':
+                                
+                                # Sprawdź czy decyzja ma już gałąź "tak"
+                                has_yes_branch = False
+                                for trans in self.transitions:
+                                    if trans['source_id'] == source_id and trans.get('name') == 'tak':
+                                        has_yes_branch = True
+                                        break
+                                
+                                # Jeśli ma gałąź "tak", to pozostałe gałęzie to prawdopodobnie "nie"
+                                if has_yes_branch:
+                                    target_node = self.id_map.get(current_node_id)
+                                    if target_node is not None:
+                                        target_name = target_node.attrib.get('name', '').lower()
+                                        
+                                        # Lista słów kluczowych wskazujących na gałąź "nie"
+                                        negative_indicators = [
+                                            'nieudana', 'nieudany', 'zablokowane', 'zablokowany',
+                                            'błąd', 'error', 'przekazanie', 'ponowne', 'ponowny',
+                                            'klient zrezygnował', 'proces nieudany', 'rezygnacja'
+                                        ]
+                                        
+                                        is_negative_flow = any(keyword in target_name for keyword in negative_indicators)
+                                        
+                                        # Sprawdź w danych parsera czy to był "decision_else"
+                                        is_decision_else = False
+                                        if hasattr(self, 'parsed_data') and 'flow' in self.parsed_data:
+                                            for flow_item in self.parsed_data['flow']:
+                                                if (flow_item.get('id') == target_parser_id and 
+                                                    flow_item.get('type') == 'decision_else'):
+                                                    is_decision_else = True
+                                                    break
+                                        
+                                        # Jeśli to negatywny przepływ lub decision_else, przypisz "nie"
+                                        if is_negative_flow or is_decision_else:
+                                            transition_label = 'nie'
+                                            
+                                            if self.debug_options.get('transitions'):
+                                                reason = "decision_else" if is_decision_else else "negatywne słowa kluczowe"
+                                                log_debug(f"   ✅ INTELIGENTNE WYKRYWANIE: etykieta 'nie' przez {reason}")
 
+                # ✅ FINALNE LOGOWANIE I DODANIE PRZEJŚCIA
+                if self.debug_options.get('transitions'):
+                    if transition_label:
+                        log_debug(f"🏷️ FINALNA etykieta: '{transition_label}' dla {source_id[-6:]} → {current_node_id[-6:]}")
+                    else:
+                        log_debug(f"🏷️ BRAK etykiety dla {source_id[-6:]} → {current_node_id[-6:]}")
+
+                # ✅ DODAJ PRZEJŚCIE Z ETYKIETĄ
                 self._add_transition(main_activity, source_id, current_node_id, name=transition_label)
             
             if current_node_id:
@@ -1800,16 +1874,16 @@ class XMIActivityGenerator:
         for i, (name, partition_id) in enumerate(self.swimlane_ids.items()):
             if hasattr(self, 'layout_manager') and hasattr(self.layout_manager, 'swimlanes_geometry'):
                 lane_geom = self.layout_manager.swimlanes_geometry.get(partition_id, {})
-                left = lane_geom.get('x', 100 + i * 280)
-                width = lane_geom.get('width', 250)
-                height = lane_geom.get('height', 1050)
-                top = lane_geom.get('y', 100)
+                left = lane_geom.get('x', 100 + i * 400)
+                width = lane_geom.get('width', 350)
+                height = lane_geom.get('height', 1450)
+                top = lane_geom.get('y', 50)
             else:
                 # Fallback pozycje
-                left = 100 + i * 280
-                width = 250
-                height = 1050
-                top = 100
+                left = 100 + i * 400
+                width = 350
+                height = 1450
+                top = 50
             
             right = left + width
             bottom = top + height
@@ -2259,140 +2333,142 @@ class XMIActivityGenerator:
             node = self.id_map[element_id]
             node_name = node.attrib.get('name', '').lower()
             
-            # POZYCJONOWANIE na podstawie typu i nazwy elementu:
+            # ✅ NOWE ZWIĘKSZONE ODSTĘPY (było 2px, teraz 50-80px):
+            
             if element_type in ['InitialNode', 'control'] and 'start' in str(node.attrib.get('action', '')).lower():
-                # START - środek, góra
-                x, y = 675, 100
-                width, height = 50, 50
+                # START - środek, góra z większym marginesem
+                x, y = 785, 80           # ← było 675,50 - przesunięte w prawo i wyżej
+                width, height = 60, 60   # ← było 50,50 - większe
                 
             elif element_type in ['ActivityFinalNode', 'control'] and any(action in str(node.attrib.get('action', '')).lower() for action in ['end', 'stop', 'final']):
-                # END - środek, dół
-                x, y = 675, 900
-                width, height = 50, 50
+                # END - środek, dół z większym marginesem
+                x, y = 785, 1400         # ← było 675,1100 - przesunięte i niżej
+                width, height = 60, 60   # ← było 50,50 - większe
                 
             elif element_type in ['DecisionNode', 'decision_start']:
-                # DECYZJE - środek, różne wysokości w zależności od nazwy
-                if 'składni' in node_name or 'składniowo' in node_name or 'syntax' in node_name:
-                    x, y = 675, 200  # Pierwsza decyzja - sprawdzanie składni
-                elif 'generowania' in node_name or 'wygenerowany' in node_name or 'generate' in node_name:
-                    x, y = 675, 400  # Druga decyzja - sprawdzanie generowania
-                elif 'zgodny' in node_name or 'oczekiwaniami' in node_name or 'wizualn' in node_name:
-                    x, y = 675, 600  # Trzecia decyzja - sprawdzanie zgodności/wizualne
+                # DECYZJE - środek, WIĘKSZE i bardziej regularne odstępy
+                if 'ocr' in node_name or 'odczyt' in node_name:
+                    x, y = 785, 400      # ← było 675,250 - większy odstęp od góry
+                elif 'biometr' in node_name or 'weryfikacja biometryczna' in node_name:
+                    x, y = 785, 700      # ← było 675,550 - większy odstęp
+                elif 'manualna' in node_name or 'weryfikacja manualna' in node_name:
+                    x, y = 785, 1000     # ← było 675,850 - większy odstęp
                 else:
-                    # Inne decyzje - rozłóż równomiernie
-                    decision_hash = hash(node_name) % 5
-                    x, y = 675, 250 + decision_hash * 150
-                width, height = 80, 80
+                    # Inne decyzje - równomierne rozmieszczenie
+                    decision_index = hash(node_name) % 3
+                    x, y = 785, 400 + decision_index * 300  # ← większe odstępy 300px
+                width, height = 100, 100  # ← było 80,80 - większe decyzje
                 
-            elif 'pozytywny' in node_name or 'sukces' in node_name or 'positive' in node_name:
-                # TESTY POZYTYWNE - główna ścieżka (środek)
-                if 'zapisanie sukcesu' in node_name or 'save success' in node_name:
-                    x, y = 675, 850   # Na końcu głównej ścieżki
-                else:
-                    x, y = 675, 750   # Potwierdzenie pozytywne
-                width, height = 140, 60
+            elif 'rozpoczęcie' in node_name or ('proces' in node_name and 'weryfikacji' in node_name):
+                # ROZPOCZĘCIE - główna ścieżka, większy odstęp
+                x, y = 785, 180          # ← było 675,150 - większy odstęp od START
+                width, height = 200, 80  # ← było 140,60 - szersze dla długiej nazwy
                 
-            elif 'negatywny' in node_name or 'błąd' in node_name or 'blad' in node_name or 'error' in node_name:
-                # TESTY NEGATYWNE - rozdziel według typu błędu
-                if 'składni' in node_name or 'syntax' in node_name:
-                    # Błędy składni - LEWA strona
-                    if 'raportowanie' in node_name:
-                        x, y = 200, 400   # Raportowanie błędów składni
-                    elif 'zapisanie' in node_name:
-                        x, y = 200, 500   # Zapisanie błędów składni
-                    else:
-                        x, y = 200, 300   # Wykrycie błędów składni
-                        
-                elif 'generowania' in node_name or 'generate' in node_name:
-                    # Błędy generowania - PRAWA strona
-                    if 'raportowanie' in node_name:
-                        x, y = 1200, 600  # Raportowanie błędów generowania
-                    elif 'zapisanie' in node_name:
-                        x, y = 1200, 700  # Zapisanie błędów generowania
-                    else:
-                        x, y = 1200, 500  # Wykrycie błędów generowania
-                        
-                elif 'wizualn' in node_name or 'visual' in node_name:
-                    # Błędy wizualne - LEWA strona (razem z błędami składni)
-                    if 'raportowanie' in node_name:
-                        x, y = 200, 800   # Raportowanie błędów wizualnych
-                    elif 'zapisanie' in node_name:
-                        x, y = 200, 900   # Zapisanie błędów wizualnych
-                    else:
-                        x, y = 200, 700   # Wykrycie błędów wizualnych
+            elif 'przesłanie' in node_name and 'zdjęcia' in node_name:
+                # PRZESŁANIE ZDJĘĆ - główna ścieżka
+                x, y = 785, 280          # ← było 675,200 - większy odstęp 100px
+                width, height = 220, 80  # ← szerokie dla długiej nazwy
+                
+            elif 'odczytywanie' in node_name and 'ocr' in node_name:
+                # OCR - główna ścieżka  
+                x, y = 785, 350          # ← większy odstęp 70px
+                width, height = 180, 70  # ← odpowiedni rozmiar
+                
+            elif 'porównanie' in node_name and ('selfie' in node_name or 'biometr' in node_name):
+                # BIOMETRIA - główna ścieżka
+                x, y = 785, 480          # ← odstęp 80px od decyzji OCR
+                width, height = 200, 80  # ← szerokie
+                
+            elif 'aktywacja' in node_name and 'konta' in node_name:
+                # AKTYWACJA KONTA - główna ścieżka (środek)
+                if 'pozytywny' in node_name or 'sukces' in node_name:
+                    x, y = 785, 1250     # ← było 675,1000 - niżej
                 else:
-                    # Inne błędy - LEWA strona domyślnie
-                    x, y = 200, 600
+                    x, y = 785, 800      # ← różne wysokości dla różnych aktywacji
+                width, height = 160, 70
+                
+            elif 'wysłanie' in node_name and 'powiadomienia' in node_name:
+                # POWIADOMIENIA - główna ścieżka
+                x, y = 785, 900          # ← większy odstęp
+                width, height = 180, 70
+                
+            elif 'otrzymanie' in node_name and 'powiadomienia' in node_name:
+                # OTRZYMANIE POWIADOMIEŃ - główna ścieżka
+                if 'aktywacji' in node_name:
+                    x, y = 785, 1000     # ← większy odstęp
+                elif 'zablokowaniu' in node_name:
+                    x, y = 450, 1300     # ← lewa strona dla błędów
+                else:
+                    x, y = 785, 1100
+                width, height = 200, 80  # ← szerokie dla długich nazw
+                
+            elif ('weryfikacja' in node_name and 'nieudana' in node_name) or 'przekazanie' in node_name:
+                # PRZEKAZANIE DO ANALITYKA - gałęzie "nie"
+                if 'automatyczna' in node_name:
+                    x, y = 1200, 600     # ← PRAWA strona dla pierwszej weryfikacji
+                    width, height = 220, 80
+                else:
+                    x, y = 1200, 900     # ← PRAWA strona, niżej
+                    width, height = 220, 80
                     
-                width, height = 140, 60
+            elif 'weryfikacja manualna' in node_name and node_name != 'weryfikacja manualna ok?':
+                # WERYFIKACJA MANUALNA - po przekazaniu
+                x, y = 1200, 750         # ← PRAWA strona
+                width, height = 180, 70
                 
-            elif 'raportowanie' in node_name or 'report' in node_name:
-                # RAPORTOWANIE - kontynuacja gałęzi błędów
-                if 'składni' in node_name:
-                    x, y = 200, 400   # Po błędach składni (lewa)
-                elif 'generowania' in node_name:
-                    x, y = 1200, 600  # Po błędach generowania (prawa)
-                elif 'wizualn' in node_name:
-                    x, y = 200, 800   # Po błędach wizualnych (lewa)
-                else:
-                    x, y = 400, 700   # Środek dla niespecyficznych raportów
-                width, height = 140, 60
+            elif 'konto zablokowane' in node_name:
+                # BLOKOWANIE KONTA - gałęzie "nie"
+                x, y = 1200, 1050        # ← PRAWA strona
+                width, height = 160, 70
                 
-            elif 'zapisanie' in node_name or 'save' in node_name:
-                # ZAPISANIE WYNIKÓW - końcowe akcje w każdej gałęzi
-                if 'sukces' in node_name or 'success' in node_name:
-                    x, y = 675, 850   # Sukces - główna ścieżka (środek)
-                elif 'składni' in node_name:
-                    x, y = 200, 500   # Błędy składni (lewa)
-                elif 'generowania' in node_name:
-                    x, y = 1200, 700  # Błędy generowania (prawa)
-                elif 'wizualny' in node_name:
-                    x, y = 200, 900   # Błędy wizualne (lewa)
-                else:
-                    x, y = 500, 800   # Inne zapisanie
-                width, height = 140, 60
+            elif 'ponowne przesłanie' in node_name:
+                # PONOWNE PRZESŁANIE - gałąź "nie" z pierwszej decyzji
+                x, y = 400, 500          # ← LEWA strona
+                width, height = 200, 80
                 
-            elif 'rozpoczęcie' in node_name or 'start' in node_name:
-                # ROZPOCZĘCIE - główna ścieżka, na początku akcji
-                x, y = 675, 160
-                width, height = 140, 60
+            elif 'proces nieudany' in node_name or 'klient zrezygnował' in node_name:
+                # REZYGNACJA KLIENTA - skrajna lewa
+                x, y = 400, 800          # ← LEWA strona
+                width, height = 180, 70
                 
-            elif 'wprowadzenie' in node_name or 'input' in node_name:
-                # WPROWADZENIE - główna ścieżka
-                x, y = 675, 250
-                width, height = 140, 60
-                
-            elif 'weryfikacja' in node_name or 'verify' in node_name:
-                # WERYFIKACJA - główna ścieżka
-                x, y = 675, 650
-                width, height = 140, 60
+            elif 'koniec procesu' in node_name:
+                # KONIEC PROCESU - po rezygnacji
+                x, y = 400, 900          # ← LEWA strona
+                width, height = 160, 70
                 
             elif element_type in ['MergeNode', 'JoinNode']:
-                # MERGE/JOIN - środek, automatyczne pozycjonowanie
-                x, y = 675, 800
-                width, height = 60, 20
+                # MERGE/JOIN - większe odstępy
+                x, y = 785, 1350         # ← było 675,1150 - niżej
+                width, height = 80, 30   # ← było 60,20 - większe
                 
             elif element_type in ['ForkNode']:
-                # FORK - środek
-                x, y = 675, 450
-                width, height = 60, 20
+                # FORK - większe odstępy
+                x, y = 785, 650          # ← było 675,600 - większy odstęp
+                width, height = 80, 30   # ← było 60,20 - większe
                 
             elif element_type == 'Comment':
-                # NOTATKI - z boku, nie przeszkadzają
-                x, y = 50, 300 + hash(element_id) % 6 * 100
-                width, height = 120, 60
+                # NOTATKI - WIĘKSZE rozmieszczenie z boku
+                x, y = 100, 500 + hash(element_id) % 4 * 200  # ← było *150, teraz *200
+                width, height = 150, 80  # ← było 120,60 - większe
                 
             else:
-                # POZOSTAŁE AKTYWNOŚCI - główna ścieżka (środek)
-                # Użyj hash nazwy dla deterministycznego, ale różnego pozycjonowania
-                y_offset = hash(node_name) % 8 * 80
-                x, y = 675, 300 + y_offset
-                width, height = 140, 60
+                # POZOSTAŁE AKTYWNOŚCI - inteligentne pozycjonowanie
+                if 'negatywny' in node_name or 'błąd' in node_name:
+                    # Aktywności negatywne - LEWA lub PRAWA strona
+                    if 'składni' in node_name or hash(node_name) % 2 == 0:
+                        x, y = 400, 600 + hash(node_name) % 5 * 150  # LEWA
+                    else:
+                        x, y = 1200, 600 + hash(node_name) % 5 * 150  # PRAWA
+                else:
+                    # Standardowe aktywności - główna ścieżka
+                    y_offset = hash(node_name) % 10 * 100     # ← było *120, zmniejszone
+                    x, y = 785, 500 + y_offset               # ← główna ścieżka
+                width, height = 180, 80  # ← było 140,60 - większe
             
             geometry = f"Left={x};Top={y};Right={x + width};Bottom={y + height};"
             
             if self.debug_options.get('positioning', False):
-                log_debug(f"🧠 POZYCJA INTELIGENTNA dla {element_id[-6:]} '{node_name[:25]}': {geometry}")
+                log_debug(f"📐 POZYCJA ULEPSZONA dla {element_id[-6:]} '{node_name[:30]}': {geometry}")
             
             return geometry
         
@@ -2494,7 +2570,7 @@ if __name__ == '__main__':
     
     # Utworzenie parsera argumentów z bezpośrednią obsługą plików PlantUML
     parser = argparse.ArgumentParser(description='Generator XMI dla diagramów aktywności')
-    parser.add_argument('input_file', nargs='?', default='diagram_aktywnosci_PlantUML.puml',
+    parser.add_argument('input_file', nargs='?', default='Diagram_aktywności_nowy.puml',
                         help='Plik wejściowy z kodem PlantUML')
     parser.add_argument('--output', '-o', 
                         help='Plik wyjściowy XMI (domyślnie: diagram_aktywnosci_[timestamp].xmi)')
@@ -2568,11 +2644,12 @@ if __name__ == '__main__':
         log_debug("🔄 Parsowanie kodu PlantUML...")
         parser = PlantUMLActivityParser(puml_content, parser_debug_options)
         parsed_data = parser.parse()
+        diagram_title = parsed_data.get("title", "Diagram aktywności")
         
         # Generowanie XMI
         log_debug("🔄 Generowanie XMI...")
         generator = XMIActivityGenerator(author="Generator XMI", debug_options=generator_debug_options)
-        xml_content = generator.generate_activity_diagram(diagram_name, parsed_data)
+        xml_content = generator.generate_activity_diagram(diagram_name = diagram_title, parsed_data=parsed_data)
         
         # Zapisz wynikowy XMI
         with open(output_filename, 'w', encoding='utf-8') as f:
