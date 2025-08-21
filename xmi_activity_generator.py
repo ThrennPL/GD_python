@@ -12,7 +12,7 @@ sys.path.append(parent_dir)
 # PODSTAWOWE IMPORTY - ZAWSZE POTRZEBNE
 try:
     from logger_utils import log_debug, log_info, log_error, log_exception, log_warning, setup_logger
-    from utils.plantuml.plantuml_activity_parser import PlantUMLActivityParser
+    from plantuml_activity_parser import PlantUMLActivityParser
 except ImportError as e:
     print(f"❌ Krytyczny błąd importu podstawowych modułów: {e}")
     sys.exit(1)
@@ -20,7 +20,7 @@ except ImportError as e:
 try:
     graph_layout_path = os.path.join(os.path.dirname(__file__), 'graph_layout_manager.py')
     if os.path.exists(graph_layout_path):
-        from utils.xmi.graph_layout_manager import GraphLayoutManager
+        from graph_layout_manager import GraphLayoutManager
         GRAPH_LAYOUT_AVAILABLE = True
         log_info("✅ GraphLayoutManager dostępny")
     else:
@@ -2563,7 +2563,7 @@ class XMIActivityGenerator:
 if __name__ == '__main__':
     import argparse
     import os
-    from utils.plantuml.plantuml_activity_parser import PlantUMLActivityParser
+    from plantuml_activity_parser import PlantUMLActivityParser
     from datetime import datetime
     
     setup_logger('xmi_activity_generator.log')
