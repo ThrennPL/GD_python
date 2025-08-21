@@ -1,4 +1,4 @@
-from logger_utils import log_info, log_error, log_debug, log_exception
+from utils.logger_utils import log_info, log_error, log_debug, log_exception
 import re
 import requests
 import os

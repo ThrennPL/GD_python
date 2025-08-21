@@ -19,22 +19,22 @@ load_dotenv()
 
 try:
     #from plantuml_to_ea import plantuml_to_xmi
-    from extract_code_from_response import extract_xml, extract_plantuml, extract_plantuml_blocks, is_valid_xml
-    from xml_highlighter import XMLHighlighter
+    from utils.extract_code_from_response import extract_xml, extract_plantuml, extract_plantuml_blocks, is_valid_xml
+    from utils.xmi.xml_highlighter import XMLHighlighter
     from input_validator import validate_input_text
     from api_thread import APICallThread
-    from plantuml_utils import plantuml_encode, identify_plantuml_diagram_type, fetch_plantuml_svg_local, fetch_plantuml_svg_www
-    from logger_utils import setup_logger, log_info, log_error, log_exception
-    from translations_pl import TRANSLATIONS as PL
-    from translations_en import TRANSLATIONS as EN
-    from plantuml_sequance_parser import PlantUMLSequenceParser
-    from xmi_sequance_generator import XMISequenceGenerator
-    from plantuml_class_parser import PlantUMLClassParser
-    from xmi_class_generator import XMIClassGenerator
-    from plantuml_activity_parser import PlantUMLActivityParser
-    from xmi_activity_generator import XMIActivityGenerator
-    from plantuml_component_parser import PlantUMLComponentParser
-    from xmi_component_generator import XMIComponentGenerator
+    from utils.plantuml.plantuml_utils import plantuml_encode, identify_plantuml_diagram_type, fetch_plantuml_svg_local, fetch_plantuml_svg_www
+    from utils.logger_utils import setup_logger, log_info, log_error, log_exception
+    from language.translations_pl import TRANSLATIONS as PL
+    from language.translations_en import TRANSLATIONS as EN
+    from utils.plantuml.plantuml_sequance_parser import PlantUMLSequenceParser
+    from utils.xmi.xmi_sequance_generator import XMISequenceGenerator
+    from utils.plantuml.plantuml_class_parser import PlantUMLClassParser
+    from utils.xmi.xmi_class_generator import XMIClassGenerator
+    from utils.plantuml.plantuml_activity_parser import PlantUMLActivityParser
+    from utils.xmi.xmi_activity_generator import XMIActivityGenerator
+    from utils.plantuml.plantuml_component_parser import PlantUMLComponentParser
+    from utils.xmi.xmi_component_generator import XMIComponentGenerator
 except ImportError as e:
     MODULES_LOADED = False
     print(f"Error importing modules: {e}")
@@ -57,9 +57,9 @@ def tr(key):
     return EN[key] if LANG == "en" else PL[key]
 
 if LANG == "en":
-    from prompt_templates_en import prompt_templates, get_diagram_specific_requirements
+    from prompts.prompt_templates_en import prompt_templates, get_diagram_specific_requirements
 else:
-    from prompt_templates_pl import prompt_templates, get_diagram_specific_requirements
+    from prompts.prompt_templates_pl import prompt_templates, get_diagram_specific_requirements
 
 class AIApp(QMainWindow):
     API_URL = os.getenv("API_URL", "http://localhost:1234//v1/models")
@@ -546,10 +546,10 @@ class AIApp(QMainWindow):
         
         try:
             if DB_PROVIDER == "mysql":
-                from mysql_connector import log_ai_interaction
+                from utils.db.mysql_connector import log_ai_interaction
                 subprocess.Popen([ sys.executable, 'mysql_connector.py', self.prompt_text, response_content, model_name])    
             elif DB_PROVIDER == "postgres":
-                from PostgreSQL_connector import log_ai_interaction
+                from utils.db.PostgreSQL_connector import log_ai_interaction
                 subprocess.Popen([ sys.executable, 'postgres_connector.py', self.prompt_text, response_content, model_name])
 
             #log_info(f"AI interaction logged in database successfully for model {model_name}")
@@ -770,7 +770,7 @@ class AIApp(QMainWindow):
                 # Aktualizacja przycisków
                 self.save_diagram_button.setEnabled(True)
                 
-                diagram_type = identify_plantuml_diagram_type(plantuml_code, LANG).lower()
+                diagram_type = identify_plantuml_diagram_type(self.plantuml_code, LANG).lower()
                 if any(word in diagram_type for word in ["klas", "sekwenc", "aktywno", "komponent", "class", "sequence", "activity", "component"]):
                     self.save_xmi_button.setEnabled(True)
                 else:

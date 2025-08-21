@@ -4,9 +4,18 @@ import uuid
 from datetime import datetime
 import re
 import os
+import sys
 from typing import Dict, List, Optional, Tuple
-from logger_utils import log_debug, log_info, log_error, log_exception, log_warning, setup_logger
-from plantuml_component_parser import PlantUMLComponentParser
+
+parent_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
+sys.path.append(parent_dir)
+
+try:
+    from utils.logger_utils import log_debug, log_info, log_error, log_exception, log_warning, setup_logger
+    from utils.plantuml.plantuml_component_parser import PlantUMLComponentParser
+except ImportError as e:
+    print(f"❌ Krytyczny błąd importu podstawowych modułów: {e}")
+    sys.exit(1)
 
 setup_logger('xmi_component_generator.log')
 
@@ -2126,7 +2135,7 @@ class XMIComponentGenerator:
 if __name__ == '__main__':
     import argparse
     import os
-    from plantuml_component_parser import PlantUMLComponentParser
+    from utils.plantuml.plantuml_component_parser import PlantUMLComponentParser
     from datetime import datetime
     
     setup_logger('xmi_component_generator.log')

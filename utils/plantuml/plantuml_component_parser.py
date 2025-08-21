@@ -3,7 +3,16 @@ import pprint
 import uuid
 from datetime import datetime
 import os
-from logger_utils import log_debug, log_info, log_error, log_exception, log_warning, setup_logger
+import sys
+
+parent_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
+sys.path.append(parent_dir)
+
+try:
+    from utils.logger_utils import log_debug, log_info, log_error, log_exception, log_warning, setup_logger
+except ImportError as e:
+    print(f"❌ Krytyczny błąd importu podstawowych modułów: {e}")
+    sys.exit(1)
 
 setup_logger("plantuml_component_parser.log")
 

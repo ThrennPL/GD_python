@@ -1,5 +1,6 @@
-from translations_pl import TRANSLATIONS as PL
-from translations_en import TRANSLATIONS as EN
+
+from language.translations_pl import TRANSLATIONS as PL
+from language.translations_en import TRANSLATIONS as EN
 
 def tr(key, LANG="pl"):
     return EN[key] if LANG == "en" else PL[key]

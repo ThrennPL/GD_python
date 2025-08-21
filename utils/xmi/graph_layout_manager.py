@@ -9,7 +9,7 @@ parent_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')
 sys.path.append(parent_dir)
 
 try:
-    from logger_utils import log_debug, log_info, log_error, log_exception, log_warning
+    from utils.logger_utils import log_debug, log_info, log_error, log_exception, log_warning
 except ImportError:
     def log_debug(msg): print(f"DEBUG: {msg}")
     def log_info(msg): print(f"INFO: {msg}")

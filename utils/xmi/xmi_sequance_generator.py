@@ -1,8 +1,17 @@
 import xml.etree.ElementTree as ET
 import uuid
-from plantuml_sequance_parser import PlantUMLSequenceParser
 from datetime import datetime
+import os
+import sys
 
+parent_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
+sys.path.append(parent_dir)
+
+try:
+    from utils.plantuml.plantuml_sequance_parser import PlantUMLSequenceParser
+except ImportError as e:
+    print(f"❌ Krytyczny błąd importu podstawowych modułów: {e}")
+    sys.exit(1)
 
 class XMISequenceGenerator:
     

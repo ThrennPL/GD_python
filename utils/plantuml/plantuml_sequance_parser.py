@@ -1,9 +1,19 @@
 import re
 import pprint
 from datetime import datetime
-from logger_utils import log_debug, log_info, log_error, log_exception, setup_logger
 import unittest
 import os
+import sys
+
+parent_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
+sys.path.append(parent_dir)
+
+# PODSTAWOWE IMPORTY - ZAWSZE POTRZEBNE
+try:
+    from utils.logger_utils import log_debug, log_info, log_error, log_exception, setup_logger
+except ImportError as e:
+    print(f"❌ Krytyczny błąd importu podstawowych modułów: {e}")
+    sys.exit(1)
 
 setup_logger('plantuml_sequance_parser.log')
 

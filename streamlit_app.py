@@ -7,8 +7,8 @@ import base64
 from io import BytesIO
 import os
 from dotenv import load_dotenv
-from translations_pl import TRANSLATIONS as PL
-from translations_en import TRANSLATIONS as EN
+from language.translations_pl import TRANSLATIONS as PL
+from language.translations_en import TRANSLATIONS as EN
 
 
 
@@ -22,23 +22,23 @@ def tr(key):
 
 # Try to import custom modules with error handling
 try:
-    from extract_code_from_response import extract_xml, extract_plantuml, extract_plantuml_blocks, is_valid_xml
+    from utils.extract_code_from_response import extract_xml, extract_plantuml, extract_plantuml_blocks, is_valid_xml
     from input_validator import validate_input_text
-    from plantuml_utils import plantuml_encode, identify_plantuml_diagram_type, fetch_plantuml_svg_local, fetch_plantuml_svg_www
+    from utils.plantuml.plantuml_utils import plantuml_encode, identify_plantuml_diagram_type, fetch_plantuml_svg_local, fetch_plantuml_svg_www
     if LANG == "en":
-        from prompt_templates_en import prompt_templates, get_diagram_specific_requirements
+        from prompts.prompt_templates_en import prompt_templates, get_diagram_specific_requirements
     else:
-        from prompt_templates_pl import prompt_templates, get_diagram_specific_requirements
-    from logger_utils import setup_logger, log_info, log_error, log_exception, log_debug
+        from prompts.prompt_templates_pl import prompt_templates, get_diagram_specific_requirements
+    from utils.logger_utils import setup_logger, log_info, log_error, log_exception, log_debug
     #from plantuml_to_ea import plantuml_to_xmi
-    from plantuml_sequance_parser import PlantUMLSequenceParser
-    from xmi_sequance_generator import XMISequenceGenerator
-    from plantuml_class_parser import PlantUMLClassParser
-    from xmi_class_generator import XMIClassGenerator
-    from plantuml_activity_parser import PlantUMLActivityParser
-    from xmi_activity_generator import XMIActivityGenerator 
-    from plantuml_component_parser import PlantUMLComponentParser
-    from xmi_component_generator import XMIComponentGenerator
+    from utils.plantuml.plantuml_sequance_parser import PlantUMLSequenceParser
+    from utils.xmi.xmi_sequance_generator import XMISequenceGenerator
+    from utils.plantuml.plantuml_class_parser import PlantUMLClassParser
+    from utils.xmi.xmi_class_generator import XMIClassGenerator
+    from utils.plantuml.plantuml_activity_parser import PlantUMLActivityParser
+    from utils.xmi.xmi_activity_generator import XMIActivityGenerator 
+    from utils.plantuml.plantuml_component_parser import PlantUMLComponentParser
+    from utils.xmi.xmi_component_generator import XMIComponentGenerator
     MODULES_LOADED = True
 except ImportError as e:
     MODULES_LOADED = False
@@ -166,10 +166,10 @@ def call_api(prompt, model_name):
                 content = str(response)
             if os.getenv("DB_HOST") is not None:
                 if os.getenv("DB_PROVIDER") == "mysql":
-                    from mysql_connector import log_ai_interaction
+                    from utils.db.mysql_connector import log_ai_interaction
                     log_ai_interaction(request=prompt, response=content, model_name=model_name, status_code=None)
                 elif os.getenv("DB_PROVIDER") == "postgresql":
-                    from PostgreSQL_connector import log_ai_interaction
+                    from utils.db.PostgreSQL_connector import log_ai_interaction
                     log_ai_interaction(request=prompt, response=content, model_name=model_name, status_code=None)
             return content
         except Exception as e:

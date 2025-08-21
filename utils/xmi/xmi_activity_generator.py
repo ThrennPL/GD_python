@@ -11,8 +11,8 @@ sys.path.append(parent_dir)
 
 # PODSTAWOWE IMPORTY - ZAWSZE POTRZEBNE
 try:
-    from logger_utils import log_debug, log_info, log_error, log_exception, log_warning, setup_logger
-    from plantuml_activity_parser import PlantUMLActivityParser
+    from utils.plantuml.plantuml_activity_parser import PlantUMLActivityParser
+    from utils.logger_utils import log_debug, log_info, log_error, log_exception, log_warning, setup_logger
 except ImportError as e:
     print(f"❌ Krytyczny błąd importu podstawowych modułów: {e}")
     sys.exit(1)
@@ -20,7 +20,7 @@ except ImportError as e:
 try:
     graph_layout_path = os.path.join(os.path.dirname(__file__), 'graph_layout_manager.py')
     if os.path.exists(graph_layout_path):
-        from graph_layout_manager import GraphLayoutManager
+        from utils.xmi.graph_layout_manager import GraphLayoutManager
         GRAPH_LAYOUT_AVAILABLE = True
         log_info("✅ GraphLayoutManager dostępny")
     else:
@@ -2098,23 +2098,7 @@ class XMIActivityGenerator:
             except Exception as e:
                 if self.debug_options.get('positioning', False):
                     log_debug(f"❌ Błąd GraphLayoutManager: {e}")
-        
-        # PRIORYTET 2: Stary LayoutManager (jeśli dostępny)
-        if OLD_LAYOUT_AVAILABLE:
-            try:
-                layout_manager = LayoutManager(debug=self.debug_options.get('positioning', False))
                 
-                if self.debug_options.get('positioning', False):
-                    log_debug("✅ Użyto starego LayoutManager")
-                
-                # Dodaj metody kompatybilności
-                self._add_compatibility_methods(layout_manager)
-                return layout_manager
-                
-            except Exception as e:
-                if self.debug_options.get('positioning', False):
-                    log_debug(f"❌ Błąd starego LayoutManager: {e}")
-        
         # PRIORYTET 3: Awaryjny Layout Manager
         if self.debug_options.get('positioning', False):
             log_debug("⚠️ Tworzę awaryjny Layout Manager")
@@ -2563,7 +2547,7 @@ class XMIActivityGenerator:
 if __name__ == '__main__':
     import argparse
     import os
-    from plantuml_activity_parser import PlantUMLActivityParser
+    from utils.plantuml.plantuml_activity_parser import PlantUMLActivityParser
     from datetime import datetime
     
     setup_logger('xmi_activity_generator.log')

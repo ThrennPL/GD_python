@@ -2,14 +2,23 @@ import xml.dom.minidom
 import xml.etree.ElementTree as ET
 from datetime import datetime
 import uuid
+import sys
 import os
 import re
 from typing import Dict, List, Optional, Tuple
-from plantuml_model import UMLClass, UMLRelation, UMLEnum, UMLNote
-from plantuml_class_parser import PlantUMLClassParser
-from logger_utils import log_info, log_error, log_exception, log_debug, setup_logger, log_warning
-from translations_pl import TRANSLATIONS as PL
-from translations_en import TRANSLATIONS as EN
+
+parent_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
+sys.path.append(parent_dir)
+
+try:
+    from utils.plantuml.plantuml_model import UMLClass, UMLRelation, UMLEnum, UMLNote
+    from utils.plantuml.plantuml_class_parser import PlantUMLClassParser
+    from utils.logger_utils import log_info, log_error, log_exception, log_debug, setup_logger, log_warning
+    from language.translations_pl import TRANSLATIONS as PL
+    from language.translations_en import TRANSLATIONS as EN
+except ImportError as e:
+    print(f"❌ Krytyczny błąd importu podstawowych modułów: {e}")
+    sys.exit(1)
 
 
 setup_logger()
@@ -1473,7 +1482,7 @@ class XMIClassGenerator:
         
 if __name__ == "__main__":
     # Przykład użycia
-    from plantuml_class_parser import PlantUMLClassParser
+    from utils.plantuml.plantuml_class_parser import PlantUMLClassParser
     from datetime import datetime
     
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")

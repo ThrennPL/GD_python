@@ -1,6 +1,13 @@
-from plantuml_model import UMLClass, UMLRelation, UMLEnum, UMLNote
-from logger_utils import setup_logger, log_info, log_error, log_debug, log_exception
 import re
+import sys
+
+try:
+    from utils.plantuml.plantuml_model import UMLClass, UMLRelation, UMLEnum, UMLNote
+    from utils.logger_utils import setup_logger, log_info, log_error, log_debug, log_exception
+except ImportError as e:
+    print(f"❌ Krytyczny błąd importu podstawowych modułów: {e}")
+    sys.exit(1)
+
 
 setup_logger('plantuml_class_parser.log')
 

@@ -19,7 +19,7 @@ import os
 parent_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
 sys.path.append(parent_dir)
 try: 
-    from logger_utils import setup_logger, log_info, log_error, log_exception
+    from utils.logger_utils import setup_logger, log_info, log_error, log_exception
 except ImportError as e:
     MODULES_LOADED = False
     print(f"Import error: {e}")
