@@ -35,6 +35,7 @@ try:
     from utils.xmi.xmi_activity_generator import XMIActivityGenerator
     from utils.plantuml.plantuml_component_parser import PlantUMLComponentParser
     from utils.xmi.xmi_component_generator import XMIComponentGenerator
+    from utils.metrics.model_response_metrics import  ModelResponseMetrics, measure_response_time
 except ImportError as e:
     MODULES_LOADED = False
     print(f"Error importing modules: {e}")
@@ -64,6 +65,7 @@ else:
 class AIApp(QMainWindow):
     API_URL = os.getenv("API_URL", "http://localhost:1234//v1/models")
     XML_BLOCK_PATTERN = r"```xml\n(.*?)\n```"
+    ModelResponseMetrics.initialize(metrics_file="model_metrics.jsonl")
     
     def __init__(self):
         super().__init__()
@@ -318,6 +320,7 @@ class AIApp(QMainWindow):
             self.model_selector.addItem("No models available")
         self.model_selector.setCurrentText(API_DEFAULT_MODEL)  # Ustaw domyślny model
     
+    @measure_response_time()
     def get_loaded_models(self):
         """Pobiera listę modeli z API, obsługuje OpenAI i Gemini."""
         #MODEL_PROVIDER = os.getenv("MODEL_PROVIDER", "gemini")
@@ -353,6 +356,7 @@ class AIApp(QMainWindow):
             log_exception(error_msg)
             return None
 
+    @measure_response_time()
     def start_api_thread(self, prompt, model_name=None):
         self.prompt_text = prompt
 
@@ -536,6 +540,7 @@ class AIApp(QMainWindow):
         selected_domain = "banking"
         return tr(f"domain_{selected_domain}")
     
+
     def handle_api_response(self, model_name, response_content):
         """Obsługuje odpowiedź z API."""
         if hasattr(self, "verification_timer") and self.verification_timer.isActive():
@@ -1184,6 +1189,7 @@ class AIApp(QMainWindow):
             self.append_to_chat("System", error_msg)
             self.send_to_api_custom_prompt(prompt)
 
+    @measure_response_time
     def send_to_api_custom_prompt(self, prompt):
         self.send_button.setEnabled(False)
         self.start_api_thread(prompt)

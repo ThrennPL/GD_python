@@ -14,7 +14,7 @@ parent_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')
 sys.path.append(parent_dir)
 
 try:
-    from logger_utils import log_debug, log_info, log_error, log_warning
+    from utils.logger_utils import log_debug, log_info, log_error, log_warning
 except ImportError:
     def log_debug(msg): print(f"DEBUG: {msg}")
     def log_info(msg): print(f"INFO: {msg}")
@@ -57,19 +57,41 @@ class AILayoutManager:
     def _setup_ai_api(self):
         """Konfiguruje API do prawdziwego modelu AI - WYMAGANE"""
         try:
+            # Znajdź ścieżkę do katalogu głównego projektu
+            parent_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
+            sys.path.append(parent_dir)
+            
             from dotenv import load_dotenv
-            import os
-            load_dotenv()
             
-            self.api_url = os.getenv("API_CHAT_URL", "https://test/v1/chat/completions")
-            self.api_key = os.getenv("API_KEY", "test")
-            self.default_model = os.getenv("API_DEFAULT_MODEL", "gemma3-12b-it")
+            # Wskaż dokładną ścieżkę do pliku .env w głównym katalogu
+            dotenv_path = os.path.join(parent_dir, '.env')
             
+            # Sprawdź czy plik istnieje przed załadowaniem
+            if os.path.exists(dotenv_path):
+                if self.debug_ai_communication:
+                    log_info(f"Ładowanie konfiguracji z: {dotenv_path}")
+                load_dotenv(dotenv_path=dotenv_path)
+            else:
+                log_warning(f"Plik .env nie znaleziony w {dotenv_path}")
+                # Próba alternatywnej ścieżki (bieżący katalog)
+                alt_path = os.path.join(os.getcwd(), '.env')
+                if os.path.exists(alt_path):
+                    log_info(f"Ładowanie konfiguracji z alternatywnej ścieżki: {alt_path}")
+                    load_dotenv(dotenv_path=alt_path)
+                else:
+                    log_error(f"Nie znaleziono pliku .env ani w {dotenv_path}, ani w {alt_path}")
+            
+            # Pobierz zmienne środowiskowe z załadowanego pliku .env
+            self.api_url = os.getenv("CHAT_URL", "https://generativelanguage.googleapis.com/v1beta/chat/completions")
+            self.api_key = os.getenv("API_KEY", "")
+            self.default_model = os.getenv("API_DEFAULT_MODEL", "gemini-2.0-flash")
+            self.model_provider = os.getenv("MODEL_PROVIDER", "gemini")
+
             if self.debug_ai_communication:
                 log_info(f"🤖 REAL AI CONFIG:")
                 log_info(f"   URL: {self.api_url}")
                 log_info(f"   Model: {self.default_model}")
-                log_info(f"   Key: {self.api_key[:10]}...")
+                log_info(f"   Key: {self.api_key[:10]}..." if self.api_key else "   Key: <brak>")
                 
         except ImportError:
             log_error("❌ dotenv not installed - install with: pip install python-dotenv")
@@ -470,67 +492,93 @@ class AILayoutManager:
         return positions
 
     def _call_real_ai_model(self, prompt: str, context: str = "") -> str:
-        """Wywołuje prawdziwy model AI przez API - ULEPSZONA WERSJA Z BATCH SUPPORT"""
+        """Wywołuje prawdziwy model AI przez API - z obsługą różnych dostawców"""
         
         try:
-            import requests
-            
-            headers = {
-                "Authorization": f"Bearer {self.api_key}",
-                "Content-Type": "application/json"
-            }
-            
-            # DOSTOSOWANE LIMITY WEDŁUG KONTEKSTU
+            # Dostosowane limity według kontekstu
             if "POSITION_BATCH" in context:
                 max_tokens = 2000    # Więcej tokenów dla grup pozycji
                 temperature = 0.05   # Bardzo deterministyczne dla pozycji
                 timeout = 240        # Krótszy timeout dla małych grup
             elif context == "POSITION_CALCULATION":
-                max_tokens = 2500    # Jeszcze więcej dla dużych grup (backward compatibility)
+                max_tokens = 2500    # Jeszcze więcej dla dużych grup
                 temperature = 0.05
                 timeout = 300
-            elif context == "SEMANTIC_BATCH" in context:
-                max_tokens = 1500    # Standardowe dla semantyki
-                temperature = 0.1
-                timeout = 200
             else:
                 max_tokens = 1500
                 temperature = 0.1
                 timeout = 300
-            
-            payload = {
-                "model": self.default_model,
-                "messages": [{"role": "user", "content": prompt}],
-                "max_tokens": max_tokens,
-                "temperature": temperature
-            }
-            
+                
             if self.debug_ai_communication:
                 log_info(f"🤖 REAL AI API CALL:")
-                log_info(f"📤 URL: {self.api_url}")
+                log_info(f"📤 MODEL PROVIDER: {self.model_provider}")
                 log_info(f"📤 MODEL: {self.default_model}")
                 log_info(f"📤 MAX_TOKENS: {max_tokens}")
                 log_info(f"📤 TEMPERATURE: {temperature}")
-                log_info(f"📤 TIMEOUT: {timeout}s")
-                log_info(f"📤 PROMPT LENGTH: {len(prompt)} chars")
                 log_info(f"📤 CONTEXT: {context}")
+                log_info(f"📤 PROMPT LENGTH: {len(prompt)} chars")
             
-            # Wywołanie z odpowiednim timeout
-            response = requests.post(self.api_url, headers=headers, json=payload, timeout=timeout)
-            
-            if response.status_code == 200:
-                result = response.json()
-                ai_response = result.get('choices', [{}])[0].get('message', {}).get('content', '')
+            # Obsługa różnych dostawców modeli
+            if self.model_provider == "gemini":
+                import google.generativeai as genai
                 
-                if self.debug_ai_communication:
-                    log_info(f"📥 AI RESPONSE: {len(ai_response)} chars")
-                    log_info(f"📥 PREVIEW: {ai_response[:200]}...")
+                genai.configure(api_key=self.api_key)
+                model = genai.GenerativeModel(self.default_model)
                 
-                return ai_response
-            else:
-                log_error(f"AI API Error: {response.status_code} - {response.text}")
-                raise Exception(f"AI API returned {response.status_code}: {response.text}")
+                # Przygotuj treść jako wiadomość
+                generation_config = {
+                    "temperature": temperature,
+                    "max_output_tokens": max_tokens,
+                }
                 
+                try:
+                    response = model.generate_content(
+                        prompt, 
+                        generation_config=generation_config
+                    )
+                    ai_response = response.text if hasattr(response, "text") else str(response)
+                    
+                    if self.debug_ai_communication:
+                        log_info(f"📥 GEMINI RESPONSE: {len(ai_response)} chars")
+                        log_info(f"📥 PREVIEW: {ai_response[:300]}...")
+                    
+                    return ai_response
+                    
+                except Exception as e:
+                    log_error(f"Gemini API error: {e}")
+                    raise Exception(f"Gemini API error: {e}")
+                    
+            else:  # openai lub local
+                import requests
+                
+                headers = {
+                    "Authorization": f"Bearer {self.api_key}",
+                    "Content-Type": "application/json"
+                }
+                
+                payload = {
+                    "model": self.default_model,
+                    "messages": [{"role": "user", "content": prompt}],
+                    "max_tokens": max_tokens,
+                    "temperature": temperature
+                }
+                
+                # Wywołanie z odpowiednim timeout
+                response = requests.post(self.api_url, headers=headers, json=payload, timeout=timeout)
+                
+                if response.status_code == 200:
+                    result = response.json()
+                    ai_response = result.get('choices', [{}])[0].get('message', {}).get('content', '')
+                    
+                    if self.debug_ai_communication:
+                        log_info(f"📥 API RESPONSE: {len(ai_response)} chars")
+                        log_info(f"📥 PREVIEW: {ai_response[:300]}...")
+                    
+                    return ai_response
+                else:
+                    log_error(f"AI API Error: {response.status_code} - {response.text}")
+                    raise Exception(f"AI API returned {response.status_code}: {response.text}")
+                    
         except Exception as e:
             log_error(f"AI API Exception: {e}")
             raise Exception(f"Failed to call AI API: {e}")
@@ -605,55 +653,6 @@ class AILayoutManager:
         
         log_info(f"✅ KROK 5 COMPLETED: {len(corrections)} pozycji poprawionych")
         return element_positions
-    
-    def _call_real_ai_model(self, prompt: str, context: str = "") -> str:
-        """Wywołuje prawdziwy model AI przez API"""
-        
-        try:
-            import requests
-            
-            headers = {
-                "Authorization": f"Bearer {self.api_key}",
-                "Content-Type": "application/json"
-            }
-            
-            payload = {
-                "model": self.default_model,
-                "messages": [{"role": "user", "content": prompt}],
-                "max_tokens": 1500,
-                "temperature": 0.1
-            }
-            
-            if self.debug_ai_communication:
-                log_info(f"🤖 REAL AI API CALL:")
-                log_info(f"📤 URL: {self.api_url}")
-                log_info(f"📤 MODEL: {self.default_model}")
-                log_info(f"📤 PROMPT LENGTH: {len(prompt)} chars")
-                log_info(f"📤 CONTEXT: {context}")
-            
-            # Zwiększony timeout dla krokowych zapytań
-            response = requests.post(self.api_url, headers=headers, json=payload, timeout=1000)
-            
-            if response.status_code == 200:
-                result = response.json()
-                ai_response = result.get('choices', [{}])[0].get('message', {}).get('content', '')
-                
-                if self.debug_ai_communication:
-                    log_info(f"📥 AI RESPONSE: {len(ai_response)} chars")
-                    log_info(f"📥 PREVIEW: {ai_response[:300]}...")
-                
-                return ai_response
-            else:
-                log_error(f"AI API Error: {response.status_code} - {response.text}")
-                raise Exception(f"AI API returned {response.status_code}: {response.text}")
-                
-        except Exception as e:
-            log_error(f"AI API Exception: {e}")
-            raise Exception(f"Failed to call AI API: {e}")
-    
-    # ============================================================================
-    # PARSING METHODS - Parsują odpowiedzi AI z każdego kroku
-    # ============================================================================
     
     def _parse_semantic_response(self, ai_response: str, batch_elements: List) -> Dict:
         """Parsuje odpowiedź z kroku 1 (analiza semantyczna)"""

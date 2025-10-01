@@ -11,7 +11,7 @@ sys.path.append(parent_dir)
 
 # PODSTAWOWE IMPORTY - ZAWSZE POTRZEBNE
 try:
-    from logger_utils import log_debug, log_info, log_error, log_exception, log_warning, setup_logger
+    from utils.logger_utils import log_debug, log_info, log_error, log_exception, log_warning, setup_logger
     from utils.plantuml.plantuml_activity_parser import PlantUMLActivityParser
 except ImportError as e:
     print(f"❌ Krytyczny błąd importu podstawowych modułów: {e}")
@@ -2848,7 +2848,7 @@ if __name__ == '__main__':
     
     # Utworzenie parsera argumentów z bezpośrednią obsługą plików PlantUML
     parser = argparse.ArgumentParser(description='Generator XMI dla diagramów aktywności')
-    parser.add_argument('input_file', nargs='?', default='Diagram_aktywności_z_aktorami.puml',
+    parser.add_argument('input_file', nargs='?', default='Diagram_aktywności_nowy.puml',
                         help='Plik wejściowy z kodem PlantUML')
     parser.add_argument('--output', '-o', 
                         help='Plik wyjściowy XMI (domyślnie: diagram_aktywnosci_[timestamp].xmi)')

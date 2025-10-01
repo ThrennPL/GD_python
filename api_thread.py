@@ -1,4 +1,5 @@
 from utils.logger_utils import log_info, log_error, log_debug, log_exception
+from utils.metrics.model_response_metrics import measure_response_time, ModelResponseMetrics
 import re
 import requests
 import os
@@ -19,6 +20,7 @@ class APICallThread(QThread):
         self.model_name = model_name
         self.provider = provider
 
+    @measure_response_time
     def run(self):
         """Wysyła żądanie API i emituje odpowiedź."""
         # zapisz w logu treść wysyłanego promptu

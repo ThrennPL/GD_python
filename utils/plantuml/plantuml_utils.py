@@ -486,7 +486,8 @@ def fetch_plantuml_svg_local(plantuml_code: str, plantuml_jar_path: str = "plant
         # Dodatkowo można sprawdzać stderr na obecność "Error" lub typowych fragmentów
         error_msg = ""
         log_info(f"Plik SVG został pomyślnie wygenerowany i zapisany jako: {svg_path}")
-        log_info(f"PlantUML stdout: {stdout_jar.strip()}")
+        if stdout_jar.strip() != "":
+            log_info(f"PlantUML stdout: {stdout_jar.strip()}")
 
     return svg_path, error_msg
 
