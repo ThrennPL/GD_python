@@ -6,6 +6,7 @@ output*.*
 *.log*
 *.puml
 *.json
+*.jsonl
 =======
 output*.*
 *.svg
@@ -16,4 +17,5 @@ output*.*
 .env
 app.log.*
 *.json
+*.jsonl
 >>>>>>> 46631394621d974d34f5f8bfea7e8b1784a2f083

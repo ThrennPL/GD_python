@@ -250,7 +250,7 @@ class XMIActivityGenerator:
                 decision_parser_id in self.layout_manager.element_positions):
                 
                 decision_pos = self.layout_manager.element_positions[decision_parser_id]
-                log_debug(f"   📍 Pozycja decyzji: row={decision_pos['row']}, column={decision_pos['column']}, X={decision_pos['x']}, Y={decision_pos['y']}")
+                log_debug(f"   📍 Pozycja decyzji: row={decision_pos.get('grid_row', 'N/A')}, column={decision_pos.get('grid_col', 'N/A')}, X={decision_pos['x']}, Y={decision_pos['y']}")
             else:
                 log_debug(f"   ⚠️ Brak pozycji dla decyzji (parser_id: {decision_parser_id})")
             
@@ -1297,7 +1297,7 @@ class XMIActivityGenerator:
                     return existing_id
         
         # ✅ UTWÓRZ NOWY WĘZEŁ
-        node_id = self._generate_unique_id()
+        node_id = self._generate_ea_id()
         node = ET.SubElement(parent, 'node', attrib={
             'xmi:type': node_type,
             'xmi:id': f'EAID_{node_id}',
@@ -2260,6 +2260,20 @@ class XMIActivityGenerator:
             log_debug(f"🔍 use_ai_positioning = {getattr(self, 'use_ai_positioning', 'NIE USTAWIONE')}")
 
         log_info(f"🧠 AI POSITIONING: {getattr(self, 'use_ai_positioning', False)}")
+
+            # PRIORYTET 0: ImprovedLayoutManager (jeśli dostępny)
+        try:
+            from utils.xmi.improved_layout_manager import ImprovedLayoutManager
+            layout_manager = ImprovedLayoutManager(
+                debug=self.debug_options.get('positioning', False)
+            )
+            log_info("✅ Użyto ImprovedLayoutManager - nowe 6-krokowe podejście")
+            return layout_manager
+        except ImportError:
+            log_warning("⚠️ ImprovedLayoutManager niedostępny - próbuję alternatywy")
+        except Exception as e:
+            log_error(f"❌ Błąd ImprovedLayoutManager: {e}")
+
 
         # ✅ NOWY PRIORYTET 1: AI Layout Manager (jeśli włączony)
         if getattr(self, 'use_ai_positioning', False):
