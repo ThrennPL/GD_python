@@ -269,7 +269,7 @@ class ImprovedLayoutManager:
         """Wykrywa i rozwiązuje nakładające się elementy"""
         overlaps_found = True
         iterations = 0
-        max_iterations = 10
+        max_iterations = 50
         
         while overlaps_found and iterations < max_iterations:
             overlaps_found = False

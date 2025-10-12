@@ -357,6 +357,16 @@ class XMIActivityGenerator:
             self.parser_id_to_xmi_id = {}
 
         for i, item in enumerate(flow):
+            # Zachowaj oryginalne dane PlantUML dla każdego elementu
+            item['original_plantuml_data'] = {
+                'type': item.get('type'),
+                'swimlane': item.get('swimlane'),
+                'position': i,  # Zachowaj pozycję w oryginalnym przepływie
+                'text': item.get('text', ''),
+                'action': item.get('action', ''),
+                'condition': item.get('condition', '')
+            }
+
             current_swimlane = item.get('swimlane')
             item_type = item.get('type')
             parser_item_id = item.get('id')
@@ -881,14 +891,20 @@ class XMIActivityGenerator:
         
 
     def _handle_control(self, item, parent, stack, prev_id, partition):
-        """Obsługa węzłów kontrolnych z wieloma zakończeniami."""
+        """Obsługa węzłów kontrolnych z komentarzami o typach PlantUML"""
         action = item['action']
         
         if action == 'start':
             node_id = self._add_node(parent, 'uml:InitialNode', 'Initial', partition)
+            node = self.id_map[node_id]
+            
+            # Dodaj komentarz z typem PlantUML
+            self._add_element_comment(node, 'control:start')
+            
             self.diagram_objects.append({
                 'id': node_id,
-                'type': 'InitialNode'
+                'type': 'InitialNode',
+                'original_type': 'control:start'
             })
             
             if self.debug_options.get('processing', False):
@@ -897,17 +913,20 @@ class XMIActivityGenerator:
             return {'id': node_id, 'transition': True}
         
         elif action in ['end', 'stop']:
-            # Każde zakończenie to osobny węzeł
             activity_text = item.get('text', f'{action.capitalize()} Node')
             
-            # Utwórz unikalny węzeł końcowy dla każdego zakończenia
             node_id = self._add_node(parent, 'uml:ActivityFinalNode', activity_text, partition)
+            node = self.id_map[node_id]
+            
+            # Dodaj komentarz z typem PlantUML
+            self._add_element_comment(node, f'control:{action}')
             
             self.diagram_objects.append({
                 'id': node_id,
                 'type': 'ActivityFinalNode',
                 'action': action,
-                'context': activity_text
+                'context': activity_text,
+                'original_type': f'control:{action}'
             })
             
             if self.debug_options.get('processing', False):
@@ -935,16 +954,35 @@ class XMIActivityGenerator:
                 log_debug(f" - {obj}")
 
     def _handle_activity(self, item, parent, stack, prev_id, partition):
-        """Obsługuje element 'activity' - tworzy węzeł aktywności."""
+        """Obsługuje element 'activity' - tworzy węzeł aktywności z komentarzem o typie PlantUML"""
         node_id = self._add_node(parent, 'uml:Action', item['text'], partition)
+        node = self.id_map[node_id]
+        
+        # Zachowaj oryginalne informacje
+        original_colors = item.get('colors', {})
+        original_stereotype = item.get('stereotype', '')
+        additional_info = []
+        
+        if original_colors:
+            additional_info.append(f"Colors: {original_colors}")
+        if original_stereotype:
+            additional_info.append(f"Stereotype: {original_stereotype}")
+        
+        # Dodaj komentarz z typem PlantUML
+        self._add_element_comment(
+            node, 
+            'activity', 
+            "\n".join(additional_info) if additional_info else None
+        )
         
         # Dodaj do listy obiektów diagramu
         self.diagram_objects.append({
             'id': node_id,
             'type': 'UML_ActivityNode',
-            'name': item['text']
+            'name': item['text'],
+            'original_type': 'activity'
         })
-    
+        
         return {'id': node_id}
     
     def _find_appropriate_target_for_missing_branch(self, item):
@@ -1045,7 +1083,22 @@ class XMIActivityGenerator:
         return 'yes'
     
     def _handle_decision_start(self, item, parent, stack, prev_id, partition):
-        """Obsługa decyzji z eliminacją duplikatów."""
+        """
+        Obsługa decyzji z eliminacją duplikatów i dodawaniem komentarzy UML.
+        
+        Tworzy węzeł decyzyjny w diagramie XMI na podstawie elementu decyzji z PlantUML.
+        Dodaje komentarz UML z informacjami o oryginalnym elemencie.
+        
+        Args:
+            item: Element decyzji z parsera PlantUML
+            parent: Element nadrzędny w strukturze XMI
+            stack: Stos strukturalny do śledzenia zagnieżdżonych elementów
+            prev_id: ID poprzedniego elementu w przepływie
+            partition: ID partycji (swimlane), do której należy element
+            
+        Returns:
+            dict: Informacje o utworzonym elemencie
+        """
         condition = item.get('condition', 'Decision')
         decision_id = item.get('id')
         then_label = item.get('then_label', 'tak')
@@ -1053,7 +1106,8 @@ class XMIActivityGenerator:
         # ✅ SPRAWDŹ CZY DECYZJA O TAKIEJ NAZWIE JUŻ ISTNIEJE
         existing_decision_id = None
         for existing_item in self.diagram_objects:
-            if (existing_item.get('type') == 'DecisionNode' and 
+            if (isinstance(existing_item, dict) and 
+                existing_item.get('type') == 'DecisionNode' and 
                 existing_item.get('name') == condition):
                 existing_decision_id = existing_item.get('id')
                 break
@@ -1063,7 +1117,7 @@ class XMIActivityGenerator:
             if self.debug_options.get('processing', False):
                 log_debug(f"🔄 Używam istniejącej decyzji: {existing_decision_id[-6:]} '{condition}'")
             
-            # Dodaj nową gałąź do istniejącej decyzji
+            # Dodaj do stosu informacje o tej decyzji, aby poprawnie obsłużyć gałęzie
             stack.append({
                 'type': 'decision',
                 'id': existing_decision_id,
@@ -1076,11 +1130,21 @@ class XMIActivityGenerator:
         else:
             # ✅ UTWÓRZ NOWĄ DECYZJĘ
             node_id = self._add_node(parent, 'uml:DecisionNode', condition, partition)
+            node = self.id_map[node_id]
             
+            # Dodaj komentarz z typem PlantUML
+            additional_info = f"Condition: {condition}\nThen label: {then_label}"
+            if item.get('needs_else', False):
+                additional_info += "\nNeeds else: True"
+            
+            self._add_element_comment(node, 'decision_start', additional_info)
+            
+            # Dodaj do listy obiektów diagramu
             self.diagram_objects.append({
                 'id': node_id,
                 'type': 'DecisionNode',
-                'name': condition
+                'name': condition,
+                'original_type': 'decision_start'
             })
             
             # Dodaj do stosu
@@ -1532,10 +1596,16 @@ class XMIActivityGenerator:
             'scope': 'public'
         })
         
-        # Dodaj model dla pakietu
+        # Dodaj model dla pakietu (z zabezpieczeniem przed niewłaściwym formatem ID)
+        package2_value = self.package_id
+        if '_' in self.package_id:
+            package2_value = f"EAID_{self.package_id.split('_')[1]}"
+        else:
+            package2_value = f"EAID_{self.package_id}"
+            
         ET.SubElement(package_element, 'model', {
-            'package2': f"EAID_{self.package_id.split('_')[1]}", 
-            'package': "EAPK_25CB1803_12A5_47b7_BF59_0C80F57AA528",  # Stała wartość ze wzorca
+            'package2': package2_value, 
+            'package': "EAPK_25CB1803_12A5_47b7_BF59_0C80F57AA528",
             'tpos': '0',
             'ea_localid': self._get_local_id(self.package_id),
             'ea_eleType': 'package'
@@ -1552,7 +1622,7 @@ class XMIActivityGenerator:
             
             # Dodaj model dla toru
             ET.SubElement(swimlane_element, 'model', {
-                'package': self.package_id,  # Pakiet zawierający ten tor
+                'package': self.package_id,
                 'tpos': '0',
                 'ea_localid': self._get_local_id(partition_id),
                 'ea_eleType': 'element'
@@ -1566,22 +1636,17 @@ class XMIActivityGenerator:
                 'scope': 'public'
             })
         
-        # Dodaj pozostałe elementy diagramu z odpowiednim przypisaniem do torów
+        # Dodaj pozostałe elementy diagramu
         for node_id, node in self.id_map.items():
             if node_id not in self.swimlane_ids.values():  # Nie dodawaj torów ponownie
                 node_element = ET.SubElement(elements, 'element', {'xmi:idref': node_id})
                 
-                # Określ typ i nazwę elementu
+                # Określ typ i nazwę elementu (z zabezpieczeniem przed None)
                 node_type = node.attrib.get('xmi:type', '')
-                if 'name' in node.attrib:
-                    node_name = node.attrib['name']
-                else:
-                    node_name = ''
+                node_name = node.attrib.get('name', '')
                 
                 # Znajdź tor, do którego należy ten element
-                owner_id = None
-                if 'inPartition' in node.attrib:
-                    owner_id = node.attrib['inPartition']
+                owner_id = node.attrib.get('inPartition')
                 
                 # Dodaj model dla elementu
                 model_attrs = {
@@ -1593,7 +1658,7 @@ class XMIActivityGenerator:
                 
                 if owner_id:
                     model_attrs['owner'] = owner_id
-                    
+                        
                 ET.SubElement(node_element, 'model', model_attrs)
                 
                 # Dodaj properties dla elementu
@@ -1606,6 +1671,18 @@ class XMIActivityGenerator:
                 
                 if node_name:
                     props.set('name', node_name)
+                
+                # Dodaj tag tylko raz, bez duplikatów
+                diagram_obj = next((obj for obj in self.diagram_objects 
+                                if isinstance(obj, dict) and obj.get('id') == node_id and 
+                                obj.get('original_type')), None)
+                
+                if diagram_obj and diagram_obj.get('original_type'):
+                    tags = ET.SubElement(node_element, 'tags')
+                    ET.SubElement(tags, 'tag', {
+                        'name': 'PlantUMLOriginalType',
+                        'value': diagram_obj.get('original_type')
+                    })
 
     def _get_ntype_from_uml_type(self, uml_type):
         ntype_map = {
@@ -2850,6 +2927,39 @@ class XMIActivityGenerator:
             return False
         
         return True
+    
+    def _add_element_comment(self, element, original_type, additional_info=None):
+        """Dodaje komentarz UML opisujący oryginalny typ elementu z PlantUML"""
+        comment_id = self._generate_ea_id("EAID")
+        
+        # Przygotuj treść komentarza
+        comment_text = f"Original PlantUML element type: {original_type}"
+        if additional_info:
+            comment_text += f"\n{additional_info}"
+        
+        # Utwórz element komentarza
+        comment = ET.SubElement(element, 'ownedComment', {
+            'xmi:type': 'uml:Comment',
+            'xmi:id': comment_id,
+            'visibility': 'public'
+        })
+        
+        # Dodaj treść komentarza
+        body = ET.SubElement(comment, 'body')
+        body.text = comment_text
+        
+        # Dodaj komentarz do mapy ID
+        self.id_map[comment_id] = comment
+        
+        # Dodaj do listy obiektów diagramu (ale ukryty)
+        self.diagram_objects.append({
+            'id': comment_id,
+            'type': 'Comment',
+            'name': comment_text[:30] + '...',
+            'hidden': True
+        })
+        
+        return comment_id
 
 # --- Przykład użycia ---
 if __name__ == '__main__':

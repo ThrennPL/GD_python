@@ -177,6 +177,119 @@ class PlantUMLActivityParser:
                 last_element = element
                 continue
 
+            # Parsowanie pętli repeat/while
+            if line.startswith('repeat'):
+                repeat_id = self._generate_id()
+                element = {
+                    'type': 'repeat_start',
+                    'swimlane': self.current_swimlane,
+                    'id': repeat_id
+                }
+                self.flow.append(element)
+                
+                structure_stack.append({
+                    'type': 'repeat',
+                    'id': repeat_id,
+                    'element': element
+                })
+                
+                if self.debug_options.get('parsing'):
+                    log_debug(f"Rozpoczęto blok repeat (ID: {repeat_id})")
+                
+                self._register_logical_connection(last_element, element, "")
+                self._register_connection(last_element, element, connections)
+                last_element = element
+                continue
+
+            # Parsowanie repeat while
+            repeat_while_match = re.match(r'^repeat while\s*\((.*?)\)$', line)
+            if repeat_while_match:
+                condition = repeat_while_match.group(1).strip()
+                
+                repeat_info = None
+                if structure_stack and structure_stack[-1]['type'] == 'repeat':
+                    repeat_info = structure_stack.pop()
+                else:
+                    log_warning("Znaleziono 'repeat while' bez pasującego 'repeat'")
+                
+                repeat_end_id = self._generate_id()
+                element = {
+                    'type': 'repeat_end',
+                    'condition': condition,
+                    'swimlane': self.current_swimlane,
+                    'id': repeat_end_id,
+                    'repeat_id': repeat_info['id'] if repeat_info else None
+                }
+                self.flow.append(element)
+                
+                # Dodaj połączenie zwrotne do początku pętli
+                if repeat_info:
+                    self._register_logical_connection(element, repeat_info['element'], "true")
+                    
+                if self.debug_options.get('parsing'):
+                    log_debug(f"Zakończono blok repeat z warunkiem: {condition}")
+                
+                self._register_logical_connection(last_element, element, "")
+                self._register_connection(last_element, element, connections)
+                last_element = element
+                continue
+
+            # Parsowanie loop
+            loop_match = re.match(r'^loop(\s+(.+))?$', line)
+            if loop_match:
+                loop_label = loop_match.group(2).strip() if loop_match.group(2) else ""
+                loop_id = self._generate_id()
+                element = {
+                    'type': 'loop_start',
+                    'label': loop_label,
+                    'swimlane': self.current_swimlane,
+                    'id': loop_id
+                }
+                self.flow.append(element)
+                
+                structure_stack.append({
+                    'type': 'loop',
+                    'id': loop_id,
+                    'element': element
+                })
+                
+                if self.debug_options.get('parsing'):
+                    log_debug(f"Rozpoczęto blok loop{' ' + loop_label if loop_label else ''} (ID: {loop_id})")
+                
+                self._register_logical_connection(last_element, element, "")
+                self._register_connection(last_element, element, connections)
+                last_element = element
+                continue
+
+            # Parsowanie endloop
+            if line == 'endloop':
+                loop_info = None
+                if structure_stack and structure_stack[-1]['type'] == 'loop':
+                    loop_info = structure_stack.pop()
+                else:
+                    log_warning("Znaleziono 'endloop' bez pasującego 'loop'")
+                
+                loop_end_id = self._generate_id()
+                element = {
+                    'type': 'loop_end',
+                    'swimlane': self.current_swimlane,
+                    'id': loop_end_id,
+                    'loop_id': loop_info['id'] if loop_info else None
+                }
+                self.flow.append(element)
+                
+                # Dodaj połączenie zwrotne do początku pętli
+                if loop_info:
+                    self._register_logical_connection(element, loop_info['element'], "loop")
+                
+                if self.debug_options.get('parsing'):
+                    log_debug(f"Zakończono blok loop")
+                
+                self._register_logical_connection(last_element, element, "")
+                self._register_connection(last_element, element, connections)
+                last_element = element
+                continue
+
             # Parsowanie decyzji (if/then/else)
             if_match = re.match(r'^if\s*\((.*?)\)\s*then\s*\((.*?)\)$', line)
             if if_match:
@@ -200,7 +313,7 @@ class PlantUMLActivityParser:
                     'then_label': then_label.strip()  # ✅ ZAPAMIĘTAJ etykietę "tak"
                 })
                 
-                # ✅ POPRAWKA: Normalne połączenie WCHODZĄCE (BEZ etykiety)
+                # Normalne połączenie WCHODZĄCE (BEZ etykiety)
                 self._register_logical_connection(last_element, element, "")
                 self._register_connection(last_element, element, connections, label="")
                 
@@ -268,6 +381,93 @@ class PlantUMLActivityParser:
                     last_element = element
                 else:
                     log_warning("Znaleziono 'endif' bez pasującego 'if'")
+                continue
+
+            # Parsowanie parallel
+            if line == 'parallel':
+                parallel_id = self._generate_id()
+                element = {
+                    'type': 'parallel_start',
+                    'swimlane': self.current_swimlane,
+                    'id': parallel_id
+                }
+                self.flow.append(element)
+                structure_stack.append({
+                    'type': 'parallel',
+                    'id': len(self.flow) - 1,
+                    'element': element,
+                    'branches': 1,
+                    'parallel_id': parallel_id,
+                    'branch_elements': []
+                })
+                
+                if self.debug_options.get('structure'):
+                    log_debug(f"Rozpoczęto blok parallel (ID: {parallel_id})")
+                
+                self._register_logical_connection(last_element, element, "")
+                self._register_connection(last_element, element, connections)
+                last_element = element
+                continue
+
+            if line == 'parallel again':
+                parallel_id = None
+                if structure_stack and structure_stack[-1]['type'] == 'parallel':
+                    branch_elements = structure_stack[-1].get('branch_elements', [])
+                    if branch_elements:
+                        structure_stack[-1]['branches_data'] = structure_stack[-1].get('branches_data', []) + [branch_elements]
+                    
+                    structure_stack[-1]['branch_elements'] = []
+                    structure_stack[-1]['branches'] += 1
+                    parallel_id = structure_stack[-1]['parallel_id']
+                else:
+                    log_warning("Znaleziono 'parallel again' bez pasującego 'parallel'")
+                
+                element = {
+                    'type': 'parallel_again',
+                    'swimlane': self.current_swimlane,
+                    'id': self._generate_id(),
+                    'parallel_id': parallel_id
+                }
+                self.flow.append(element)
+                
+                if self.debug_options.get('structure'):
+                    log_debug(f"Dodano gałąź parallel dla {parallel_id}")
+                
+                # Dla parallel_again nie rejestrujemy standardowego połączenia
+                last_element = element
+                continue
+
+            if line == 'end parallel':
+                join_id = self._generate_id()
+                branches = 1
+                parallel_id = None
+                
+                if structure_stack:
+                    parallel_info = structure_stack.pop()
+                    branch_elements = parallel_info.get('branch_elements', [])
+                    if branch_elements:
+                        parallel_info['branches_data'] = parallel_info.get('branches_data', []) + [branch_elements]
+                    
+                    branches = parallel_info.get('branches', 1)
+                    parallel_id = parallel_info.get('parallel_id')
+                else:
+                    log_warning("Znaleziono 'end parallel' bez pasującego 'parallel'")
+                
+                element = {
+                    'type': 'parallel_end',
+                    'swimlane': self.current_swimlane,
+                    'id': join_id,
+                    'parallel_id': parallel_id,
+                    'branches_count': branches
+                }
+                self.flow.append(element)
+                
+                if self.debug_options.get('structure'):
+                    log_debug(f"Zakończono blok parallel (ID: {parallel_id}), liczba gałęzi: {branches}")
+                
+                self._register_logical_connection(last_element, element, "")
+                self._register_connection(last_element, element, connections)
+                last_element = element
                 continue
 
             # Parsowanie fork/join (bez zmian - działają dobrze)
@@ -662,19 +862,116 @@ class PlantUMLActivityParser:
                 curr_item['from_swimlane'] = prev_item.get('swimlane')
     
     def _verify_flow_continuity(self):
-        """Weryfikuje ciągłość przepływu (od start do stop)."""
+        """Weryfikuje ciągłość przepływu i wykrywa niepołączone części diagramu (wyspy)."""
         # Szukaj elementów start i stop
-        start_elements = [i for i, item in enumerate(self.flow) 
-                         if item['type'] == 'control' and item['action'] == 'start']
-        stop_elements = [i for i, item in enumerate(self.flow) 
-                         if item['type'] == 'control' and item['action'] in ['stop', 'end']]
+        start_elements = [item for item in self.flow 
+                        if item['type'] == 'control' and item['action'] == 'start']
+        stop_elements = [item for item in self.flow 
+                        if item['type'] == 'control' and item['action'] in ['stop', 'end']]
         
         if not start_elements:
             log_warning("Diagram nie ma elementu początkowego (start)")
+            return
         if not stop_elements:
             log_warning("Diagram nie ma elementu końcowego (stop/end)")
         
-        # TODO: Bardziej zaawansowana weryfikacja ścieżek przepływu
+        # Budowanie grafu połączeń dla analizy osiągalności
+        connection_graph = {}
+        for element in self.flow:
+            connection_graph[element['id']] = []
+        
+        # Wypełnienie grafu połączeniami
+        for conn in self.logical_connections:
+            source_id = conn.get('source_id')
+            target_id = conn.get('target_id')
+            if source_id in connection_graph and target_id in connection_graph:
+                connection_graph[source_id].append(target_id)
+        
+        # Analiza osiągalności z każdego elementu start
+        reachable_nodes = set()
+        for start_element in start_elements:
+            # Wykonaj przeszukiwanie wszerz (BFS)
+            queue = [start_element['id']]
+            visited = set()
+            
+            while queue:
+                current_id = queue.pop(0)
+                if current_id in visited:
+                    continue
+                    
+                visited.add(current_id)
+                reachable_nodes.add(current_id)
+                
+                # Dodaj wszystkie połączone węzły do kolejki
+                for target_id in connection_graph.get(current_id, []):
+                    if target_id not in visited:
+                        queue.append(target_id)
+        
+        # Znajdź nieosiągalne elementy (wyspy)
+        unreachable_nodes = []
+        for element in self.flow:
+            # Pomijamy elementy specjalne jak swimlanes, notes, które nie są częścią przepływu
+            if element['type'] in ['swimlane', 'note']:
+                continue
+            
+            if element['id'] not in reachable_nodes:
+                unreachable_nodes.append(element)
+                element['unreachable'] = True  # Oznacz element jako nieosiągalny
+        
+        # Raportowanie nieosiągalnych elementów
+        if unreachable_nodes:
+            log_warning(f"Wykryto {len(unreachable_nodes)} nieosiągalnych elementów (wysp):")
+            for node in unreachable_nodes:
+                desc = self._get_element_description(node)
+                log_warning(f"  - Nieosiągalny element: {desc}")
+        
+        # Grupowanie wysp (elementów połączonych ze sobą, ale nieosiągalnych z punktu startowego)
+        if unreachable_nodes:
+            self._identify_islands(unreachable_nodes, connection_graph)
+
+    def _identify_islands(self, unreachable_nodes, connection_graph):
+        """Identyfikuje i grupuje niepołączone części diagramu (wyspy)."""
+        islands = []
+        processed = set()
+        
+        for node in unreachable_nodes:
+            if node['id'] in processed:
+                continue
+                
+            # Znajdź wszystkie połączone elementy w tej wyspie
+            island = []
+            queue = [node['id']]
+            island_nodes = set()
+            
+            while queue:
+                current_id = queue.pop(0)
+                if current_id in island_nodes:
+                    continue
+                    
+                island_nodes.add(current_id)
+                processed.add(current_id)
+                
+                # Dodaj element do wyspy
+                for element in unreachable_nodes:
+                    if element['id'] == current_id:
+                        island.append(element)
+                        break
+                
+                # Dodaj wszystkie połączone węzły do kolejki
+                for target_id in connection_graph.get(current_id, []):
+                    if target_id not in island_nodes:
+                        queue.append(target_id)
+            
+            if island:
+                islands.append(island)
+        
+        # Raportowanie wysp
+        if islands:
+            log_warning(f"Zidentyfikowano {len(islands)} oddzielnych wysp w diagramie:")
+            for i, island in enumerate(islands, 1):
+                elements_desc = [self._get_element_description(elem) for elem in island]
+                log_warning(f"  Wyspa #{i}: {len(island)} elementów: {', '.join(elements_desc[:3])}" + 
+                        (f" i {len(elements_desc) - 3} więcej" if len(elements_desc) > 3 else ""))
     
     def _debug_parser_results(self, connections):
         """Analizuje i loguje wyniki parsowania oraz potencjalne problemy."""
@@ -766,15 +1063,25 @@ class PlantUMLActivityParser:
         stats = {
             'total_activities': len([item for item in self.flow if item['type'] == 'activity']),
             'total_decisions': len([item for item in self.flow if item['type'] == 'decision_start']),
-            'total_loops': len([item for item in self.flow if item['type'] == 'loop_start']),
-            'total_forks': len([item for item in self.flow if item['type'] == 'fork_start']),
+            'total_loops': len([item for item in self.flow if item['type'] in ['loop_start', 'repeat_start']]),
+            'total_forks': len([item for item in self.flow if item['type'] in ['fork_start', 'parallel_start']]),
             'total_swimlanes': len(self.swimlanes),
             'total_notes': len([item for item in self.flow if item['type'] == 'note']),
             'cross_swimlane_transitions': len([item for item in self.flow if item.get('cross_swimlane')]),
+            'unreachable_elements': len([item for item in self.flow if item.get('unreachable', False)]),
             'decision_branches': {
                 'with_else': len([item for item in self.flow 
                                 if item['type'] == 'decision_start' and not item.get('missing_else', False)]),
-                'without_else': incomplete_decisions
+                'without_else': len([item for item in self.flow 
+                                if item['type'] == 'decision_start' and item.get('missing_else', False)])
+            },
+            'loops': {
+                'repeat_while': len([item for item in self.flow if item['type'] == 'repeat_start']),
+                'loop_endloop': len([item for item in self.flow if item['type'] == 'loop_start'])
+            },
+            'parallel_branches': {
+                'fork': len([item for item in self.flow if item['type'] == 'fork_start']),
+                'parallel': len([item for item in self.flow if item['type'] == 'parallel_start'])
             }
         }
         return stats
@@ -785,7 +1092,7 @@ if __name__ == '__main__':
     setup_logger('plantuml_activity_parser.log')
     # Konfiguracja parsera argumentów
     parser = argparse.ArgumentParser(description='Parser diagramów aktywności PlantUML')
-    parser.add_argument('input_file', nargs='?', default='diagram_aktywnosci_PlantUML.puml',
+    parser.add_argument('input_file', nargs='?', default='Diagram_aktywności_nowy.puml',
                         help='Plik wejściowy z kodem PlantUML')
     parser.add_argument('--output', '-o', help='Plik wyjściowy JSON (domyślnie: generowana nazwa)')
     parser.add_argument('--debug', '-d', action='store_true', help='Włącz tryb debugowania')
