@@ -143,6 +143,24 @@ SVG diagrams can be generated in two ways, depending on the `plantuml_generator_
       * `prompt_templates_pl.py`, `prompt_templates_en.py` - prompt template files for Polish and English
 
 ---
+## 📄 License
+
+This project is licensed under the **Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License (CC BY-NC-SA 4.0)**.
+
+You can view the full license details here:
+[https://creativecommons.org/licenses/by-nc-sa/4.0/](https://creativecommons.org/licenses/by-nc-sa/4.0/)
+
+---
+
+### What this means:
+
+This license allows others to use, share, and build upon this work, but with the following key restrictions:
+
+* **Attribution (BY)**: You must give appropriate credit to the original author (me) and provide a link to this license.
+* **NonCommercial (NC)**: **You may not use this material for commercial purposes.** This is a core condition of the license.
+* **ShareAlike (SA)**: If you remix, transform, or build upon this material, you must distribute your contributions under the **same license** (CC BY-NC-SA 4.0) as the original.
+
+---
 
 ## TODO (development)
 
