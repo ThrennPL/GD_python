@@ -182,5 +182,5 @@ Check `Szablony_promptow.txt` for descriptions of dedicated prompt templates for
   * [GD 2025-06-14 Process description validation](https://github.com/user-attachments/assets/2f5040b3-5c29-448f-ad64-60d6b85b5add)
   * [GD 2025-06-14 Class Diagram](https://github.com/user-attachments/assets/3fe6a5d1-cc2b-4522-b61d-a1752a4ab8bc)
   * [GD 2025-06-14 Component Diagram](https://github.com/user-attachments/assets/eb99c9a0-834b-4a84-9037-c2a32af755da)
-  * [GD 2025-06-14 C4 Component Diagram](https://github.com/user-attachments/assets/54f3dccc-2a16-4115-a3f9-71f664c41bff)
-)
+  * [GD 2025-06-14 C4 Component Diagram](https://github.com/user-attachments/assets/cbf7e5d1-f81a-4032-97ad-6fed6d2eeaa4)
+
