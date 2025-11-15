@@ -143,9 +143,22 @@ Diagramy SVG mogą być generowane na dwa sposoby, zależnie od ustawienia param
       * `prompt_templates_pl.py`, `prompt_templates_en.py` - pliki z szablonami promptów dla języka polskiego i angielskiego
 
 ---
-## Licencja
+## 📄 Licencja
 
-Ten projekt jest udostępniony na licencji Creative Commons BY-NC-SA 4.0. Oznacza to, że możesz go dowolnie używać i modyfikować w celach niekomercyjnych, pod warunkiem uznania autorstwa i udostępniania pochodnych na tej samej licencji. Użycie komercyjne jest zabronione.
+Ten projekt jest licencjonowany na mocy **Creative Commons Uznanie autorstwa-Użycie niekomercyjne-Na tych samych warunkach 4.0 Międzynarodowa (CC BY-NC-SA 4.0)**.
+
+Możesz zobaczyć skrót licencji (w języku polskim) tutaj:
+[https://creativecommons.org/licenses/by-nc-sa/4.0/deed.pl](https://creativecommons.org/licenses/by-nc-sa/4.0/deed.pl)
+
+---
+
+### Co to oznacza:
+
+Licencja ta zezwala na używanie, udostępnianie i tworzenie utworów zależnych (bazujących na tym kodzie), ale z następującymi kluczowymi ograniczeniami:
+
+* **Uznanie autorstwa (BY)**: Musisz odpowiednio oznaczyć autora oryginału (mnie) oraz podać link do tej licencji.
+* **Użycie niekomercyjne (NC)**: **Nie możesz używać tego materiału do celów komercyjnych.** Jest to kluczowy warunek tej licencji.
+* **Na tych samych warunkach (SA)**: Jeśli remiksujesz, przekształcasz lub tworzysz na podstawie tego materiału, musisz rozpowszechniać swoje dzieło na **tej samej licencji** (CC BY-NC-SA 4.0), co oryginał.
 
 ---
 
