@@ -143,6 +143,11 @@ Diagramy SVG mogą być generowane na dwa sposoby, zależnie od ustawienia param
       * `prompt_templates_pl.py`, `prompt_templates_en.py` - pliki z szablonami promptów dla języka polskiego i angielskiego
 
 ---
+## Licencja
+
+Ten projekt jest udostępniony na licencji Creative Commons BY-NC-SA 4.0. Oznacza to, że możesz go dowolnie używać i modyfikować w celach niekomercyjnych, pod warunkiem uznania autorstwa i udostępniania pochodnych na tej samej licencji. Użycie komercyjne jest zabronione.
+
+---
 
 ## TODO (rozwojowe)
 
