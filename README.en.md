@@ -153,6 +153,24 @@ SVG diagrams can be generated in two ways, depending on the `plantuml_generator_
       * `prompt_templates_pl.py`, `prompt_templates_en.py` - prompt template files for Polish and English
 
 ---
+## 📄 License
+
+This project is licensed under the **Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License (CC BY-NC-SA 4.0)**.
+
+You can view the full license details here:
+[https://creativecommons.org/licenses/by-nc-sa/4.0/](https://creativecommons.org/licenses/by-nc-sa/4.0/)
+
+---
+
+### What this means:
+
+This license allows others to use, share, and build upon this work, but with the following key restrictions:
+
+* **Attribution (BY)**: You must give appropriate credit to the original author (me) and provide a link to this license.
+* **NonCommercial (NC)**: **You may not use this material for commercial purposes.** This is a core condition of the license.
+* **ShareAlike (SA)**: If you remix, transform, or build upon this material, you must distribute your contributions under the **same license** (CC BY-NC-SA 4.0) as the original.
+
+---
 
 ## TODO (development)
 
@@ -171,7 +189,8 @@ Check `Szablony_promptow.txt` for descriptions of dedicated prompt templates for
 
 ## Screenshots
 
-  * [GD 2025-06-14 Process description validation](https://github.com/user-attachments/assets/6bafbbb4-c6e7-4f62-b145-51623c20026e)
-  * [GD 2025-06-14 Class Diagram](https://github.com/user-attachments/assets/a3082146-64d2-466b-b1d7-de33567c51eb)
+  * [GD 2025-06-14 Process description validation](https://github.com/user-attachments/assets/2f5040b3-5c29-448f-ad64-60d6b85b5add)
+  * [GD 2025-06-14 Class Diagram](https://github.com/user-attachments/assets/3fe6a5d1-cc2b-4522-b61d-a1752a4ab8bc)
   * [GD 2025-06-14 Component Diagram](https://github.com/user-attachments/assets/eb99c9a0-834b-4a84-9037-c2a32af755da)
-  * [GD 2025-06-14 C4 Component Diagram](https://github.com/user-attachments/assets/168735ab-e2d8-4fcb-97d83f2a5b6c)
+  * [GD 2025-06-14 C4 Component Diagram](https://github.com/user-attachments/assets/cbf7e5d1-f81a-4032-97ad-6fed6d2eeaa4)
+

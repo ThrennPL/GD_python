@@ -206,6 +206,24 @@ Diagramy SVG mogą być generowane na dwa sposoby, zależnie od ustawienia param
       * `prompt_templates_pl.py`, `prompt_templates_en.py` - pliki z szablonami promptów dla języka polskiego i angielskiego
 
 ---
+## 📄 Licencja
+
+Ten projekt jest licencjonowany na mocy **Creative Commons Uznanie autorstwa-Użycie niekomercyjne-Na tych samych warunkach 4.0 Międzynarodowa (CC BY-NC-SA 4.0)**.
+
+Możesz zobaczyć skrót licencji (w języku polskim) tutaj:
+[https://creativecommons.org/licenses/by-nc-sa/4.0/deed.pl](https://creativecommons.org/licenses/by-nc-sa/4.0/deed.pl)
+
+---
+
+### Co to oznacza:
+
+Licencja ta zezwala na używanie, udostępnianie i tworzenie utworów zależnych (bazujących na tym kodzie), ale z następującymi kluczowymi ograniczeniami:
+
+* **Uznanie autorstwa (BY)**: Musisz odpowiednio oznaczyć autora oryginału (mnie) oraz podać link do tej licencji.
+* **Użycie niekomercyjne (NC)**: **Nie możesz używać tego materiału do celów komercyjnych.** Jest to kluczowy warunek tej licencji.
+* **Na tych samych warunkach (SA)**: Jeśli remiksujesz, przekształcasz lub tworzysz na podstawie tego materiału, musisz rozpowszechniać swoje dzieło na **tej samej licencji** (CC BY-NC-SA 4.0), co oryginał.
+
+---
 
 ## TODO (rozwojowe)
 
@@ -224,7 +242,8 @@ Zapoznaj się z plikiem `Szablony_promptow.txt` - zawiera opis działania poszcz
 
 ## Zrzuty ekranu
 
-  * [GD 2025-06-14 Sprawdzanie poprawności opisu procesu](https://github.com/user-attachments/assets/6bafbbb4-c6e7-4f62-b145-51623c20026e)
-  * [GD 2025-06-14 Diagram Klas](https://github.com/user-attachments/assets/a3082146-64d2-466b-b1d7-de33567c51eb)
+  * [GD 2025-11-15 Sprawdzanie poprawności opisu procesu](https://github.com/user-attachments/assets/5016fd0b-d3fd-48e9-ae34-6285e4ab57bd)
+  * [GD 2025-11-15 Diagram Klas](https://github.com/user-attachments/assets/87dd2e69-c36e-4e53-8a3f-a5ed2c14e398)
   * [GD 2025-06-14 Diagram komponentów](https://github.com/user-attachments/assets/eb99c9a0-834b-4a84-9037-c2a32af755da)
-  * [GD 2025-06-14 Diagram komponentów C4](https://github.com/user-attachments/assets/168735ab-e2d8-4fcb-97d83f2a5b6c)
+  * [GD 2025-11-15 Diagram komponentów C4](https://github.com/user-attachments/assets/c7ff4a33-aede-45cd-b168-3012db42cf89)
+
