@@ -10,15 +10,35 @@ from dotenv import load_dotenv
 from language.translations_pl import TRANSLATIONS as PL
 from language.translations_en import TRANSLATIONS as EN
 
-
+# Import PDF functionality
+try:
+    from utils.pdf.streamlit_pdf_integration import PDFUploadManager
+    PDF_SUPPORT = True
+except ImportError:
+    PDF_SUPPORT = False
+    PDFUploadManager = None
 
 # Load environment variables
 load_dotenv()
 
-LANG = "en"  # Domyślny język, można zmienić na "pl" dla polskiego
+# Initialize session state for language if not exists
+if 'current_language' not in st.session_state:
+    st.session_state.current_language = "pl"
+
+LANG = st.session_state.current_language
 
 def tr(key):
     return EN[key] if LANG == "en" else PL[key]
+
+def update_language():
+    """Update language and reinitialize prompt templates"""
+    global LANG, prompt_templates, get_diagram_specific_requirements
+    LANG = st.session_state.current_language
+    if LANG == "en":
+        from prompts.prompt_templates_en import prompt_templates, get_diagram_specific_requirements
+    else:
+        from prompts.prompt_templates_pl import prompt_templates, get_diagram_specific_requirements
+    st.rerun()
 
 # Try to import custom modules with error handling
 try:
@@ -88,6 +108,11 @@ if 'show_plantuml_code' not in st.session_state:
     st.session_state.show_plantuml_code = False
 if 'selected_diagram_index' not in st.session_state:
     st.session_state.selected_diagram_index = 0
+
+# Initialize PDF manager if available
+if PDF_SUPPORT:
+    if 'pdf_manager' not in st.session_state:
+        st.session_state.pdf_manager = PDFUploadManager()
 
 # Helper functions for safe logging
 def safe_log_info(message):
@@ -256,16 +281,30 @@ def display_plantuml_diagram(plantuml_code):
     try:
         if plantuml_generator_type == "www":
             if plantuml_code is not None:
-                safe_log_error(tr("plantuml_code_display").format(code=plantuml_code))
+                safe_log_info(tr("plantuml_code_display").format(code=plantuml_code))
                 svg_data, err_msg = fetch_plantuml_svg_www(plantuml_code, LANG=LANG)
+                
+                # Sprawdź czy wystąpił błąd PlantUML
+                if err_msg:
+                    safe_log_error(f"PlantUML błąd (www): {err_msg}")
+                    st.error(f"Błąd PlantUML: {err_msg}")
+                    return False
                 
             else:
                 error_msg = tr("msg_error_fetching_plantuml")
                 st.error(error_msg)
                 safe_log_error(error_msg + f": {plantuml_code}")
+                return False
             
             if isinstance(svg_data, bytes):
                 svg_str = svg_data.decode('utf-8')
+                
+                # Sprawdź czy SVG zawiera komunikat błędu
+                if _is_error_svg(svg_str):
+                    safe_log_error("SVG zawiera komunikat błędu PlantUML")
+                    st.error("Diagram zawiera błędy składniowe PlantUML")
+                    return False
+                
                 #resize SVG to fit the container
                 #svg_str = svg_str.replace('width="100%"', 'width="50%" height="600"')
                 #st.components.v1.html(svg_str, height=1000)
@@ -275,10 +314,31 @@ def display_plantuml_diagram(plantuml_code):
                     use_container_width=True
                 )
                 return True
+                
         elif plantuml_generator_type == "local":
-            svg_path, err_msg  = fetch_plantuml_svg_local(plantuml_code, plantuml_jar_path, LANG=LANG)
+            svg_path, err_msg = fetch_plantuml_svg_local(plantuml_code, plantuml_jar_path, LANG=LANG)
+            
+            # Sprawdź czy wystąpił błąd PlantUML  
+            if err_msg:
+                safe_log_error(f"PlantUML błąd (local): {err_msg}")
+                st.error(f"Błąd PlantUML: {err_msg}")
+                return False
+                
+            # Sprawdź czy plik SVG istnieje
+            if not os.path.exists(svg_path):
+                safe_log_error(f"Plik SVG nie został utworzony: {svg_path}")
+                st.error("Nie udało się wygenerować diagramu SVG")
+                return False
+                
             with open(svg_path, "r", encoding="utf-8") as f:
                 svg_str = f.read()  
+                
+                # Sprawdź czy SVG zawiera komunikat błędu
+                if _is_error_svg(svg_str):
+                    safe_log_error("SVG zawiera komunikat błędu PlantUML")
+                    st.error("Diagram zawiera błędy składniowe PlantUML") 
+                    return False
+                    
                 #resize SVG to fit the container
                 #svg_str = svg_str.replace('width="100%"', 'width="500%" height="600"')
             #st.components.v1.html(svg_str, height=1000)
@@ -288,11 +348,35 @@ def display_plantuml_diagram(plantuml_code):
                     use_container_width=True
                 )
             return True
+            
     except Exception as e:
         error_msg = tr("msg_error_displaying_plantuml_exception").format(error=str(e))
         safe_log_exception(error_msg)
         st.error(error_msg)
         return False
+    
+    # Jeśli doszliśmy tutaj, coś poszło nie tak
+    return False
+
+def _is_error_svg(svg_content: str) -> bool:
+    """Sprawdza czy SVG zawiera komunikat błędu PlantUML."""
+    error_indicators = [
+        "Syntax Error?",
+        "Unknown preprocessing", 
+        "Error line",
+        "Syntax error",
+        "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?><svg xmlns=\"http://www.w3.org/2000/svg\" xmlns:xlink=\"http://www.w3.org/1999/xlink\" contentScriptType=\"application/ecmascript\" contentStyleType=\"text/css\" height=\"16px\" preserveAspectRatio=\"none\" style=\"width:323px;height:16px;\" version=\"1.1\" viewBox=\"0 0 323 16\" width=\"323px\" zoomAndPan=\"magnify\"><defs><filter height=\"300%\" id=\"f1nk1pfzhqwmoc\" width=\"300%\" x=\"-1\" y=\"-1\"><feGaussianBlur result=\"blurOut\" stdDeviation=\"2.0\"/><feColorMatrix in=\"blurOut\" result=\"blurOut2\" type=\"matrix\" values=\"0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 .4 0\"/><feOffset dx=\"4.0\" dy=\"4.0\" in=\"blurOut2\" result=\"blurOut3\"/><feBlend in=\"SourceGraphic\" in2=\"blurOut3\" mode=\"normal\"/></filter></defs><g><text fill=\"#000000\" font-family=\"sans-serif\" font-size=\"14\" lengthAdjust=\"spacingAndGlyphs\" textLength=\"0\" x=\"148.5\" y=\"11.5016\"/></g></svg>"
+    ]
+    
+    for indicator in error_indicators:
+        if indicator in svg_content:
+            return True
+    
+    # Sprawdź czy SVG jest bardzo mały (może być pustym błędem)
+    if len(svg_content.strip()) < 200:
+        return True
+        
+    return False
 
 @st.dialog(tr("show_plantuml_dialog"), width="large")
 def show_plantuml_modal():
@@ -328,6 +412,22 @@ st.markdown((tr("app_description")))
 # Sidebar configuration
 with st.sidebar:
     st.header(tr("configuration_lable"))
+    
+    # Language selection - at the top
+    lang_options = {"pl": tr("language_polish"), "en": tr("language_english")}
+    selected_lang = st.selectbox(
+        tr("language_selector"), 
+        options=list(lang_options.keys()),
+        format_func=lambda x: lang_options[x],
+        index=0 if st.session_state.current_language == "pl" else 1,
+        key="language_selectbox"
+    )
+    
+    if selected_lang != st.session_state.current_language:
+        st.session_state.current_language = selected_lang
+        update_language()
+    
+    st.divider()
     
     # Model selection
     if st.session_state.models:
@@ -389,13 +489,17 @@ with st.sidebar:
         domain = st.selectbox("Domena:", 
                               ["NONE", "banking", "insurance", "logistics", "healthcare", "e-commerce"])
 
+# PDF Upload Section (if supported)
+if PDF_SUPPORT and 'pdf_manager' in st.session_state:
+    st.session_state.pdf_manager.render_pdf_upload_section()
+
 # Main content area
 col1, col2 = st.columns([1, 1])
 
 with col1:
     st.header(tr("input_box"))
     process_description = st.text_area(
-        "",
+        "Opis procesu",
         height=150,
         placeholder=tr("input_box.setToolTip"),
     )
@@ -507,7 +611,10 @@ with col1:
                         )
                 else:
                     prompt = process_description
-                    
+                
+                # Enhance prompt with PDF context if available
+                if PDF_SUPPORT and 'pdf_manager' in st.session_state:
+                    prompt = st.session_state.pdf_manager.get_enhanced_prompt(prompt, diagram_type)
                 
                 # Call API
                 response = call_api(prompt, selected_model)
@@ -895,11 +1002,30 @@ if st.session_state.show_plantuml_code and st.session_state.plantuml_diagrams:
     
     @st.dialog(tr("show_plantuml_dialog") + f" - {diagram_type}", width="large")
     def show_plantuml_modal():
-        st.code(plantuml_code, language="plantuml",height=500)
-                
-        if st.button(tr("close_plantuml_button"), type="primary"):
-            st.session_state.show_plantuml_code = False
-            st.rerun()
+        st.write(tr("edit_plantuml_code"))
+        
+        # Edytowalne pole tekstowe dla kodu PlantUML
+        edited_code = st.text_area(
+            label="",
+            value=plantuml_code,
+            height=500,
+            key=f"plantuml_edit_{selected_index}"
+        )
+        
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            if st.button(tr("update_diagram_button"), type="secondary"):
+                if edited_code.strip():
+                    # Aktualizuj kod w session_state
+                    st.session_state.plantuml_diagrams[selected_index] = edited_code
+                    st.success(tr("msg_diagram_updated"))
+                    st.rerun()
+                    
+        with col2:
+            if st.button(tr("close_plantuml_button"), type="primary"):
+                st.session_state.show_plantuml_code = False
+                st.rerun()
     
    # Show modal and handle closing
     result = show_plantuml_modal()

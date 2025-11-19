@@ -1092,7 +1092,7 @@ if __name__ == '__main__':
     setup_logger('plantuml_activity_parser.log')
     # Konfiguracja parsera argumentów
     parser = argparse.ArgumentParser(description='Parser diagramów aktywności PlantUML')
-    parser.add_argument('input_file', nargs='?', default='Diagram_aktywności_nowy.puml',
+    parser.add_argument('input_file', nargs='?', default='Diagram_aktywności_z_aktorami.puml',
                         help='Plik wejściowy z kodem PlantUML')
     parser.add_argument('--output', '-o', help='Plik wyjściowy JSON (domyślnie: generowana nazwa)')
     parser.add_argument('--debug', '-d', action='store_true', help='Włącz tryb debugowania')

@@ -454,10 +454,15 @@ def fetch_plantuml_svg_www(plantuml_code: str, LANG="pl") -> bytes:
         error_msg = f"{int(error_headers['line'])+1}: {error_headers['error']} : {error_headers['description']}" 
   
     if response.status_code == 200:
-        log_error(f"Błąd powbierania SVG (kod: {response.status_code}):\n {error_msg}") 
-        return response.content, error_msg
+        # Sprawdź czy PlantUML zwrócił błąd w nagłówkach
+        if error_msg:
+            log_error(f"Błąd PlantUML w diagramie: {error_msg}")
+            return response.content, error_msg
+        else:
+            log_info(f"SVG pomyślnie pobrany z plantuml.com")
+            return response.content, None
     else:
-        error_msg = f"Błąd powbierania SVG (kod: {response.status_code}):\n {response.text}"
+        error_msg = f"Błąd pobierania SVG (kod: {response.status_code}): {response.text}"
         log_error(f"{error_msg}")
         raise Exception(error_msg)
     

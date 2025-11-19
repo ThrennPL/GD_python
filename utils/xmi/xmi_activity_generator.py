@@ -17,30 +17,6 @@ except ImportError as e:
     print(f"❌ Krytyczny błąd importu podstawowych modułów: {e}")
     sys.exit(1)
 
-try:
-    from utils.xmi.ai_layout_manager import AILayoutManager
-    AI_LAYOUT_AVAILABLE = True
-    log_info("✅ AI Layout Manager zaimportowany pomyślnie!")
-except ImportError as e:
-    AI_LAYOUT_AVAILABLE = False
-    log_warning(f"⚠️ AI Layout Manager niedostępny: {e}")
-except Exception as e:
-    AI_LAYOUT_AVAILABLE = False
-    log_error(f"❌ Błąd importu AI Layout Manager: {e}")
-
-try:
-    graph_layout_path = os.path.join(os.path.dirname(__file__), 'graph_layout_manager.py')
-    if os.path.exists(graph_layout_path):
-        from utils.xmi.graph_layout_manager import GraphLayoutManager
-        GRAPH_LAYOUT_AVAILABLE = True
-        log_info("✅ GraphLayoutManager dostępny")
-    else:
-        GRAPH_LAYOUT_AVAILABLE = False
-        log_warning("⚠️ graph_layout_manager.py nie istnieje")
-except ImportError as e:
-    GRAPH_LAYOUT_AVAILABLE = False
-    log_warning(f"⚠️ GraphLayoutManager niedostępny: {e}")
-
 setup_logger('xmi_activity_generator.log')
 
 class XMIActivityGenerator:
@@ -2972,7 +2948,7 @@ if __name__ == '__main__':
     
     # Utworzenie parsera argumentów z bezpośrednią obsługą plików PlantUML
     parser = argparse.ArgumentParser(description='Generator XMI dla diagramów aktywności')
-    parser.add_argument('input_file', nargs='?', default='Diagram_aktywności_nowy.puml',
+    parser.add_argument('input_file', nargs='?', default='Diagram_aktywności_z_aktorami.puml',
                         help='Plik wejściowy z kodem PlantUML')
     parser.add_argument('--output', '-o', 
                         help='Plik wyjściowy XMI (domyślnie: diagram_aktywnosci_[timestamp].xmi)')

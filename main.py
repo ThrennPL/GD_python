@@ -36,6 +36,13 @@ try:
     from utils.plantuml.plantuml_component_parser import PlantUMLComponentParser
     from utils.xmi.xmi_component_generator import XMIComponentGenerator
     from utils.metrics.model_response_metrics import  ModelResponseMetrics, measure_response_time
+    # PDF functionality import
+    try:
+        from utils.pdf.pdf_processor import PDFProcessor, enhance_prompt_with_pdf_context
+        PDF_SUPPORT = True
+    except ImportError:
+        PDF_SUPPORT = False
+        PDFProcessor = None
 except ImportError as e:
     MODULES_LOADED = False
     print(f"Error importing modules: {e}")
@@ -57,6 +64,15 @@ LANG = "pl"  # Domyślny język, można zmienić na "pl" dla polskiego
 def tr(key):
     return EN[key] if LANG == "en" else PL[key]
 
+def update_language(new_lang):
+    """Update language globally and reload prompt templates"""
+    global LANG, prompt_templates, get_diagram_specific_requirements
+    LANG = new_lang
+    if LANG == "en":
+        from prompts.prompt_templates_en import prompt_templates, get_diagram_specific_requirements
+    else:
+        from prompts.prompt_templates_pl import prompt_templates, get_diagram_specific_requirements
+
 if LANG == "en":
     from prompts.prompt_templates_en import prompt_templates, get_diagram_specific_requirements
 else:
@@ -74,9 +90,17 @@ class AIApp(QMainWindow):
         self.verification_attempts = 0
         self.last_prompt_type = None 
         self.prompt_templates = prompt_templates  # Załaduj szablony z pliku
+        
+        # Initialize PDF processor if available
+        if PDF_SUPPORT:
+            self.pdf_processor = PDFProcessor()
+            self.selected_pdf_files = []
+        else:
+            self.pdf_processor = None
+            self.selected_pdf_files = []
 
         # Grupa dla szablonu
-        template_group = QGroupBox(tr("template_group"))
+        self.template_group = QGroupBox(tr("template_group"))
         template_layout = QHBoxLayout()
 
         # ComboBox do wyboru modelu
@@ -125,9 +149,10 @@ class AIApp(QMainWindow):
         self.template_selector.setToolTip(tr("template_selector.setToolTip"))
         self.template_selector.addItems(list(self.prompt_templates.keys()))
 
-        template_layout.addWidget(QLabel(tr("template_selector")))
+        self.template_label = QLabel(tr("template_selector"))
+        template_layout.addWidget(self.template_label)
         template_layout.addWidget(self.template_selector)
-        template_group.setStyleSheet("background-color: #f0ffff;")
+        self.template_group.setStyleSheet("background-color: #f0ffff;")
 
         # Dodanie ComboBox do wyboru typu diagramu
         self.diagram_type_selector = QComboBox(self)
@@ -137,7 +162,8 @@ class AIApp(QMainWindow):
             "communication", "component", "deployment", "timing", "collaboration"
         ])
         
-        template_layout.addWidget(QLabel(tr("template_layout.select_label")))
+        self.diagram_type_label = QLabel(tr("template_layout.select_label"))
+        template_layout.addWidget(self.diagram_type_label)
         template_layout.addWidget(self.diagram_type_selector)
 
         self.template_selector.currentIndexChanged.connect(self.on_template_changed)
@@ -153,17 +179,64 @@ class AIApp(QMainWindow):
 
         template_layout.addWidget(self.use_template_checkbox)
         
-        template_group.setLayout(template_layout)
+        self.template_group.setLayout(template_layout)
 
         # Layout główny
         left_layout = QVBoxLayout()
 
-        # 1. Etykieta i wybór modelu (dodaj na górze)
-        left_layout.addWidget(QLabel(tr("model_selector")))
+        # 1. Language selector at the top
+        language_layout = QHBoxLayout()
+        self.language_label = QLabel(tr("language_selector"))
+        language_layout.addWidget(self.language_label)
+        self.language_selector = QComboBox(self)
+        self.language_selector.addItem(tr("language_polish"), "pl")
+        self.language_selector.addItem(tr("language_english"), "en")
+        self.language_selector.setCurrentIndex(0 if LANG == "pl" else 1)
+        self.language_selector.currentIndexChanged.connect(self.on_language_changed)
+        language_layout.addWidget(self.language_selector)
+        left_layout.addLayout(language_layout)
+
+        # 2. Etykieta i wybór modelu
+        self.model_label = QLabel(tr("model_selector"))
+        left_layout.addWidget(self.model_label)
         left_layout.addWidget(self.model_selector)
 
         # 2. Grupa dla szablonu (jak dotychczas)
-        left_layout.addWidget(template_group)
+        left_layout.addWidget(self.template_group)
+
+        # 3. PDF Context Group (if supported)
+        if PDF_SUPPORT:
+            self.pdf_group = QGroupBox(tr("pdf_context_group"))
+            pdf_layout = QVBoxLayout()
+            
+            # Info label
+            self.pdf_info_label = QLabel(tr("pdf_upload_info"))
+            self.pdf_info_label.setWordWrap(True)
+            pdf_layout.addWidget(self.pdf_info_label)
+            
+            # Buttons layout
+            pdf_buttons_layout = QHBoxLayout()
+            
+            self.select_pdf_button = QPushButton(tr("select_pdf_button"))
+            self.select_pdf_button.clicked.connect(self.select_pdf_files)
+            pdf_buttons_layout.addWidget(self.select_pdf_button)
+            
+            self.clear_pdf_button = QPushButton(tr("clear_pdf_button"))
+            self.clear_pdf_button.clicked.connect(self.clear_pdf_files)
+            self.clear_pdf_button.setEnabled(False)
+            pdf_buttons_layout.addWidget(self.clear_pdf_button)
+            
+            pdf_layout.addLayout(pdf_buttons_layout)
+            
+            # Selected files display
+            self.pdf_files_label = QLabel(tr("no_pdf_files_selected"))
+            self.pdf_files_label.setWordWrap(True)
+            self.pdf_files_label.setStyleSheet("color: gray; font-style: italic;")
+            pdf_layout.addWidget(self.pdf_files_label)
+            
+            self.pdf_group.setLayout(pdf_layout)
+            self.pdf_group.setStyleSheet("background-color: #fff8e1;")
+            left_layout.addWidget(self.pdf_group)
 
         # Przycisk "Wyślij zapytanie"
         self.send_button = QPushButton(tr("send_button"))
@@ -189,11 +262,13 @@ class AIApp(QMainWindow):
         self.validate_input_button = QPushButton(tr("validate_input_button"), self)
 
         # 3. Output box (okno konwersacji)
-        left_layout.addWidget(QLabel(tr("output_box")))
+        self.output_label = QLabel(tr("output_box"))
+        left_layout.addWidget(self.output_label)
         left_layout.addWidget(self.output_box)
 
         # 4. Input box (opis procesu)
-        left_layout.addWidget(QLabel(tr("input_box")))
+        self.input_label = QLabel(tr("input_box"))
+        left_layout.addWidget(self.input_label)
         left_layout.addWidget(self.input_box)
         self.input_box.setFixedHeight(100)
 
@@ -243,6 +318,70 @@ class AIApp(QMainWindow):
         # Połącz sygnał zmiany zakładki z tą metodą
         self.diagram_tabs.currentChanged.connect(self.on_tab_changed)
 
+    def on_language_changed(self, index):
+        """Handle language selection change"""
+        new_lang = self.language_selector.itemData(index)
+        if new_lang and new_lang != LANG:
+            self.change_language(new_lang)
+
+    def change_language(self, new_lang):
+        """Change application language and update UI"""
+        update_language(new_lang)
+        self.prompt_templates = prompt_templates  # Reload templates
+        
+        # Update window title
+        self.setWindowTitle(tr("setWindowTitle"))
+        
+        # Update language selector items
+        self.language_selector.setItemText(0, tr("language_polish"))
+        self.language_selector.setItemText(1, tr("language_english"))
+        
+        # Update all labels
+        self.language_label.setText(tr("language_selector"))
+        self.model_label.setText(tr("model_selector"))
+        self.template_label.setText(tr("template_selector"))
+        self.diagram_type_label.setText(tr("template_layout.select_label"))
+        self.output_label.setText(tr("output_box"))
+        self.input_label.setText(tr("input_box"))
+        
+        # Update group boxes
+        self.template_group.setTitle(tr("template_group"))
+        if hasattr(self, 'pdf_group'):
+            self.pdf_group.setTitle(tr("pdf_context_group"))
+            self.pdf_info_label.setText(tr("pdf_upload_info"))
+        
+        # Update all buttons
+        self.send_button.setText(tr("send_button"))
+        self.save_xml_button.setText(tr("save_xml_button"))
+        self.edit_plantuml_button.setText(tr("edit_plantuml_button"))
+        self.save_PlantUML_button.setText(tr("save_plantuml_button"))
+        self.save_xmi_button.setText(tr("save_xmi_button"))
+        self.save_diagram_button.setText(tr("save_diagram_button"))
+        self.validate_input_button.setText(tr("validate_input_button"))
+        
+        # Update PDF buttons if available
+        if hasattr(self, 'select_pdf_button'):
+            self.select_pdf_button.setText(tr("select_pdf_button"))
+            self.clear_pdf_button.setText(tr("clear_pdf_button"))
+            if not self.selected_pdf_files:  # Only update if no files selected
+                self.pdf_files_label.setText(tr("no_pdf_files_selected"))
+        
+        # Update checkbox
+        if hasattr(self, 'use_template_checkbox'):
+            self.use_template_checkbox.setText(tr("use_template_checkboxuse_template_checkbox"))
+        
+        # Update tooltips
+        self.model_selector.setToolTip(tr("model_selector.setToolTip"))
+        self.input_box.setToolTip(tr("input_box.setToolTip"))
+        self.output_box.setToolTip(tr("output_box.setToolTip"))
+        self.template_selector.setToolTip(tr("template_selector.setToolTip"))
+        self.diagram_type_selector.setToolTip(tr("diagram_type_selector.setToolTip"))
+        
+        # Update template selector
+        self.update_template_selector()
+        
+        # Show info message
+        QMessageBox.information(self, tr("language_change_title"), tr("language_change_message"))
 
     def close_plantuml_tab(self, idx):
         self.diagram_tabs.removeTab(idx)
@@ -470,6 +609,9 @@ class AIApp(QMainWindow):
             )
         else:
             prompt = process_description
+
+        # Enhance prompt with PDF context if available
+        prompt = self.enhance_prompt_with_pdf_context(prompt, diagram_type)
 
         self.send_button.setEnabled(False)
         if not process_description:
@@ -768,15 +910,15 @@ class AIApp(QMainWindow):
                 dialog.accept()
                 
                 # Wyświetlenie komunikatu o sukcesie
-                ok_msg = tr("msg_info_edited_plantuml_saved").format(diagram_type=diagram_type)
-                self.append_to_chat("System", ok_msg)
-                log_info(ok_msg)
+                success_msg = tr("msg_diagram_updated")
+                self.append_to_chat("System", success_msg)
+                log_info(success_msg)
                 
                 # Aktualizacja przycisków
                 self.save_diagram_button.setEnabled(True)
                 
-                diagram_type = identify_plantuml_diagram_type(self.plantuml_code, LANG).lower()
-                if any(word in diagram_type for word in ["klas", "sekwenc", "aktywno", "komponent", "class", "sequence", "activity", "component"]):
+                diagram_type_lower = identify_plantuml_diagram_type(new_code, LANG).lower()
+                if any(word in diagram_type_lower for word in ["klas", "sekwenc", "aktywno", "komponent", "class", "sequence", "activity", "component"]):
                     self.save_xmi_button.setEnabled(True)
                 else:
                     self.save_xmi_button.setEnabled(False)
@@ -799,32 +941,31 @@ class AIApp(QMainWindow):
             dialog.setWindowTitle(tr("dialog_edit_plantuml_title"))
             layout = QVBoxLayout(dialog)
 
-            # Ustawienie minimalnego rozmiaru dla edytora tekstu
+            # Etykieta informacyjna
+            info_label = QLabel(tr("edit_plantuml_code"), dialog)
+            layout.addWidget(info_label)
+
+            # Edytowalne pole tekstowe dla kodu PlantUML
             text_edit = QTextEdit(dialog)
             text_edit.setPlainText(plantuml_code)
             text_edit.setMinimumSize(500, 400)  # Minimum 500x400
             layout.addWidget(text_edit)
             
-            save_button = QPushButton(tr("dialog_save_button"), dialog)
+            # Przyciski
+            update_button = QPushButton(tr("update_diagram_button"), dialog)
             preview_button = QPushButton(tr("dialog_preview_button"), dialog)
             cancel_button = QPushButton(tr("dialog_cancel_button"), dialog)
             
-            if text_edit.textChanged:
-                save_button.setEnabled(True)
-                preview_button.setEnabled(True)
-            else:
-                save_button.setEnabled(False)
-                preview_button.setEnabled(False)
-                
+            # Połączenie sygnałów
             cancel_button.clicked.connect(dialog.reject)
             preview_button.clicked.connect(lambda: self.preview_plantuml_diagram(text_edit.toPlainText()))
-            save_button.clicked.connect(lambda: self.save_edited_plantuml(idx, text_edit.toPlainText(), dialog))
+            update_button.clicked.connect(lambda: self.save_edited_plantuml(idx, text_edit.toPlainText(), dialog))
             
             # Poziomy layout dla przycisków w jednej linii
             button_layout = QHBoxLayout()
             button_layout.addStretch()  # Elastyczna przestrzeń po lewej
             button_layout.addWidget(preview_button)
-            button_layout.addWidget(save_button)
+            button_layout.addWidget(update_button)
             button_layout.addWidget(cancel_button)
             layout.addLayout(button_layout)  # Dodaj layout przycisków do głównego layoutu
 
@@ -1198,6 +1339,77 @@ class AIApp(QMainWindow):
         use_template = self.use_template_checkbox.isChecked()
         self.template_selector.setEnabled(use_template)
         self.diagram_type_selector.setEnabled(use_template)
+
+    # PDF handling methods
+    def select_pdf_files(self):
+        """Otwiera dialog wyboru plików PDF."""
+        if not PDF_SUPPORT:
+            QMessageBox.warning(self, tr("pdf_not_supported_title"), tr("pdf_not_supported_message"))
+            return
+            
+        files, _ = QFileDialog.getOpenFileNames(
+            self, 
+            tr("select_pdf_files_title"),
+            "",
+            tr("pdf_file_filter")
+        )
+        
+        if files:
+            self.selected_pdf_files = files
+            self.update_pdf_files_display()
+            self.clear_pdf_button.setEnabled(True)
+            log_info(f"Selected PDF files: {files}")
+    
+    def clear_pdf_files(self):
+        """Czyści wybrane pliki PDF."""
+        self.selected_pdf_files = []
+        self.update_pdf_files_display()
+        self.clear_pdf_button.setEnabled(False)
+        log_info("Cleared PDF files selection")
+    
+    def update_pdf_files_display(self):
+        """Aktualizuje wyświetlanie wybranych plików PDF."""
+        if not self.selected_pdf_files:
+            self.pdf_files_label.setText(tr("no_pdf_files_selected"))
+            self.pdf_files_label.setStyleSheet("color: gray; font-style: italic;")
+        else:
+            file_names = [os.path.basename(f) for f in self.selected_pdf_files]
+            if len(file_names) > 3:
+                display_text = tr("pdf_files_selected").format(
+                    count=len(file_names),
+                    files=", ".join(file_names[:3]) + f" + {len(file_names)-3} więcej"
+                )
+            else:
+                display_text = tr("pdf_files_selected").format(
+                    count=len(file_names),
+                    files=", ".join(file_names)
+                )
+            self.pdf_files_label.setText(display_text)
+            self.pdf_files_label.setStyleSheet("color: green; font-weight: bold;")
+    
+    def enhance_prompt_with_pdf_context(self, original_prompt, diagram_type):
+        """Wzbogaca prompt o kontekst z plików PDF."""
+        if not PDF_SUPPORT or not self.selected_pdf_files or not self.pdf_processor:
+            return original_prompt
+            
+        try:
+            enhanced_prompt = enhance_prompt_with_pdf_context(
+                original_prompt, 
+                self.selected_pdf_files, 
+                diagram_type
+            )
+            
+            if enhanced_prompt != original_prompt:
+                log_info(f"Prompt enhanced with PDF context from {len(self.selected_pdf_files)} files")
+                self.append_to_chat("System", tr("pdf_context_added_message").format(count=len(self.selected_pdf_files)))
+            
+            return enhanced_prompt
+            
+        except Exception as e:
+            error_msg = tr("pdf_processing_error").format(error=str(e))
+            log_error(error_msg)
+            self.append_to_chat("System", error_msg)
+            return original_prompt
 
 
 

@@ -7,3 +7,7 @@ google-genai
 google-generativeai
 psycopg2-binary
 mysql-connector-python
+PyPDF2
+PyMuPDF
+python-docx
+openpyxl

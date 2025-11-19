@@ -62,9 +62,13 @@ An application for generating, visualizing, and validating UML (PlantUML) and BP
 ## Features
 
   * Generate PlantUML or BPMN XML code from process descriptions
+  * **🆕 PDF Integration** - enrich diagram context with data from PDF documents
   * Select prompt template and diagram type (sequence, activity, class, component, state, use case, etc.)
   * Visualize PlantUML diagrams (SVG)
+  * **🆕 PlantUML Code Editing** - edit generated code directly in the application
   * Automatic PlantUML code verification if SVG generation fails
+  * **🆕 Enhanced Error Verification** - more accurate detection of PlantUML syntax errors
+  * **🆕 GUI Language Selection** - dynamic language switching during application use
   * AI-based process description validation
   * Conversation history with the AI model
   * Support for multiple AI models (local or via API, e.g., OpenAI, Gemini)
@@ -102,6 +106,7 @@ SVG diagrams can be generated in two ways, depending on the `plantuml_generator_
   * Python 3.7+ (for Streamlit) or Python 3.8+ (for PyQt5)
   * Local AI server (e.g., LM Studio) running at `http://localhost:1234` (if using a local model)
   * Dependencies from `requirements.txt`
+  * **🆕 PDF Support:** PyPDF2, PyMuPDF (automatically installed)
   * Java (for local PlantUML rendering)
   * `plantuml.jar` (download from PlantUML website)
   * PyQt5 (desktop version only)
@@ -125,11 +130,13 @@ SVG diagrams can be generated in two ways, depending on the `plantuml_generator_
 ## Usage
 
 1.  **Select AI model**: From the list of available models on the server.
-2.  **Configure template**: Choose the template type (PlantUML/XML) and a specific template.
-3.  **Select diagram type**: Sequence, activity, class, etc.
-4.  **Enter process description**: In the text field, enter a detailed description of the process you want to visualize.
-5.  **Generate/Validate**: Click "Send query" or "Validate description".
-6.  **Display Diagram**: The generated PlantUML diagram (SVG) or BPMN XML code will appear in the appropriate tabs.
+2.  **🆕 Add PDF context**: (Optional) Upload a PDF file to enrich context.
+3.  **Configure template**: Choose the template type (PlantUML/XML) and a specific template.
+4.  **Select diagram type**: Sequence, activity, class, etc.
+5.  **Enter process description**: In the text field, enter a detailed description of the process you want to visualize.
+6.  **Generate/Validate**: Click "Send query" or "Validate description".
+7.  **Display Diagram**: The generated PlantUML diagram (SVG) or BPMN XML code will appear in the appropriate tabs.
+8.  **🆕 Edit code**: Click "PlantUML Code" to edit generated code directly in the application.
 
 ---
 
@@ -138,6 +145,9 @@ SVG diagrams can be generated in two ways, depending on the `plantuml_generator_
   * `streamlit_app.py` - main Streamlit application
   * `main.py` - original PyQt5 application
   * `run_streamlit.bat` - Windows launch script for Streamlit version
+  * **🆕 `utils/pdf/`** - PDF integration modules
+      * `pdf_processor.py` - PDF file processing
+      * `streamlit_pdf_integration.py` - Streamlit interface integration
   * Other Python files - helper modules
       * `translations_pl.py`, `translations_en.py` - interface translation files
       * `prompt_templates_pl.py`, `prompt_templates_en.py` - prompt template files for Polish and English
