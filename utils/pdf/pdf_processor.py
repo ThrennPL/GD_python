@@ -43,27 +43,65 @@ class PDFProcessor:
         self.cache_dir = Path(cache_dir)
         self.cache_dir.mkdir(parents=True, exist_ok=True)
         
-        # Wzorce dla różnych typów kontekstu
+        # Wzorce dla różnych typów kontekstu - znacznie rozszerzone
         self.patterns = {
             'actors': [
-                r'(?:użytkownik|klient|pracownik|administrator|operator|analityk)',
-                r'(?:user|client|employee|admin|operator|analyst)',
+                r'(?:użytkownik|klient|pracownik|administrator|operator|analityk|student|dziekan|dziekanat)',
+                r'(?:user|client|employee|admin|operator|analyst|student|dean)',
                 r'(?:role|rola):\s*([^.\n]+)',
+                r'(?:aktor|actor):\s*([^.\n]+)',
+                r'(?:uczestnik|participant):\s*([^.\n]+)',
+                # Dodatkowe wzorce dla ról akademickich
+                r'(?:rektor|prorektor|kierownik|sekretarz|dyrektor)',
+                r'(?:wykładowca|profesor|doktor|magister)',
+                r'(?:BOS|dziekanat|sekretariat)',
             ],
             'activities': [
-                r'(?:krok|etap|czynność|operacja):\s*([^.\n]+)',
-                r'(?:step|stage|activity|operation):\s*([^.\n]+)',
-                r'(?:proces|procedure):\s*([^.\n]+)',
+                # Podstawowe wzorce aktywności
+                r'(?:krok|etap|czynność|operacja|działanie):\s*([^.\n]+)',
+                r'(?:step|stage|activity|operation|action):\s*([^.\n]+)',
+                r'(?:proces|procedura|procedure):\s*([^.\n]+)',
+                # Czasowniki wskazujące na operacje
+                r'(?:składa|przyjmuje|przekazuje|rozpatruje|akceptuje|odrzuca|zwraca|informuje|archiwizuje)',
+                r'(?:submit|receive|transfer|review|accept|reject|return|inform|archive)',
+                r'(?:wykonuje|realizuje|przeprowadza|dokonuje|sprawdza|weryfikuje|zatwierdza)',
+                r'(?:execute|perform|conduct|carry out|check|verify|approve)',
+                # Wzorce dla operacji biznesowych
+                r'(?:może|można|należy|trzeba|powinien)\s+([^.\n]+)',
+                r'(?:can|may|should|must|need to)\s+([^.\n]+)',
+                # Wzorce dla procesów
+                r'([A-ZĄĆĘŁŃÓŚŹŻ][a-ząćęłńóśźż\s]{5,50})(?:\s+(?:podania|procesu|dokumentu))',
+                r'([A-Z][a-z\s]{5,50})(?:\s+(?:application|process|document))',
             ],
             'decisions': [
-                r'(?:jeśli|gdy|w przypadku gdy|decyzja)',
-                r'(?:if|when|in case of|decision)',
-                r'(?:warunek|condition):\s*([^.\n]+)',
+                r'(?:jeśli|gdy|w przypadku gdy|decyzja|warunek)',
+                r'(?:if|when|in case of|decision|condition)',
+                r'(?:może|można):\s*([^.\n]+)',
+                r'(?:can|may):\s*([^.\n]+)',
+                r'(?:reguła biznesowa|business rule):\s*([^.\n]+)',
+                r'(?:zaakceptować|odrzucić|zwrócić|approve|reject|return)',
+                r'(?:pozytywna|negatywna)\s+(?:opinia|opinion)',
             ],
             'systems': [
-                r'(?:system|aplikacja|baza danych|serwis)',
-                r'(?:system|application|database|service)',
-                r'(?:API|interface|interfejs)',
+                r'(?:system|aplikacja|baza danych|serwis|platforma)',
+                r'(?:system|application|database|service|platform)',
+                r'(?:API|interface|interfejs|portal)',
+                r'(?:dziekanat|sekretariat|biuro|office|department)',
+                r'(?:moduł|module|komponent|component)',
+            ],
+            'business_objects': [
+                # Obiekty biznesowe - dokumenty, formularze, etc.
+                r'(?:podanie|wniosek|formularz|dokument|zaświadczenie)',
+                r'(?:application|form|document|certificate|request)',
+                r'(?:umowa|kontrakt|contract|agreement)',
+                r'(?:raport|report|sprawozdanie)',
+                r'(?:załącznik|attachment|appendix)',
+            ],
+            'business_rules': [
+                r'(?:reguła|rule|zasada|principle|warunek|condition)',
+                r'(?:wymaganie|requirement|kryterium|criterion)',
+                r'(?:ograniczenie|constraint|limitation)',
+                r'(?:termin|deadline|czas|time limit)',
             ]
         }
     
@@ -146,7 +184,7 @@ class PDFProcessor:
         return text_content
     
     def analyze_process_context(self, text: str) -> ProcessContext:
-        """Analizuje tekst i wyciąga kontekst procesu biznesowego."""
+        """Analizuje tekst i wyciąga kontekst procesu biznesowego - ulepszona wersja."""
         context = ProcessContext(
             process_name="",
             actors=[],
@@ -157,38 +195,66 @@ class PDFProcessor:
             systems=[]
         )
         
-        # Znajdź nazwę procesu (pierwszy nagłówek lub tytuł)
+        # Normalizuj tekst
+        text_normalized = re.sub(r'\s+', ' ', text.lower())
+        
+        # Znajdź nazwę procesu (ulepszona logika)
         title_patterns = [
+            r'proces\s*biznesowy:\s*([^.\n]{10,100})',
+            r'business\s*process:\s*([^.\n]{10,100})',
+            r'proces:\s*([^.\n]{10,100})',
             r'^#\s*(.+)$',
             r'^\*\*(.+)\*\*$',
-            r'^([A-ZĄĆĘŁŃÓŚŹŻ][^.\n]{10,60})$'
+            r'^([A-ZĄĆĘŁŃÓŚŹŻ][^.\n]{10,80})$'
         ]
         
         lines = text.split('\n')
-        for line in lines[:10]:  # Sprawdź pierwsze 10 linii
+        for line in lines[:15]:  # Sprawdź pierwsze 15 linii
             for pattern in title_patterns:
-                match = re.search(pattern, line.strip(), re.MULTILINE)
+                match = re.search(pattern, line.strip(), re.IGNORECASE)
                 if match and not context.process_name:
                     context.process_name = match.group(1).strip()
                     break
+            if context.process_name:
+                break
         
-        # Wyciągnij aktorów
+        # Wyciągnij aktorów (ulepszone)
         for pattern in self.patterns['actors']:
             matches = re.finditer(pattern, text, re.IGNORECASE)
             for match in matches:
                 actor = match.group(0) if match.lastindex is None else match.group(1)
                 if actor and len(actor.strip()) > 2:
-                    context.actors.append(actor.strip())
+                    context.actors.append(actor.strip().title())
         
-        # Wyciągnij aktywności
-        for pattern in self.patterns['activities']:
+        # Wyciągnij aktywności i operacje biznesowe (znacznie ulepszone)
+        activity_patterns = self.patterns['activities']
+        
+        # Dodatkowe wzorce specyficzne dla operacji biznesowych
+        business_operation_patterns = [
+            r'([A-ZĄĆĘŁŃÓŚŹŻ][a-ząćęłńóśźż\s]{2,}(?:podanie|wniosek|dokument|formularz)[a-ząćęłńóśźż\s]*)',
+            r'([a-ząćęłńóśźż\s]*(?:składa|przyjmuje|przekazuje|rozpatruje|zatwierdza|odrzuca|archiwizuje)[a-ząćęłńóśźż\s]{5,50})',
+            r'([a-ząćęłńóśźż\s]*(?:informuje|powiadamia|sprawdza|weryfikuje|kontroluje)[a-ząćęłńóśźż\s]{5,50})',
+            r'((?:może|można|należy|powinien)[a-ząćęłńóśźż\s]{5,80})',
+            # Wzorce dla pełnych zdań opisujących operacje
+            r'([A-ZĄĆĘŁŃÓŚŹŻ][^.!?]*(?:wykonuje|realizuje|przeprowadza|dokonuje)[^.!?]*[.!?])',
+            r'([A-ZĄĆĘŁŃÓŚŹŻ][^.!?]*(?:process|execute|perform|handle)[^.!?]*[.!?])',
+        ]
+        
+        for pattern in activity_patterns + business_operation_patterns:
             matches = re.finditer(pattern, text, re.IGNORECASE)
             for match in matches:
                 activity = match.group(0) if match.lastindex is None else match.group(1)
                 if activity and len(activity.strip()) > 3:
-                    context.activities.append(activity.strip())
+                    # Oczyść i dodaj
+                    activity_clean = re.sub(r'^\W+|\W+$', '', activity.strip())
+                    # Filtruj zbyt krótkie lub niepotrzebne
+                    if (len(activity_clean) > 8 and 
+                        not any(skip in activity_clean.lower() for skip in 
+                               ['system', 'może być', 'można', 'należy używać', 'diagram', 'notacja']) and
+                        not re.match(r'^[a-z\s]*$', activity_clean)):  # Usuń same małe litery
+                        context.activities.append(activity_clean.strip())
         
-        # Wyciągnij decyzje
+        # Wyciągnij decyzje i reguły biznesowe
         for pattern in self.patterns['decisions']:
             matches = re.finditer(pattern, text, re.IGNORECASE)
             for match in matches:
@@ -196,21 +262,73 @@ class PDFProcessor:
                 if decision and len(decision.strip()) > 3:
                     context.decisions.append(decision.strip())
         
-        # Wyciągnij systemy
+        # Wyciągnij reguły biznesowe (nowa kategoria)
+        if 'business_rules' in self.patterns:
+            for pattern in self.patterns['business_rules']:
+                matches = re.finditer(pattern, text, re.IGNORECASE)
+                for match in matches:
+                    rule = match.group(0) if match.lastindex is None else match.group(1)
+                    if rule and len(rule.strip()) > 3:
+                        context.business_rules.append(rule.strip())
+        
+        # Wyciągnij systemy i komponenty
         for pattern in self.patterns['systems']:
             matches = re.finditer(pattern, text, re.IGNORECASE)
             for match in matches:
                 system = match.group(0) if match.lastindex is None else match.group(1)
                 if system and len(system.strip()) > 2:
-                    context.systems.append(system.strip())
+                    context.systems.append(system.strip().title())
         
-        # Deduplikacja
-        context.actors = list(set(context.actors))
-        context.activities = list(set(context.activities))
-        context.decisions = list(set(context.decisions))
-        context.systems = list(set(context.systems))
+        # Wyciągnij obiekty biznesowe jeśli wzorzec istnieje
+        if 'business_objects' in self.patterns:
+            for pattern in self.patterns['business_objects']:
+                matches = re.finditer(pattern, text, re.IGNORECASE)
+                for match in matches:
+                    obj = match.group(0) if match.lastindex is None else match.group(1)
+                    if obj and len(obj.strip()) > 2:
+                        context.data_flows.append(obj.strip().title())
+        
+        # Deduplikacja i filtrowanie
+        context.actors = list(set(filter(lambda x: len(x) > 2, context.actors)))[:15]
+        context.activities = list(set(filter(lambda x: len(x) > 5, context.activities)))[:25]
+        context.decisions = list(set(filter(lambda x: len(x) > 3, context.decisions)))[:15]
+        context.systems = list(set(filter(lambda x: len(x) > 2, context.systems)))[:15]
+        context.business_rules = list(set(filter(lambda x: len(x) > 3, context.business_rules)))[:15]
+        context.data_flows = list(set(filter(lambda x: len(x) > 2, context.data_flows)))[:15]
         
         return context
+    
+    def debug_extraction(self, pdf_doc: PDFDocument) -> str:
+        """Metoda debugująca - pokazuje co zostało wyekstraktowane z PDF."""
+        context = self.analyze_process_context(pdf_doc.text_content)
+        
+        debug_info = f"""
+**DEBUG: Analiza ekstraktów z PDF: {pdf_doc.title}**
+
+**PROCES:** {context.process_name}
+
+**AKTORZY ({len(context.actors)}):**
+{chr(10).join(f"- {actor}" for actor in context.actors)}
+
+**AKTYWNOŚCI ({len(context.activities)}):**
+{chr(10).join(f"- {activity}" for activity in context.activities)}
+
+**SYSTEMY ({len(context.systems)}):**
+{chr(10).join(f"- {system}" for system in context.systems)}
+
+**DECYZJE ({len(context.decisions)}):**
+{chr(10).join(f"- {decision}" for decision in context.decisions)}
+
+**REGUŁY BIZNESOWE ({len(context.business_rules)}):**
+{chr(10).join(f"- {rule}" for rule in context.business_rules)}
+
+**OBIEKTY BIZNESOWE ({len(context.data_flows)}):**
+{chr(10).join(f"- {obj}" for obj in context.data_flows)}
+
+**PIERWSZE 500 ZNAKÓW TEKSTU:**
+{pdf_doc.text_content[:500]}...
+"""
+        return debug_info
     
     def process_pdf(self, file_path: str, use_cache: bool = True) -> PDFDocument:
         """Główna metoda do przetwarzania pliku PDF."""
@@ -305,41 +423,84 @@ class PDFProcessor:
 """
     
     def _get_activity_context(self, context: ProcessContext, pdf_doc: PDFDocument) -> str:
-        """Kontekst dla diagramu aktywności."""
-        return f"""
-**KONTEKST PROCESU Z PDF: {pdf_doc.title}**
+        """Kontekst dla diagramu aktywności - ulepszona wersja."""
+        
+        # Filtruj aktywności aby usunąć zbyt ogólne
+        filtered_activities = []
+        for activity in context.activities:
+            if len(activity) > 8 and not any(skip in activity.lower() for skip in ['system', 'może być', 'można']):
+                filtered_activities.append(activity)
+        
+        return f"""**KONTEKST PROCESU Z PDF: {pdf_doc.title}**
 
 **NAZWA PROCESU:** {context.process_name}
 
 **ROLE I AKTORZY:**
-{chr(10).join(f"- {actor}" for actor in context.actors)}
+{chr(10).join(f"- {actor}" for actor in context.actors[:10]) if context.actors else "- (nie zidentyfikowano)"}
 
 **SEKWENCJA DZIAŁAŃ:**
-{chr(10).join(f"{i+1}. {activity}" for i, activity in enumerate(context.activities[:20]))}
+{chr(10).join(f"{i+1}. {activity}" for i, activity in enumerate(filtered_activities[:25])) if filtered_activities else "- (nie zidentyfikowano działań)"}
 
 **DECYZJE I WARUNKI:**
-{chr(10).join(f"- {decision}" for decision in context.decisions)}
+{chr(10).join(f"- {decision}" for decision in context.decisions[:15]) if context.decisions else "- (nie zidentyfikowano)"}
+
+**REGUŁY BIZNESOWE:**
+{chr(10).join(f"- {rule}" for rule in context.business_rules[:10]) if context.business_rules else "- (nie zidentyfikowano)"}
 
 **SYSTEMY ZAANGAŻOWANE:**
-{chr(10).join(f"- {system}" for system in context.systems)}
-"""
+{chr(10).join(f"- {system}" for system in context.systems[:10]) if context.systems else "- (nie zidentyfikowano)"}
+
+**OBIEKTY BIZNESOWE:**
+{chr(10).join(f"- {obj}" for obj in context.data_flows[:10]) if context.data_flows else "- (nie zidentyfikowano)"}
+
+**INSTRUKCJA:** Wykorzystaj powyższy kontekst do stworzenia diagramu aktywności pokazującego przepływ procesu z uwzględnieniem wszystkich ról, decyzji i działań."""
     
     def _get_class_context(self, context: ProcessContext, pdf_doc: PDFDocument) -> str:
-        """Kontekst dla diagramu klas."""
-        return f"""
-**ANALIZA DOMENY Z PDF: {pdf_doc.title}**
+        """Kontekst dla diagramu klas - znacznie ulepszona wersja."""
+        
+        # Filtruj i pogrupuj operacje biznesowe
+        business_operations = []
+        for activity in context.activities:
+            # Wyłącz zbyt ogólne lub niepotrzebne frazy
+            if any(skip in activity.lower() for skip in ['może', 'można', 'należy', 'powinien', 'system', 'proces']):
+                continue
+            if len(activity) > 10:  # Tylko znaczące operacje
+                business_operations.append(activity)
+        
+        # Filtruj systemy/encje
+        entities = []
+        for system in context.systems:
+            if len(system) > 2 and system.lower() not in ['system', 'serwis', 'service']:
+                entities.append(system)
+        
+        # Dodaj obiekty biznesowe jako encje
+        for obj in context.data_flows:
+            if len(obj) > 2:
+                entities.append(obj)
+        
+        # Filtruj aktorów
+        filtered_actors = [actor for actor in context.actors if len(actor) > 3]
+        
+        return f"""**ANALIZA DOMENY Z PDF: {pdf_doc.title}**
 
 **PROCES BIZNESOWY:** {context.process_name}
 
 **GŁÓWNE BYTY/ENCJE:**
-{chr(10).join(f"- {system}" for system in context.systems)}
+{chr(10).join(f"- {entity}" for entity in entities[:15]) if entities else "- (nie zidentyfikowano)"}
 
 **ROLE W SYSTEMIE:**
-{chr(10).join(f"- {actor}" for actor in context.actors)}
+{chr(10).join(f"- {actor}" for actor in filtered_actors[:10]) if filtered_actors else "- (nie zidentyfikowano)"}
 
 **OPERACJE BIZNESOWE:**
-{chr(10).join(f"- {activity}" for activity in context.activities)}
-"""
+{chr(10).join(f"- {operation}" for operation in business_operations[:20]) if business_operations else "- (nie zidentyfikowano operacji)"}
+
+**REGUŁY BIZNESOWE:**
+{chr(10).join(f"- {rule}" for rule in context.business_rules[:10]) if context.business_rules else "- (nie zidentyfikowano)"}
+
+**PUNKTY DECYZYJNE:**
+{chr(10).join(f"- {decision}" for decision in context.decisions[:8]) if context.decisions else "- (nie zidentyfikowano)"}
+
+**INSTRUKCJA:** Wykorzystaj powyższy kontekst z dokumentów PDF do wzbogacenia diagramu o dodatkowe szczegóły, aktorów, systemy i procesy, które mogą być istotne dla kompletnego przedstawienia."""
     
     def _get_component_context(self, context: ProcessContext, pdf_doc: PDFDocument) -> str:
         """Kontekst dla diagramu komponentów."""

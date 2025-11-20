@@ -13,3 +13,12 @@
 {"timestamp": "2025-11-19 21:31:42.722", "model": "unknown", "function": "get_loaded_models", "status": "SUCCESS", "elapsed_ms": 514, "response_size": 0}
 {"timestamp": "2025-11-19 21:34:00.743", "model": "unknown", "function": "get_loaded_models", "status": "SUCCESS", "elapsed_ms": 528, "response_size": 0}
 {"timestamp": "2025-11-19 21:37:09.524", "model": "unknown", "function": "get_loaded_models", "status": "SUCCESS", "elapsed_ms": 530, "response_size": 0}
+{"timestamp": "2025-11-20 07:42:14.706", "model": "unknown", "function": "get_loaded_models", "status": "SUCCESS", "elapsed_ms": 579, "response_size": 0}
+{"timestamp": "2025-11-20 07:43:36.028", "model": "gemini-2.5-flash", "function": "start_api_thread", "status": "SUCCESS", "elapsed_ms": 1, "response_size": 0}
+{"timestamp": "2025-11-20 07:43:36.030", "model": "gemini-2.5-flash", "function": "run", "status": "SUCCESS", "elapsed_ms": 48295, "response_size": 0}
+{"timestamp": "2025-11-20 07:55:19.155", "model": "unknown", "function": "get_loaded_models", "status": "SUCCESS", "elapsed_ms": 559, "response_size": 0}
+{"timestamp": "2025-11-20 07:55:53.680", "model": "gemini-2.5-flash", "function": "start_api_thread", "status": "SUCCESS", "elapsed_ms": 0, "response_size": 0}
+{"timestamp": "2025-11-20 07:55:53.680", "model": "gemini-2.5-flash", "function": "run", "status": "SUCCESS", "elapsed_ms": 48618, "response_size": 0}
+{"timestamp": "2025-11-20 08:01:08.317", "model": "unknown", "function": "get_loaded_models", "status": "SUCCESS", "elapsed_ms": 516, "response_size": 0}
+{"timestamp": "2025-11-20 08:02:38.356", "model": "gemini-2.0-flash", "function": "start_api_thread", "status": "SUCCESS", "elapsed_ms": 0, "response_size": 0}
+{"timestamp": "2025-11-20 08:02:38.357", "model": "gemini-2.0-flash", "function": "run", "status": "SUCCESS", "elapsed_ms": 17605, "response_size": 0}
