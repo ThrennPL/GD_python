@@ -389,11 +389,11 @@ Test file: `tests/fixtures/test_documents/Prompty.txt` - business process exampl
   * [GD 2025-11-15 Process description validation](https://github.com/user-attachments/assets/5016fd0b-d3fd-48e9-ae34-6285e4ab57bd)
   * [GD 2025-11-15 Class Diagram](https://github.com/user-attachments/assets/87dd2e69-c36e-4e53-8a3f-a5ed2c14e398)
   * [GD 2025-06-14 Component Diagram](https://github.com/user-attachments/assets/eb99c9a0-834b-4a84-9037-c2a32af755da)
-  * [GD 2025-11-15 C4 Component Diagram](https://github.com/user-attachments/assets/c7ff4a33-aede-45cd-b168-3012db42cf89)
-
+  * [GD 2025-06-14 C4 Component Diagram](https://github.com/user-attachments/assets/cbf7e5d1-f81a-4032-97ad-6fed6d2eeaa4)
+  * [GD 2025-11-20 Desktop - Class Diagram](https://github.com/user-attachments/assets/621afe0c-79d4-47f3-a409-d635b203490d)
+  * [GD 2025-11-20 Streamlit](https://github.com/user-attachments/assets/7486a5de-dda8-4f50-9b9e-5fea016d5cdc)
 ---
 
 **Status**: ✅ **PRODUCTION READY v3.0.0** - Reorganization completed + Smart PDF Analysis System  
 **Last Update**: 2025-11-20  
 **Next Steps**: GUI progress bars, cache system, batch processing
-
