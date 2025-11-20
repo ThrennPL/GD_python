@@ -246,4 +246,8 @@ Zapoznaj się z plikiem `Szablony_promptow.txt` - zawiera opis działania poszcz
   * [GD 2025-11-15 Diagram Klas](https://github.com/user-attachments/assets/87dd2e69-c36e-4e53-8a3f-a5ed2c14e398)
   * [GD 2025-06-14 Diagram komponentów](https://github.com/user-attachments/assets/eb99c9a0-834b-4a84-9037-c2a32af755da)
   * [GD 2025-11-15 Diagram komponentów C4](https://github.com/user-attachments/assets/c7ff4a33-aede-45cd-b168-3012db42cf89)
+  * [GD 2025-11-20 Desktop - Diagram klas](https://github.com/user-attachments/assets/621afe0c-79d4-47f3-a409-d635b203490d)
+  * [GD 2025-11-20 Streamlit](https://github.com/user-attachments/assets/7486a5de-dda8-4f50-9b9e-5fea016d5cdc)
+
+
 
