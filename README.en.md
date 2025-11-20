@@ -193,4 +193,6 @@ Check `Szablony_promptow.txt` for descriptions of dedicated prompt templates for
   * [GD 2025-06-14 Class Diagram](https://github.com/user-attachments/assets/3fe6a5d1-cc2b-4522-b61d-a1752a4ab8bc)
   * [GD 2025-06-14 Component Diagram](https://github.com/user-attachments/assets/eb99c9a0-834b-4a84-9037-c2a32af755da)
   * [GD 2025-06-14 C4 Component Diagram](https://github.com/user-attachments/assets/cbf7e5d1-f81a-4032-97ad-6fed6d2eeaa4)
+  * [GD 2025-11-20 Desktop - Class Diagram](https://github.com/user-attachments/assets/621afe0c-79d4-47f3-a409-d635b203490d)
+  * [GD 2025-11-20 Streamlit](https://github.com/user-attachments/assets/7486a5de-dda8-4f50-9b9e-5fea016d5cdc)
 
