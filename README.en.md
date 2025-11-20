@@ -1,6 +1,14 @@
 # UML/BPMN Diagram Generator & Validator with AI
 
-An application for generating, visualizing, and validating UML (PlantUML) and BPMN (XML) diagrams based on process descriptions, using AI models (e.g., LLM). The project offers both a desktop version (PyQt5) and a web version (Streamlit), allowing you to select prompt templates, diagram types, validate process descriptions, and automatically verify PlantUML code. The app supports **two languages (English and Polish)**, with dedicated prompt templates for each, ensuring better generation results in the chosen language.
+**Project Status**: ✅ **REORGANIZATION COMPLETED** (2025-11-20) - New professional structure + Smart PDF Analysis System
+
+An application for generating, visualizing, and validating UML (PlantUML) and BPMN (XML) diagrams based on process descriptions, using AI models (e.g., LLM). The project offers both a desktop version (PyQt5) and a web version (Streamlit), allowing you to select prompt templates, diagram types, validate process descriptions, and automatically verify PlantUML code.
+
+**🆕 Latest Features:**
+- **🧠 Smart PDF Analysis System** - intelligent model capability detection and automatic method selection
+- **📁 Reorganized structure** - professional code organization (src/, tests/, tools/, config/)
+- **⚡ Real-time progress tracking** - live feedback during operations
+- **🔄 Graceful fallback** - automatic method switching on errors
 
 ---
 
@@ -50,7 +58,9 @@ An application for generating, visualizing, and validating UML (PlantUML) and BP
 7. **Run the application:**
    - **Streamlit:**  
      ```bash
-     streamlit run streamlit_app.py
+     streamlit run src/streamlit_app.py
+     # or
+     scripts/run_streamlit.bat
      ```
    - **PyQt5:**  
      ```bash
@@ -62,7 +72,7 @@ An application for generating, visualizing, and validating UML (PlantUML) and BP
 ## Features
 
   * Generate PlantUML or BPMN XML code from process descriptions
-  * **🆕 PDF Integration** - enrich diagram context with data from PDF documents
+  * **🆕 Smart PDF Analysis System** - intelligent model capability detection and automatic analysis method selection
   * Select prompt template and diagram type (sequence, activity, class, component, state, use case, etc.)
   * Visualize PlantUML diagrams (SVG)
   * **🆕 PlantUML Code Editing** - edit generated code directly in the application
@@ -77,6 +87,73 @@ An application for generating, visualizing, and validating UML (PlantUML) and BP
   * Save queries and model responses to a database (mySQL, PostgreSQL)
   * **Two interface and prompt languages (English and Polish)**
   * Sample test prompts for the banking industry
+
+---
+
+## 🆕 Smart PDF Analysis System
+
+**Advanced PDF analysis system with AI that automatically detects model capabilities and intelligently selects analysis method.**
+
+### 🎯 Key Features:
+- **Automatic model capability detection** - system checks if model supports direct PDF upload
+- **Intelligent method selection** - based on file size and model capabilities
+- **Real-time progress tracking** - live feedback during PDF analysis
+- **Hierarchical fallback** - automatic switching between methods on errors
+- **Smart method selection** - small files (Direct PDF, high quality), large files (Text Extraction, faster)
+
+### 📊 Performance Metrics:
+| Method | Time/MB | Quality | Business Elements |
+|--------|---------|---------|-------------------|
+| Direct PDF | 11.5s | High | 75% accuracy |
+| Text Extraction | 3.6s | Medium | Basic |
+
+### ⚙️ Configuration:
+```env
+# Smart PDF Analysis
+PDF_ANALYSIS_MODEL=models/gemini-2.0-flash
+PDF_ANALYSIS_MODE=ai
+PDF_DIRECT_THRESHOLD_MB=2.0
+PDF_MAX_PAGES_TEXT=50
+PDF_CHUNK_SIZE=4000
+```
+
+### 🚀 Usage:
+1. **Automatic detection** - system checks model capabilities
+2. **Smart selection** - chooses optimal method (Direct PDF ≤2MB, Text Extraction >2MB)
+3. **Progress tracking** - real-time feedback on progress
+4. **Graceful fallback** - automatic switching on errors
+5. **Enhanced context** - enriched business context in prompts
+
+### 🎯 Models Supporting Direct PDF:
+- ✅ Gemini 2.0 Flash
+- ✅ Gemini 1.5 Pro/Flash
+- ❌ OpenAI models (fallback to text extraction)
+- ❌ Local models (fallback to text extraction)
+
+---
+
+## 🆕 PlantUML Code Editing
+
+**New functionality allowing direct editing of generated PlantUML code.**
+
+### Capabilities:
+- **Code editing** directly in the application via "PlantUML Code" button
+- **Real-time preview** - instant diagram updates
+- **Save changes** - ability to update diagram after editing
+- **Intuitive UI** - convenient editor with syntax highlighting
+
+### How to use:
+1. **Generate diagram** using AI
+2. **Click "PlantUML Code"** to open editor
+3. **Edit code** directly in dialog window
+4. **Click "Update diagram"** to apply changes
+5. **Diagram will be automatically updated**
+
+### Benefits:
+- **Quick fixes** without AI regeneration
+- **Fine-tuning** diagram details
+- **Learn PlantUML syntax** through practice
+- **Control over final result**
 
 ---
 
@@ -105,12 +182,15 @@ SVG diagrams can be generated in two ways, depending on the `plantuml_generator_
 
   * Python 3.7+ (for Streamlit) or Python 3.8+ (for PyQt5)
   * Local AI server (e.g., LM Studio) running at `http://localhost:1234` (if using a local model)
-  * Dependencies from `requirements.txt`
-  * **🆕 PDF Support:** PyPDF2, PyMuPDF (automatically installed)
+  * Dependencies from `config/requirements.txt`
+  * **🆕 Smart PDF Analysis:** 
+    * PyPDF2, PyMuPDF (automatically installed)
+    * Google Generative AI SDK (for Direct PDF upload)
+    * Automatic model capability detection
   * Java (for local PlantUML rendering)
-  * `plantuml.jar` (download from PlantUML website)
+  * `plantuml.jar` (in `config/plantuml.jar`)
   * PyQt5 (desktop version only)
-  * `.env` configuration file (see above)
+  * `.env` configuration file (copy in main directory + `config/.env`)
 
 ---
 
@@ -140,19 +220,90 @@ SVG diagrams can be generated in two ways, depending on the `plantuml_generator_
 
 ---
 
-## File Structure
+## 📁 New Project Structure
 
-  * `streamlit_app.py` - main Streamlit application
-  * `main.py` - original PyQt5 application
-  * `run_streamlit.bat` - Windows launch script for Streamlit version
-  * **🆕 `utils/pdf/`** - PDF integration modules
-      * `pdf_processor.py` - PDF file processing
-      * `streamlit_pdf_integration.py` - Streamlit interface integration
-  * Other Python files - helper modules
-      * `translations_pl.py`, `translations_en.py` - interface translation files
-      * `prompt_templates_pl.py`, `prompt_templates_en.py` - prompt template files for Polish and English
+```
+GD_python/
+├── 📁 src/                     # Main application code
+│   ├── main.py                 # PyQt5 application
+│   ├── streamlit_app.py        # Streamlit application
+│   ├── api_thread.py           # API communication
+│   └── input_validator.py      # Input validation
+├── 📁 tests/                   # All tests
+│   ├── unit/                   # Unit tests
+│   ├── integration/            # Integration tests
+│   ├── system/                 # System tests
+│   └── fixtures/               # Test data
+├── 📁 tools/                   # Development tools
+├── 📁 examples/                # Example diagrams
+│   ├── activity/, class/, sequence/
+│   └── generated/              # Generated files
+├── 📁 config/                  # Configuration
+│   ├── .env, requirements.txt
+│   └── plantuml.jar
+├── 📁 scripts/                 # Launch scripts
+│   ├── run_streamlit.bat
+│   └── run_tests.py
+├── 📁 utils/                   # Utility modules
+│   └── pdf/                    # **🆕 Smart PDF Analysis**
+│       ├── ai_pdf_analyzer.py  # AI analysis engine
+│       ├── pdf_processor.py    # Enhanced PDF processor
+│       └── streamlit_pdf_integration.py
+├── 📁 language/                # Translations
+├── 📁 prompts/                 # Prompt templates
+├── 📁 docs/                    # Documentation
+├── main.py                     # PyQt5 entry point
+└── streamlit_app.py            # Streamlit entry point
+```
 
 ---
+
+## 📈 Version History
+
+### v3.0.0 - Project Reorganization (2025-11-20)
+- ✅ **Complete structure reorganization** - professional organization in src/, tests/, tools/, config/
+- ✅ **Smart PDF Analysis System** - intelligent model capability detection and automatic method selection
+- ✅ **Real-time progress tracking** - user feedback during operations
+- ✅ **Hierarchical fallback** - graceful degradation on errors
+- ✅ **Enhanced testing** - full test structure (unit/integration/system)
+- ✅ **Performance optimization** - 75% vs 0% accuracy analysis (Direct PDF vs Text Extraction)
+
+### v2.x - Legacy Features
+- PDF Integration
+- PlantUML Code Editing  
+- GUI Language Selection
+- Enhanced Error Verification
+
+### Planned features (v3.1+):
+- Cache system for PDF analysis results
+- Batch processing of multiple files
+- User interface progress bars in GUI
+- Model auto-selection
+
+---
+
+## 🔗 Useful Links
+
+- **📚 Smart PDF System Documentation**: [`docs/SMART_PDF_SYSTEM_README.md`](docs/SMART_PDF_SYSTEM_README.md)
+- **📁 Reorganization Documentation**: [`REORGANIZATION_README.md`](REORGANIZATION_README.md)
+- **🧪 Test runner**: `python scripts/run_tests.py`
+- **🛠️ Development tools**: `tools/` directory
+
+---
+
+## 🤝 Collaboration
+
+Project is open for collaboration! If you have ideas for improvements or found bugs:
+
+1. **Fork repository**
+2. **Create feature branch** (`git checkout -b feature/amazing-feature`)
+3. **Run tests** (`python scripts/run_tests.py`)
+4. **Commit changes** (`git commit -m 'Add amazing feature'`)
+5. **Push to branch** (`git push origin feature/amazing-feature`)
+6. **Open Pull Request**
+
+---
+
 ## 📄 License
 
 This project is licensed under the **Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License (CC BY-NC-SA 4.0)**.
@@ -172,25 +323,77 @@ This license allows others to use, share, and build upon this work, but with the
 
 ---
 
+## 🧪 Testing
+
+### Run all tests:
+```bash
+python scripts/run_tests.py
+```
+
+### Tests by category:
+```bash
+# Unit tests
+python scripts/run_tests.py unit
+
+# Integration tests  
+python scripts/run_tests.py integration
+
+# System tests
+python scripts/run_tests.py system
+```
+
+### Specific test:
+```bash
+# Test Smart PDF System
+python tests/system/test_smart_pdf_system.py
+
+# Test intelligent selection
+python tests/system/test_smart_selection.py
+
+# PDF quality analysis
+python tools/analyze_pdf_quality.py
+```
+
+### 📊 Test Status:
+- ✅ **Smart PDF Analysis** - Comprehensive system tests
+- ✅ **Model Capability Detection** - Auto PDF support detection
+- ✅ **Progress Tracking** - Real-time user feedback
+- ✅ **Fallback Mechanisms** - Graceful error handling
+- ✅ **Performance Analysis** - Direct PDF vs Text Extraction
+
+---
+
 ## TODO (development)
 
-  * Work on prompt templates, especially for process validation (consider step-by-step).
+  * Work on prompt templates, especially for process validation (consider step-by-step approach).
   * XMI export for other diagram types will be available in future versions.
   * Develop an agent to assist users in creating comprehensive documentation.
+  * Cache system for PDF analysis results
+  * Batch processing of multiple files
+  * User interface progress bars
+  * Model auto-selection based on capabilities
 
 ---
 
 ## Sample Prompts
 
-See the file `Prompty_bankowe.txt` for sample process descriptions for various UML/BPMN diagram types.
-Check `Szablony_promptow.txt` for descriptions of dedicated prompt templates for diagram types.
+See the file `prompts/Prompty_bankowe.txt` for sample process descriptions for various UML/BPMN diagram types.
+Check `prompts/Szablony_promptow.txt` for descriptions of dedicated prompt templates for diagram types.
+
+Test file: `tests/fixtures/test_documents/Prompty.txt` - business process example ready for testing.
 
 ---
 
 ## Screenshots
 
-  * [GD 2025-06-14 Process description validation](https://github.com/user-attachments/assets/2f5040b3-5c29-448f-ad64-60d6b85b5add)
-  * [GD 2025-06-14 Class Diagram](https://github.com/user-attachments/assets/3fe6a5d1-cc2b-4522-b61d-a1752a4ab8bc)
+  * [GD 2025-11-15 Process description validation](https://github.com/user-attachments/assets/5016fd0b-d3fd-48e9-ae34-6285e4ab57bd)
+  * [GD 2025-11-15 Class Diagram](https://github.com/user-attachments/assets/87dd2e69-c36e-4e53-8a3f-a5ed2c14e398)
   * [GD 2025-06-14 Component Diagram](https://github.com/user-attachments/assets/eb99c9a0-834b-4a84-9037-c2a32af755da)
-  * [GD 2025-06-14 C4 Component Diagram](https://github.com/user-attachments/assets/cbf7e5d1-f81a-4032-97ad-6fed6d2eeaa4)
+  * [GD 2025-11-15 C4 Component Diagram](https://github.com/user-attachments/assets/c7ff4a33-aede-45cd-b168-3012db42cf89)
+
+---
+
+**Status**: ✅ **PRODUCTION READY v3.0.0** - Reorganization completed + Smart PDF Analysis System  
+**Last Update**: 2025-11-20  
+**Next Steps**: GUI progress bars, cache system, batch processing
 

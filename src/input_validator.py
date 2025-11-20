@@ -1,4 +1,10 @@
 
+import sys
+import os
+
+# Add parent directory to path to access utils
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 from language.translations_pl import TRANSLATIONS as PL
 from language.translations_en import TRANSLATIONS as EN
 

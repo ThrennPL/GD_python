@@ -1,5 +1,6 @@
 """
 Moduł do przetwarzania plików PDF i ekstrakcji kontekstu dla diagramów.
+Zawiera zarówno lokalną analizę wzorcami jak i integrację z AI.
 """
 
 import PyPDF2
@@ -42,6 +43,19 @@ class PDFProcessor:
     def __init__(self, cache_dir: str = "cache/pdf"):
         self.cache_dir = Path(cache_dir)
         self.cache_dir.mkdir(parents=True, exist_ok=True)
+        
+        # Sprawdź tryb analizy PDF z .env
+        self.analysis_mode = os.getenv("PDF_ANALYSIS_MODE", "local").lower()
+        
+        # Inicjalizuj AI analyzer jeśli dostępny
+        self._ai_analyzer = None
+        if self.analysis_mode == "ai":
+            try:
+                from utils.pdf.ai_pdf_analyzer import AIPDFAnalyzer
+                self._ai_analyzer = AIPDFAnalyzer()
+            except ImportError:
+                print("Warning: AI PDF analysis not available, falling back to local mode")
+                self.analysis_mode = "local"
         
         # Wzorce dla różnych typów kontekstu - znacznie rozszerzone
         self.patterns = {
@@ -382,9 +396,22 @@ class PDFProcessor:
         
         return pdf_doc
     
-    def get_context_for_diagram_type(self, pdf_doc: PDFDocument, diagram_type: str) -> str:
-        """Zwraca kontekst dostosowany do typu diagramu."""
+    def get_context_for_diagram_type(self, pdf_doc: PDFDocument, diagram_type: str, progress_callback=None) -> str:
+        """Zwraca kontekst dostosowany do typu diagramu - z wyborem trybu AI lub lokalnego."""
         
+        # Jeśli tryb AI i analyzer dostępny
+        if self.analysis_mode == "ai" and self._ai_analyzer:
+            try:
+                return self._ai_analyzer.get_enhanced_context_for_diagram(pdf_doc, diagram_type, progress_callback)
+            except Exception as e:
+                if progress_callback:
+                    progress_callback(f"⚠️ AI analysis failed: {e}, przełączanie na tryb lokalny")
+                print(f"AI analysis failed: {e}, falling back to local")
+        
+        # Fallback lub tryb lokalny
+        if progress_callback:
+            progress_callback("📝 Używanie lokalnej analizy wzorców...")
+            
         process_context = self.analyze_process_context(pdf_doc.text_content)
         
         if diagram_type.lower() in ['sequence', 'sekwencji']:
@@ -533,8 +560,8 @@ Dokument zawiera szczegółowe informacje biznesowe, które mogą być użyte ja
 """
 
 # Funkcje pomocnicze dla integracji z istniejącym kodem
-def enhance_prompt_with_pdf_context(original_prompt: str, pdf_files: List[str], diagram_type: str) -> str:
-    """Wzbogaca prompt o kontekst z plików PDF."""
+def enhance_prompt_with_pdf_context(original_prompt: str, pdf_files: List[str], diagram_type: str, progress_callback=None) -> str:
+    """Wzbogaca prompt o kontekst z plików PDF - z obsługą AI analysis i progress tracking."""
     
     if not pdf_files:
         return original_prompt
@@ -542,15 +569,43 @@ def enhance_prompt_with_pdf_context(original_prompt: str, pdf_files: List[str], 
     processor = PDFProcessor()
     pdf_contexts = []
     
-    for pdf_file in pdf_files:
+    # Sprawdzenie czy AI mode jest włączony
+    analysis_mode = processor.analysis_mode
+    
+    if progress_callback:
+        progress_callback(f"🔍 Analiza {len(pdf_files)} plików PDF w trybie: {analysis_mode.upper()}")
+    
+    for i, pdf_file in enumerate(pdf_files, 1):
         try:
+            if progress_callback:
+                progress_callback(f"📄 Przetwarzanie pliku {i}/{len(pdf_files)}: {Path(pdf_file).name}")
+                
             pdf_doc = processor.process_pdf(pdf_file)
-            context = processor.get_context_for_diagram_type(pdf_doc, diagram_type)
-            pdf_contexts.append(context)
+            
+            # Używaj AI analyzer jeśli dostępny, w przeciwnym razie lokalny
+            context = processor.get_context_for_diagram_type(pdf_doc, diagram_type, progress_callback)
+            
+            # Dodaj informację o trybie analizy
+            mode_info = f"\n[Metoda analizy: {analysis_mode.upper()}]"
+            context_with_mode = context + mode_info
+            pdf_contexts.append(context_with_mode)
+            
         except Exception as e:
-            print(f"Błąd przetwarzania {pdf_file}: {e}")
+            error_msg = f"Błąd przetwarzania {pdf_file}: {e}"
+            if progress_callback:
+                progress_callback(f"❌ {error_msg}")
+            print(error_msg)
     
     if pdf_contexts:
+        if progress_callback:
+            progress_callback("✅ Finalizowanie wzbogaconego promptu...")
+            
+        # Dostosuj instrukcję w zależności od trybu analizy
+        if analysis_mode == "ai":
+            instruction = "**INSTRUKCJA:** Powyższy kontekst został wygenerowany przez AI na podstawie analizy dokumentów PDF. Wykorzystaj te szczegółowe informacje do stworzenia kompletnego i precyzyjnego diagramu uwzględniającego wszystkie istotne elementy procesów biznesowych."
+        else:
+            instruction = "**INSTRUKCJA:** Wykorzystaj powyższy kontekst z dokumentów PDF do wzbogacenia diagramu o dodatkowe szczegóły, aktorów, systemy i procesy, które mogą być istotne dla kompletnego przedstawienia."
+        
         enhanced_prompt = f"""
 {original_prompt}
 
@@ -558,8 +613,11 @@ def enhance_prompt_with_pdf_context(original_prompt: str, pdf_files: List[str], 
 
 {chr(10).join(pdf_contexts)}
 
-**INSTRUKCJA:** Wykorzystaj powyższy kontekst z dokumentów PDF do wzbogacenia diagramu o dodatkowe szczegóły, aktorów, systemy i procesy, które mogą być istotne dla kompletnego przedstawienia.
+{instruction}
 """
+        if progress_callback:
+            progress_callback("🎯 Prompt wzbogacony o kontekst PDF")
+            
         return enhanced_prompt
     
     return original_prompt

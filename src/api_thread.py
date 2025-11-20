@@ -1,8 +1,13 @@
+import sys
+import os
+
+# Add parent directory to path to access utils
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 from utils.logger_utils import log_info, log_error, log_debug, log_exception
 from utils.metrics.model_response_metrics import measure_response_time, ModelResponseMetrics
 import re
 import requests
-import os
 from PyQt5.QtCore import QThread, pyqtSignal
 from dotenv import load_dotenv
 

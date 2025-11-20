@@ -32,7 +32,7 @@ echo.
 echo Press Ctrl+C to stop the application
 echo.
 
-streamlit run streamlit_app.py
+streamlit run src/streamlit_app.py
 
 echo.
 echo Application stopped.
