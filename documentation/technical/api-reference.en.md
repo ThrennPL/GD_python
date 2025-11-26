@@ -1,8 +1,8 @@
-# API Reference - GD_python System
+# API Reference - GD System
 
 ## 📖 API Overview
 
-The GD_python system provides a comprehensive set of APIs for generating UML diagrams, BPMN, PDF document analysis, and configuration management. The APIs are organized into functional modules with clearly defined interfaces.
+The GD system provides a comprehensive set of APIs for generating UML diagrams, BPMN, PDF document analysis, and configuration management. The APIs are organized into functional modules with clearly defined interfaces.
 
 ## 🏗️ API Architecture
 
@@ -509,7 +509,7 @@ class MockAIClient:
 
 ```python
 class GDPythonError(Exception):
-    """Base exception for GD_python system."""
+    """Base exception for GD system."""
 
 class AIConfigurationError(GDPythonError):
     """AI provider configuration error."""

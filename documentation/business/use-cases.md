@@ -1,8 +1,8 @@
-# Przypadki Użycia - System GD_python
+# Przypadki Użycia - System GD
 
 ## Przegląd Przypadków Użycia
 
-Ten dokument opisuje szczegółowe scenariusze użycia systemu GD_python dla różnych typów użytkowników i kontekstów biznesowych.
+Ten dokument opisuje szczegółowe scenariusze użycia systemu GD dla różnych typów użytkowników i kontekstów biznesowych.
 
 ## 🎯 Główni Aktorzy
 
@@ -221,7 +221,7 @@ Ten dokument opisuje szczegółowe scenariusze użycia systemu GD_python dla ró
 2. Identyfikuje procesy do migracji (100+ diagramów)
 3. Dla każdego procesu:
    - Czyta istniejącą dokumentację
-   - Wprowadza opis do GD_python
+   - Wprowadza opis do GD
    - Generuje nowy diagram
    - Porównuje z oryginalnym
    - Akceptuje lub koryguje
@@ -249,7 +249,7 @@ Ten dokument opisuje szczegółowe scenariusze użycia systemu GD_python dla ró
 1. Developer commituje zmiany w kodzie
 2. Pipeline automatycznie wykrywa zmodyfikowane pliki README
 3. Jeśli README zawiera opisy procesów, pipeline:
-   - Wywołuje API GD_python
+   - Wywołuje API GD
    - Generuje aktualne diagramy
    - Commituje diagramy do repozytorium
    - Aktualizuje dokumentację projektu
@@ -257,7 +257,7 @@ Ten dokument opisuje szczegółowe scenariusze użycia systemu GD_python dla ró
 5. Diagramy są dostępne w najnowszej wersji
 
 #### Scenariusze alternatywne:
-- **3b**: API GD_python niedostępny → pipeline odłoża zadanie
+- **3b**: API GD niedostępny → pipeline odłoża zadanie
 - **3c**: Generowanie nie powiodło się → notyfikacja do zespołu
 - **4a**: Konflikt w repozytorium → automatyczne rozwiązywanie
 
@@ -270,7 +270,7 @@ Ten dokument opisuje szczegółowe scenariusze użycia systemu GD_python dla ró
 
 ### Metryki Wydajności
 
-| Przypadek Użycia | Czas Tradycyjny | Czas z GD_python | Oszczędność |
+| Przypadek Użycia | Czas Tradycyjny | Czas z GD | Oszczędność |
 |------------------|-----------------|------------------|-------------|
 | UC-01: Diagram API | 3-4 godziny | 30-45 minut | 80-85% |
 | UC-02: Proces BPMN | 6-8 godzin | 45-90 minut | 85-90% |
@@ -281,7 +281,7 @@ Ten dokument opisuje szczegółowe scenariusze użycia systemu GD_python dla ró
 
 ### Metryki Jakości
 
-| Metryka | Przed GD_python | Po GD_python | Poprawa |
+| Metryka | Przed GD | Po GD | Poprawa |
 |---------|-----------------|--------------|---------|
 | Błędy w diagramach | 15-20% | 3-5% | 75-85% |
 | Standardowość | 40-60% | 90-95% | 100%+ |

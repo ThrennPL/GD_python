@@ -1,8 +1,8 @@
-# Przegląd Biznesowy - System GD_python
+# Przegląd Biznesowy - System GD
 
 ## Cel Biznesowy
 
-System GD_python to zaawansowana platforma do automatycznego generowania diagramów i analizy dokumentów, zaprojektowana w celu radykalnego zwiększenia efektywności pracy analityków biznesowych, architektów systemów i zespołów projektowych.
+System GD to zaawansowana platforma do automatycznego generowania diagramów i analizy dokumentów, zaprojektowana w celu radykalnego zwiększenia efektywności pracy analityków biznesowych, architektów systemów i zespołów projektowych.
 
 ## Problemy Biznesowe
 
@@ -225,4 +225,4 @@ System GD_python to zaawansowana platforma do automatycznego generowania diagram
 
 ---
 
-*Ten dokument przedstawia biznesowe uzasadnienie dla systemu GD_python i służy jako podstawa dla decyzji inwestycyjnych oraz planowania wdrożenia.*
+*Ten dokument przedstawia biznesowe uzasadnienie dla systemu GD i służy jako podstawa dla decyzji inwestycyjnych oraz planowania wdrożenia.*

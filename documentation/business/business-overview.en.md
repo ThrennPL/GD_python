@@ -1,8 +1,8 @@
-# Business Overview - GD_python System
+# Business Overview - GD System
 
 ## Business Objective
 
-The GD_python system is an advanced platform for automatic diagram generation and document analysis, designed to radically increase the efficiency of business analysts, system architects, and project teams.
+The GD system is an advanced platform for automatic diagram generation and document analysis, designed to radically increase the efficiency of business analysts, system architects, and project teams.
 
 ## Business Problems
 
@@ -136,7 +136,7 @@ The GD_python system is an advanced platform for automatic diagram generation an
 
 ### Positioning Statement
 
-> "GD_python is the only AI-powered platform that transforms natural language descriptions into professional BPMN and UML diagrams, enabling organizations to create enterprise-grade documentation 10 times faster than traditional methods while ensuring compliance and quality."
+> "GD is the only AI-powered platform that transforms natural language descriptions into professional BPMN and UML diagrams, enabling organizations to create enterprise-grade documentation 10 times faster than traditional methods while ensuring compliance and quality."
 
 ## Business Model
 
@@ -271,6 +271,6 @@ The GD_python system is an advanced platform for automatic diagram generation an
 
 ## Conclusion
 
-GD_python represents a paradigm shift in business process documentation, combining cutting-edge AI technology with proven business methodologies. With strong market demand, clear competitive advantages, and sustainable business model, the platform is positioned to capture significant market share in the rapidly growing process automation and documentation space.
+GD represents a paradigm shift in business process documentation, combining cutting-edge AI technology with proven business methodologies. With strong market demand, clear competitive advantages, and sustainable business model, the platform is positioned to capture significant market share in the rapidly growing process automation and documentation space.
 
 The combination of immediate cost savings (80% time reduction) with long-term strategic benefits (faster innovation cycles) creates compelling value for organizations of all sizes, while the dual Polish-English market approach provides unique positioning in Central European markets with global expansion potential.

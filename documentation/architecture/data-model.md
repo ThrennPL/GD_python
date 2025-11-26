@@ -1,8 +1,8 @@
-# Model Danych - System GD_python
+# Model Danych - System GD
 
 ## Przegląd Modelu Danych
 
-System GD_python operuje na strukturach danych zoptymalizowanych pod kątem przetwarzania języka naturalnego, generowania diagramów i zarządzania metrykami. Model obejmuje dane konfiguracyjne, procesowe, wyjściowe oraz analityczne.
+System GD operuje na strukturach danych zoptymalizowanych pod kątem przetwarzania języka naturalnego, generowania diagramów i zarządzania metrykami. Model obejmuje dane konfiguracyjne, procesowe, wyjściowe oraz analityczne.
 
 ## 🗃️ Główne Domeny Danych
 

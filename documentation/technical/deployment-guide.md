@@ -1,8 +1,8 @@
-# Przewodnik Wdrożenia - System GD_python
+# Przewodnik Wdrożenia - System GD
 
 ## 📋 Przegląd Wdrożenia
 
-Ten przewodnik opisuje kompletny proces wdrażania systemu GD_python w różnych środowiskach - od lokalnego developmentu, przez staging, aż po produkcję w chmurze. Obejmuje instalację, konfigurację, optymalizację wydajności i monitorowanie.
+Ten przewodnik opisuje kompletny proces wdrażania systemu GD w różnych środowiskach - od lokalnego developmentu, przez staging, aż po produkcję w chmurze. Obejmuje instalację, konfigurację, optymalizację wydajności i monitorowanie.
 
 ## 🎯 Wymagania Systemowe
 
@@ -940,4 +940,4 @@ echo "Restore completed from: $RESTORE_FILE"
 - [ ] Documentation updated
 - [ ] Post-mortem scheduled (if issues)
 
-Ten przewodnik zapewnia kompletne pokrycie wszystkich aspektów wdrażania systemu GD_python. Dostosuj konfiguracje do specyficznych wymagań Twojego środowiska.
+Ten przewodnik zapewnia kompletne pokrycie wszystkich aspektów wdrażania systemu GD. Dostosuj konfiguracje do specyficznych wymagań Twojego środowiska.
