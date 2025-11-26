@@ -1,0 +1,937 @@
+<?xml version="1.0" ?>
+<xmi:XMI xmlns:uml="http://schema.omg.org/spec/UML/2.1" xmlns:xmi="http://schema.omg.org/spec/XMI/2.1" xmi:version="2.1">
+  <xmi:Documentation exporter="Enterprise Architect" exporterVersion="6.5" exporterID="1560"/>
+  <uml:Model xmi:type="uml:Model" name="EA_Model" visibility="public">
+    <packagedElement xmi:type="uml:Package" xmi:id="EAPK_01E390CE_EAA8_4DD2_B31B_EA89C210D3CB" name="System Bankowy - Architektura Systemu" visibility="public" ea_localid="1">
+      <packagedElement xmi:type="uml:Component" xmi:id="EAID_CAACA702_35E8_42E3_8CA7_BC53FBEF1AD0" name="Użytkownik" visibility="public" alias="user"/>
+      <packagedElement xmi:type="uml:Component" xmi:id="EAID_B60939EA_39A4_40ED_9C93_DF87146618AB" name="Administrator" visibility="public" alias="admin"/>
+      <packagedElement xmi:type="uml:Component" xmi:id="EAID_2E72B1CF_CB0B_4ED1_A501_6EA327AB9886" name="Bramka SMS" visibility="public" alias="sms_gateway"/>
+      <packagedElement xmi:type="uml:Component" xmi:id="EAID_961EBD20_286C_4999_8B42_F4C27ECD8466" name="Serwer SMTP" visibility="public" alias="smtp_server"/>
+      <packagedElement xmi:type="uml:Package" xmi:id="EAID_CCFEFB8C_D668_49AA_9167_63A23C9A09A4" name="UI Layer" visibility="public">
+        <packagedElement xmi:type="uml:Component" xmi:id="EAID_6EDF294B_5AF7_4191_9F92_12AF07D488B8" name="Aplikacja Mobilna" visibility="public" alias="mobile_app"/>
+        <packagedElement xmi:type="uml:Component" xmi:id="EAID_3FA37EF7_0652_46EB_A62C_A784A57AA220" name="Panel Administracyjny" visibility="public" alias="admin_panel"/>
+        <packagedElement xmi:type="uml:Component" xmi:id="EAID_D8423DA7_72E0_4985_863A_1149A2DEC046" name="API Gateway" visibility="public" alias="api_gateway"/>
+      </packagedElement>
+      <packagedElement xmi:type="uml:Package" xmi:id="EAID_B3D3B84A_4C1D_425E_B567_5AD4D1C5C9DC" name="Business Layer" visibility="public">
+        <packagedElement xmi:type="uml:Component" xmi:id="EAID_A39C310B_0B52_48B1_99D9_7C6CFB467EC6" name="Serwis Autoryzacji i Uwierzytelniania" visibility="public" alias="auth_service"/>
+        <packagedElement xmi:type="uml:Component" xmi:id="EAID_ABBCEC25_AB3F_4FAE_B08B_2B6CD1FB209D" name="Serwis Zarządzania Kontami" visibility="public" alias="account_service"/>
+        <packagedElement xmi:type="uml:Component" xmi:id="EAID_7F39CE56_9533_4867_8DEC_88B476D4AD0D" name="Serwis Płatności" visibility="public" alias="payment_service"/>
+        <packagedElement xmi:type="uml:Component" xmi:id="EAID_F708ADEA_31E8_4109_AE30_A0A52CD6A466" name="Serwis Zarządzania Kartami" visibility="public" alias="card_service"/>
+        <packagedElement xmi:type="uml:Component" xmi:id="EAID_2988DBB3_6EE6_4A6F_8119_F045422DA14B" name="Serwis Historii Transakcji" visibility="public" alias="transaction_service"/>
+        <packagedElement xmi:type="uml:Component" xmi:id="EAID_800F3F5D_1B00_42D3_A527_7EAB2F11FB2D" name="Serwis Powiadomień" visibility="public" alias="notification_service"/>
+        <packagedElement xmi:type="uml:Component" xmi:id="EAID_825A760A_0BB4_4315_B6E3_490F238D2DEF" name="Serwis Raportowania" visibility="public" alias="reporting_service"/>
+      </packagedElement>
+      <packagedElement xmi:type="uml:Package" xmi:id="EAID_80204EEB_D1CF_47F7_9362_A189C6AE59EE" name="Data Layer" visibility="public">
+        <packagedElement xmi:type="uml:Component" xmi:id="EAID_1686712F_2D57_4ADD_A51D_F9B91515B0E5" name="Baza Danych Kont" visibility="public" alias="account_db"/>
+        <packagedElement xmi:type="uml:Component" xmi:id="EAID_E52B7A6D_B432_48A4_98B0_323758563348" name="Baza Danych Płatności" visibility="public" alias="payment_db"/>
+        <packagedElement xmi:type="uml:Component" xmi:id="EAID_194BAF5B_64BD_4039_A77C_324E672E81AE" name="Baza Danych Kart" visibility="public" alias="card_db"/>
+        <packagedElement xmi:type="uml:Component" xmi:id="EAID_7B180B07_57DC_42F7_846C_481BD2E788E3" name="Baza Danych Transakcji" visibility="public" alias="transaction_db"/>
+        <packagedElement xmi:type="uml:Component" xmi:id="EAID_5409FC80_79DE_4918_88DB_2B2DD1A4C1C1" name="Baza Danych Analityczna" visibility="public" alias="reporting_db"/>
+        <packagedElement xmi:type="uml:Component" xmi:id="EAID_A8955E11_19DE_40BE_82E6_45E1C8C2C92A" name="Repozytorium Kont" visibility="public" alias="account_repo"/>
+        <packagedElement xmi:type="uml:Component" xmi:id="EAID_35F6ACE8_9873_4225_8EE1_FF2E48412859" name="Repozytorium Płatności" visibility="public" alias="payment_repo"/>
+        <packagedElement xmi:type="uml:Component" xmi:id="EAID_D8E77112_B16A_4B26_9490_D68F1DB53D35" name="Repozytorium Kart" visibility="public" alias="card_repo"/>
+        <packagedElement xmi:type="uml:Component" xmi:id="EAID_95D01741_CDBF_42BB_8A43_9BDE45AD10C6" name="Repozytorium Transakcji" visibility="public" alias="transaction_repo"/>
+      </packagedElement>
+      <packagedElement xmi:type="uml:Package" xmi:id="EAID_A856E6E1_812E_4509_B072_B9E14D6A5A4F" name="Integration Layer" visibility="public">
+        <packagedElement xmi:type="uml:Component" xmi:id="EAID_B65988FA_412C_4ADE_94AE_956800A758C7" name="Magistrala Komunikatów" visibility="public" alias="message_bus"/>
+        <packagedElement xmi:type="uml:Component" xmi:id="EAID_1539154A_C1B6_4006_8167_7CC5DCA8E4A0" name="Adapter SMS" visibility="public" alias="sms_adapter"/>
+        <packagedElement xmi:type="uml:Component" xmi:id="EAID_BED1E75A_E17F_4BDE_B603_797871B1434A" name="Adapter SMTP" visibility="public" alias="smtp_adapter"/>
+      </packagedElement>
+      <packagedElement xmi:type="uml:Package" xmi:id="EAID_51E8307B_FF4E_4EB4_8BE8_C8795B50DD87" name="Auxiliary Components" visibility="public">
+        <packagedElement xmi:type="uml:Component" xmi:id="EAID_95592859_3FC7_495B_8CB2_BF5A8349F640" name="System Logowania" visibility="public" alias="logging_system"/>
+      </packagedElement>
+      <packagedElement xmi:type="uml:Dependency" xmi:id="EAID_2B694E8A_D10E_46E2_AD22_C67345A8B07A" supplier="EAID_6EDF294B_5AF7_4191_9F92_12AF07D488B8" client="EAID_CAACA702_35E8_42E3_8CA7_BC53FBEF1AD0" visibility="public" name="&quot;Używa aplikacji&quot;"/>
+      <packagedElement xmi:type="uml:Dependency" xmi:id="EAID_86CB4740_9F8F_44E7_8616_BD55EA06683A" supplier="EAID_3FA37EF7_0652_46EB_A62C_A784A57AA220" client="EAID_B60939EA_39A4_40ED_9C93_DF87146618AB" visibility="public" name="&quot;Zarządza systemem&quot;"/>
+      <packagedElement xmi:type="uml:Dependency" xmi:id="EAID_4F92C70D_EAA1_464A_80E2_EBFCE8871D6C" supplier="EAID_D8423DA7_72E0_4985_863A_1149A2DEC046" client="EAID_6EDF294B_5AF7_4191_9F92_12AF07D488B8" visibility="public" name="&quot;HTTP API&quot;"/>
+      <packagedElement xmi:type="uml:Dependency" xmi:id="EAID_89B97BE2_970C_431D_B390_6A77E105122D" supplier="EAID_D8423DA7_72E0_4985_863A_1149A2DEC046" client="EAID_3FA37EF7_0652_46EB_A62C_A784A57AA220" visibility="public" name="&quot;HTTP API&quot;"/>
+      <packagedElement xmi:type="uml:Dependency" xmi:id="EAID_BE8C2D26_C543_425D_9447_737B91DAF46C" supplier="EAID_A39C310B_0B52_48B1_99D9_7C6CFB467EC6" client="EAID_D8423DA7_72E0_4985_863A_1149A2DEC046" visibility="public" name="&quot;HTTP API&quot;"/>
+      <packagedElement xmi:type="uml:Dependency" xmi:id="EAID_CE4C423A_7F2F_4F10_A261_095A9E1BE796" supplier="EAID_ABBCEC25_AB3F_4FAE_B08B_2B6CD1FB209D" client="EAID_A39C310B_0B52_48B1_99D9_7C6CFB467EC6" visibility="public" name="&quot;HTTP API&quot;"/>
+      <packagedElement xmi:type="uml:Dependency" xmi:id="EAID_73FAF811_56A6_4313_9CB0_B4F395FE4CA4" supplier="EAID_A8955E11_19DE_40BE_82E6_45E1C8C2C92A" client="EAID_ABBCEC25_AB3F_4FAE_B08B_2B6CD1FB209D" visibility="public" name="&quot;Pobiera/zapisuje dane&quot;"/>
+      <packagedElement xmi:type="uml:Dependency" xmi:id="EAID_23622D51_8945_4B29_95B2_3F5FF5151485" supplier="EAID_35F6ACE8_9873_4225_8EE1_FF2E48412859" client="EAID_7F39CE56_9533_4867_8DEC_88B476D4AD0D" visibility="public" name="&quot;Pobiera/zapisuje dane&quot;"/>
+      <packagedElement xmi:type="uml:Dependency" xmi:id="EAID_F394A8B1_3CEC_45D4_BF93_075C7A59306F" supplier="EAID_D8E77112_B16A_4B26_9490_D68F1DB53D35" client="EAID_F708ADEA_31E8_4109_AE30_A0A52CD6A466" visibility="public" name="&quot;Pobiera/zapisuje dane&quot;"/>
+      <packagedElement xmi:type="uml:Dependency" xmi:id="EAID_09A11DCC_4767_439C_82C2_D75074370956" supplier="EAID_95D01741_CDBF_42BB_8A43_9BDE45AD10C6" client="EAID_2988DBB3_6EE6_4A6F_8119_F045422DA14B" visibility="public" name="&quot;Pobiera/zapisuje dane&quot;"/>
+      <packagedElement xmi:type="uml:Dependency" xmi:id="EAID_A8A4536E_0C85_43DC_B644_B5274F983FB2" supplier="EAID_1686712F_2D57_4ADD_A51D_F9B91515B0E5" client="EAID_A8955E11_19DE_40BE_82E6_45E1C8C2C92A" visibility="public" name="&quot;SQL Query&quot;"/>
+      <packagedElement xmi:type="uml:Dependency" xmi:id="EAID_8078C216_3F9C_4352_8D0C_A11DC92E909C" supplier="EAID_E52B7A6D_B432_48A4_98B0_323758563348" client="EAID_35F6ACE8_9873_4225_8EE1_FF2E48412859" visibility="public" name="&quot;SQL Query&quot;"/>
+      <packagedElement xmi:type="uml:Dependency" xmi:id="EAID_CDA9BF28_FA0E_4EE9_8628_B3435CE08C85" supplier="EAID_194BAF5B_64BD_4039_A77C_324E672E81AE" client="EAID_D8E77112_B16A_4B26_9490_D68F1DB53D35" visibility="public" name="&quot;SQL Query&quot;"/>
+      <packagedElement xmi:type="uml:Dependency" xmi:id="EAID_E34ADEDC_2624_46FD_BF9F_7B895029CA05" supplier="EAID_7B180B07_57DC_42F7_846C_481BD2E788E3" client="EAID_95D01741_CDBF_42BB_8A43_9BDE45AD10C6" visibility="public" name="&quot;SQL Query&quot;"/>
+      <packagedElement xmi:type="uml:Dependency" xmi:id="EAID_2FF793EE_730C_44D1_8BDC_0E826DBA27D8" supplier="EAID_B65988FA_412C_4ADE_94AE_956800A758C7" client="EAID_ABBCEC25_AB3F_4FAE_B08B_2B6CD1FB209D" visibility="public" name="&quot;Wysyła zdarzenie&quot;"/>
+      <packagedElement xmi:type="uml:Dependency" xmi:id="EAID_C8FDFEB1_88A3_4FAE_94EE_EE80ACB3922B" supplier="EAID_B65988FA_412C_4ADE_94AE_956800A758C7" client="EAID_7F39CE56_9533_4867_8DEC_88B476D4AD0D" visibility="public" name="&quot;Wysyła zdarzenie&quot;"/>
+      <packagedElement xmi:type="uml:Dependency" xmi:id="EAID_E8374B0E_E183_430E_BA2E_78D640D99958" supplier="EAID_B65988FA_412C_4ADE_94AE_956800A758C7" client="EAID_F708ADEA_31E8_4109_AE30_A0A52CD6A466" visibility="public" name="&quot;Wysyła zdarzenie&quot;"/>
+      <packagedElement xmi:type="uml:Dependency" xmi:id="EAID_A81F2E63_D708_4DFF_B1A9_8ABFE3FF07CB" supplier="EAID_B65988FA_412C_4ADE_94AE_956800A758C7" client="EAID_2988DBB3_6EE6_4A6F_8119_F045422DA14B" visibility="public" name="&quot;Wysyła zdarzenie&quot;"/>
+      <packagedElement xmi:type="uml:Dependency" xmi:id="EAID_D958BCF6_ACBB_4117_978E_32DF97040CCA" supplier="EAID_800F3F5D_1B00_42D3_A527_7EAB2F11FB2D" client="EAID_B65988FA_412C_4ADE_94AE_956800A758C7" visibility="public" name="&quot;Odbiera zdarzenie&quot;"/>
+      <packagedElement xmi:type="uml:Dependency" xmi:id="EAID_85E56896_6F7B_4A73_A444_7BC97E3B0A22" supplier="EAID_1539154A_C1B6_4006_8167_7CC5DCA8E4A0" client="EAID_800F3F5D_1B00_42D3_A527_7EAB2F11FB2D" visibility="public" name="&quot;Wysyła SMS&quot;"/>
+      <packagedElement xmi:type="uml:Dependency" xmi:id="EAID_1DF4A610_744F_4242_8743_C2E1FEE597B1" supplier="EAID_BED1E75A_E17F_4BDE_B603_797871B1434A" client="EAID_800F3F5D_1B00_42D3_A527_7EAB2F11FB2D" visibility="public" name="&quot;Wysyła email&quot;"/>
+      <packagedElement xmi:type="uml:Dependency" xmi:id="EAID_E7A9D19C_8F08_450C_871D_3C920DBDE627" supplier="EAID_2E72B1CF_CB0B_4ED1_A501_6EA327AB9886" client="EAID_1539154A_C1B6_4006_8167_7CC5DCA8E4A0" visibility="public" name="&quot;SMS API&quot;"/>
+      <packagedElement xmi:type="uml:Dependency" xmi:id="EAID_36A86CA2_2FEF_44CF_965D_B85F5B5201F6" supplier="EAID_961EBD20_286C_4999_8B42_F4C27ECD8466" client="EAID_BED1E75A_E17F_4BDE_B603_797871B1434A" visibility="public" name="&quot;SMTP&quot;"/>
+      <packagedElement xmi:type="uml:Dependency" xmi:id="EAID_E8F5101C_6C3A_47EF_815F_B845358BF75D" supplier="EAID_5409FC80_79DE_4918_88DB_2B2DD1A4C1C1" client="EAID_825A760A_0BB4_4315_B6E3_490F238D2DEF" visibility="public" name="&quot;SQL Query&quot;"/>
+      <packagedElement xmi:type="uml:Dependency" xmi:id="EAID_B54CD6FE_DC50_43BE_B3DF_A1CBA310F354" supplier="EAID_B65988FA_412C_4ADE_94AE_956800A758C7" client="EAID_825A760A_0BB4_4315_B6E3_490F238D2DEF" visibility="public" name="&quot;Odbiera zdarzenie&quot;"/>
+      <packagedElement xmi:type="uml:Dependency" xmi:id="EAID_CB67B257_2D76_43D4_97DE_B7F0E2D48CCF" supplier="EAID_95592859_3FC7_495B_8CB2_BF5A8349F640" client="EAID_D8423DA7_72E0_4985_863A_1149A2DEC046" visibility="public" name="&quot;Rejestruje zdarzenia&quot;"/>
+      <packagedElement xmi:type="uml:Dependency" xmi:id="EAID_6AE5C2AE_9C66_43B9_945C_8580252493BA" supplier="EAID_95592859_3FC7_495B_8CB2_BF5A8349F640" client="EAID_ABBCEC25_AB3F_4FAE_B08B_2B6CD1FB209D" visibility="public" name="&quot;Rejestruje zdarzenia&quot;"/>
+      <packagedElement xmi:type="uml:Dependency" xmi:id="EAID_E6B617A5_5810_4D57_AD53_CFC1744C5B45" supplier="EAID_95592859_3FC7_495B_8CB2_BF5A8349F640" client="EAID_7F39CE56_9533_4867_8DEC_88B476D4AD0D" visibility="public" name="&quot;Rejestruje zdarzenia&quot;"/>
+      <packagedElement xmi:type="uml:Dependency" xmi:id="EAID_0C2DA887_1591_4452_A751_44AD55B8FDF8" supplier="EAID_95592859_3FC7_495B_8CB2_BF5A8349F640" client="EAID_F708ADEA_31E8_4109_AE30_A0A52CD6A466" visibility="public" name="&quot;Rejestruje zdarzenia&quot;"/>
+      <packagedElement xmi:type="uml:Dependency" xmi:id="EAID_D80A37A7_5574_4351_B41C_8CD37D832F99" supplier="EAID_95592859_3FC7_495B_8CB2_BF5A8349F640" client="EAID_2988DBB3_6EE6_4A6F_8119_F045422DA14B" visibility="public" name="&quot;Rejestruje zdarzenia&quot;"/>
+      <packagedElement xmi:type="uml:Dependency" xmi:id="EAID_D1650D52_2502_4821_9BE6_5DD4C90DC3DB" supplier="EAID_95592859_3FC7_495B_8CB2_BF5A8349F640" client="EAID_A39C310B_0B52_48B1_99D9_7C6CFB467EC6" visibility="public" name="&quot;Rejestruje zdarzenia&quot;"/>
+    </packagedElement>
+  </uml:Model>
+  <profiles>
+    <uml:Profile xmlns:uml="http://schema.omg.org/spec/UML/2.1" xmi:version="2.1" xmi:id="EAPK_D8F4E180_BED4_4e61_B22D_45F371A2009C" profiletype="uml2" name="StandardProfileL2" metamodelReference="uml2metamodel">
+      <packagedElement xmi:type="uml:Stereotype" xmi:id="EAID_E8EB7F24_9586_429a_A543_5B9AA9CB786B" name="Service" visibility="public"/>
+    </uml:Profile>
+    <uml:Profile xmlns:uml="http://schema.omg.org/spec/UML/2.1" xmi:version="2.1" xmi:id="EAPK_EC27B841_1486_494e_B760_1860478BF8F5" profiletype="ea_uml2" name="thecustomprofile" metamodelReference="uml2metamodel">
+      <packagedElement xmi:type="uml:Stereotype" xmi:id="EAID_3F786850_E47F_11D2_ABF0_00A0C90FFFC3" name="controller" visibility="public"/>
+      <packagedElement xmi:type="uml:Stereotype" xmi:id="EAID_C4F252E8_E947_11D2_ABF1_00A0C90FFFC8" name="gateway" visibility="public"/>
+      <packagedElement xmi:type="uml:Stereotype" xmi:id="EAID_D8C0A0A0_E947_11D2_ABF2_00A0C90FFFC9" name="utility" visibility="public"/>
+      <packagedElement xmi:type="uml:Stereotype" xmi:id="EAID_F0C034E0_E947_11D2_ABF3_00A0C90FFFCA" name="facade" visibility="public"/>
+      <packagedElement xmi:type="uml:Stereotype" xmi:id="EAID_08C0A0A0_E947_11D2_ABF4_00A0C90FFFCB" name="repository" visibility="public"/>
+    </uml:Profile>
+    <uml:Profile xmlns:uml="http://schema.omg.org/spec/UML/2.1" xmi:version="2.1" xmi:id="EAPK_A3DDA574_A47C_4d73_9C42_F7EA2C5ACD8D" profiletype="uml2" name="SOMF" metamodelReference="uml2metamodel">
+      <packagedElement xmi:type="uml:Stereotype" xmi:id="EAID_F1C0F34E_F947_11D2_ABF4_00A0C90FFFCC" name="repository" visibility="public"/>
+    </uml:Profile>
+  </profiles>
+  <xmi:Extension extender="Enterprise Architect" extenderID="6.5">
+    <elements>
+      <element xmi:idref="EAPK_01E390CE_EAA8_4DD2_B31B_EA89C210D3CB" xmi:type="uml:Package" name="System Bankowy - Architektura Systemu" scope="public">
+        <model package2="EAID_01E390CE" package="EAPK_25CB1803_12A5_47b7_BF59_0C80F57AA528" tpos="0" ea_localid="1" ea_eleType="package"/>
+        <properties isSpecification="false" sType="Package" nType="7" scope="public"/>
+        <project author="195841" version="1.0" phase="1.0" created="2025-08-22 00:14:04" modified="2025-08-22 00:14:04"/>
+      </element>
+      <element xmi:idref="EAID_CAACA702_35E8_42E3_8CA7_BC53FBEF1AD0" xmi:type="uml:Component" name="Użytkownik" scope="public">
+        <model tpos="0" ea_localid="2" ea_eleType="element" package="EAPK_01E390CE_EAA8_4DD2_B31B_EA89C210D3CB"/>
+        <properties isSpecification="false" sType="Component" nType="4" scope="public"/>
+      </element>
+      <element xmi:idref="EAID_B60939EA_39A4_40ED_9C93_DF87146618AB" xmi:type="uml:Component" name="Administrator" scope="public">
+        <model tpos="0" ea_localid="3" ea_eleType="element" package="EAPK_01E390CE_EAA8_4DD2_B31B_EA89C210D3CB"/>
+        <properties isSpecification="false" sType="Component" nType="4" scope="public"/>
+      </element>
+      <element xmi:idref="EAID_2E72B1CF_CB0B_4ED1_A501_6EA327AB9886" xmi:type="uml:Component" name="Bramka SMS" scope="public">
+        <model tpos="0" ea_localid="4" ea_eleType="element" package="EAPK_01E390CE_EAA8_4DD2_B31B_EA89C210D3CB"/>
+        <properties isSpecification="false" sType="Component" nType="4" scope="public"/>
+      </element>
+      <element xmi:idref="EAID_961EBD20_286C_4999_8B42_F4C27ECD8466" xmi:type="uml:Component" name="Serwer SMTP" scope="public">
+        <model tpos="0" ea_localid="5" ea_eleType="element" package="EAPK_01E390CE_EAA8_4DD2_B31B_EA89C210D3CB"/>
+        <properties isSpecification="false" sType="Component" nType="4" scope="public"/>
+      </element>
+      <element xmi:idref="EAID_CCFEFB8C_D668_49AA_9167_63A23C9A09A4" xmi:type="uml:Package" name="UI Layer" scope="public">
+        <model tpos="0" ea_localid="6" ea_eleType="element" package="EAPK_01E390CE_EAA8_4DD2_B31B_EA89C210D3CB"/>
+        <properties isSpecification="false" sType="Package" nType="7" scope="public"/>
+      </element>
+      <element xmi:idref="EAID_B3D3B84A_4C1D_425E_B567_5AD4D1C5C9DC" xmi:type="uml:Package" name="Business Layer" scope="public">
+        <model tpos="0" ea_localid="7" ea_eleType="element" package="EAPK_01E390CE_EAA8_4DD2_B31B_EA89C210D3CB"/>
+        <properties isSpecification="false" sType="Package" nType="7" scope="public"/>
+      </element>
+      <element xmi:idref="EAID_80204EEB_D1CF_47F7_9362_A189C6AE59EE" xmi:type="uml:Package" name="Data Layer" scope="public">
+        <model tpos="0" ea_localid="8" ea_eleType="element" package="EAPK_01E390CE_EAA8_4DD2_B31B_EA89C210D3CB"/>
+        <properties isSpecification="false" sType="Package" nType="7" scope="public"/>
+      </element>
+      <element xmi:idref="EAID_A856E6E1_812E_4509_B072_B9E14D6A5A4F" xmi:type="uml:Package" name="Integration Layer" scope="public">
+        <model tpos="0" ea_localid="9" ea_eleType="element" package="EAPK_01E390CE_EAA8_4DD2_B31B_EA89C210D3CB"/>
+        <properties isSpecification="false" sType="Package" nType="7" scope="public"/>
+      </element>
+      <element xmi:idref="EAID_51E8307B_FF4E_4EB4_8BE8_C8795B50DD87" xmi:type="uml:Package" name="Auxiliary Components" scope="public">
+        <model tpos="0" ea_localid="10" ea_eleType="element" package="EAPK_01E390CE_EAA8_4DD2_B31B_EA89C210D3CB"/>
+        <properties isSpecification="false" sType="Package" nType="7" scope="public"/>
+      </element>
+      <element xmi:idref="EAID_6EDF294B_5AF7_4191_9F92_12AF07D488B8" xmi:type="uml:Component" name="Aplikacja Mobilna" scope="public">
+        <model tpos="0" ea_localid="11" ea_eleType="element" package="EAID_CCFEFB8C_D668_49AA_9167_63A23C9A09A4"/>
+        <properties isSpecification="false" sType="Component" nType="4" scope="public"/>
+        <extendedProperties package_name="UI Layer"/>
+      </element>
+      <element xmi:idref="EAID_3FA37EF7_0652_46EB_A62C_A784A57AA220" xmi:type="uml:Component" name="Panel Administracyjny" scope="public">
+        <model tpos="0" ea_localid="12" ea_eleType="element" package="EAID_CCFEFB8C_D668_49AA_9167_63A23C9A09A4"/>
+        <properties isSpecification="false" sType="Component" nType="4" scope="public"/>
+        <extendedProperties package_name="UI Layer"/>
+      </element>
+      <element xmi:idref="EAID_D8423DA7_72E0_4985_863A_1149A2DEC046" xmi:type="uml:Component" name="API Gateway" scope="public">
+        <model tpos="0" ea_localid="13" ea_eleType="element" package="EAID_CCFEFB8C_D668_49AA_9167_63A23C9A09A4"/>
+        <properties isSpecification="false" sType="Component" nType="4" scope="public"/>
+        <extendedProperties package_name="UI Layer"/>
+      </element>
+      <element xmi:idref="EAID_A39C310B_0B52_48B1_99D9_7C6CFB467EC6" xmi:type="uml:Component" name="Serwis Autoryzacji i Uwierzytelniania" scope="public">
+        <model tpos="0" ea_localid="14" ea_eleType="element" package="EAID_B3D3B84A_4C1D_425E_B567_5AD4D1C5C9DC"/>
+        <properties isSpecification="false" sType="Component" nType="4" scope="public"/>
+        <extendedProperties package_name="Business Layer"/>
+      </element>
+      <element xmi:idref="EAID_ABBCEC25_AB3F_4FAE_B08B_2B6CD1FB209D" xmi:type="uml:Component" name="Serwis Zarządzania Kontami" scope="public">
+        <model tpos="0" ea_localid="15" ea_eleType="element" package="EAID_B3D3B84A_4C1D_425E_B567_5AD4D1C5C9DC"/>
+        <properties isSpecification="false" sType="Component" nType="4" scope="public"/>
+        <extendedProperties package_name="Business Layer"/>
+      </element>
+      <element xmi:idref="EAID_7F39CE56_9533_4867_8DEC_88B476D4AD0D" xmi:type="uml:Component" name="Serwis Płatności" scope="public">
+        <model tpos="0" ea_localid="16" ea_eleType="element" package="EAID_B3D3B84A_4C1D_425E_B567_5AD4D1C5C9DC"/>
+        <properties isSpecification="false" sType="Component" nType="4" scope="public"/>
+        <extendedProperties package_name="Business Layer"/>
+      </element>
+      <element xmi:idref="EAID_F708ADEA_31E8_4109_AE30_A0A52CD6A466" xmi:type="uml:Component" name="Serwis Zarządzania Kartami" scope="public">
+        <model tpos="0" ea_localid="17" ea_eleType="element" package="EAID_B3D3B84A_4C1D_425E_B567_5AD4D1C5C9DC"/>
+        <properties isSpecification="false" sType="Component" nType="4" scope="public"/>
+        <extendedProperties package_name="Business Layer"/>
+      </element>
+      <element xmi:idref="EAID_2988DBB3_6EE6_4A6F_8119_F045422DA14B" xmi:type="uml:Component" name="Serwis Historii Transakcji" scope="public">
+        <model tpos="0" ea_localid="18" ea_eleType="element" package="EAID_B3D3B84A_4C1D_425E_B567_5AD4D1C5C9DC"/>
+        <properties isSpecification="false" sType="Component" nType="4" scope="public"/>
+        <extendedProperties package_name="Business Layer"/>
+      </element>
+      <element xmi:idref="EAID_800F3F5D_1B00_42D3_A527_7EAB2F11FB2D" xmi:type="uml:Component" name="Serwis Powiadomień" scope="public">
+        <model tpos="0" ea_localid="19" ea_eleType="element" package="EAID_B3D3B84A_4C1D_425E_B567_5AD4D1C5C9DC"/>
+        <properties isSpecification="false" sType="Component" nType="4" scope="public"/>
+        <extendedProperties package_name="Business Layer"/>
+      </element>
+      <element xmi:idref="EAID_825A760A_0BB4_4315_B6E3_490F238D2DEF" xmi:type="uml:Component" name="Serwis Raportowania" scope="public">
+        <model tpos="0" ea_localid="20" ea_eleType="element" package="EAID_B3D3B84A_4C1D_425E_B567_5AD4D1C5C9DC"/>
+        <properties isSpecification="false" sType="Component" nType="4" scope="public"/>
+        <extendedProperties package_name="Business Layer"/>
+      </element>
+      <element xmi:idref="EAID_1686712F_2D57_4ADD_A51D_F9B91515B0E5" xmi:type="uml:Component" name="Baza Danych Kont" scope="public">
+        <model tpos="0" ea_localid="21" ea_eleType="element" package="EAID_80204EEB_D1CF_47F7_9362_A189C6AE59EE"/>
+        <properties isSpecification="false" sType="Component" nType="4" scope="public"/>
+        <extendedProperties package_name="Data Layer"/>
+      </element>
+      <element xmi:idref="EAID_E52B7A6D_B432_48A4_98B0_323758563348" xmi:type="uml:Component" name="Baza Danych Płatności" scope="public">
+        <model tpos="0" ea_localid="22" ea_eleType="element" package="EAID_80204EEB_D1CF_47F7_9362_A189C6AE59EE"/>
+        <properties isSpecification="false" sType="Component" nType="4" scope="public"/>
+        <extendedProperties package_name="Data Layer"/>
+      </element>
+      <element xmi:idref="EAID_194BAF5B_64BD_4039_A77C_324E672E81AE" xmi:type="uml:Component" name="Baza Danych Kart" scope="public">
+        <model tpos="0" ea_localid="23" ea_eleType="element" package="EAID_80204EEB_D1CF_47F7_9362_A189C6AE59EE"/>
+        <properties isSpecification="false" sType="Component" nType="4" scope="public"/>
+        <extendedProperties package_name="Data Layer"/>
+      </element>
+      <element xmi:idref="EAID_7B180B07_57DC_42F7_846C_481BD2E788E3" xmi:type="uml:Component" name="Baza Danych Transakcji" scope="public">
+        <model tpos="0" ea_localid="24" ea_eleType="element" package="EAID_80204EEB_D1CF_47F7_9362_A189C6AE59EE"/>
+        <properties isSpecification="false" sType="Component" nType="4" scope="public"/>
+        <extendedProperties package_name="Data Layer"/>
+      </element>
+      <element xmi:idref="EAID_5409FC80_79DE_4918_88DB_2B2DD1A4C1C1" xmi:type="uml:Component" name="Baza Danych Analityczna" scope="public">
+        <model tpos="0" ea_localid="25" ea_eleType="element" package="EAID_80204EEB_D1CF_47F7_9362_A189C6AE59EE"/>
+        <properties isSpecification="false" sType="Component" nType="4" scope="public"/>
+        <extendedProperties package_name="Data Layer"/>
+      </element>
+      <element xmi:idref="EAID_A8955E11_19DE_40BE_82E6_45E1C8C2C92A" xmi:type="uml:Component" name="Repozytorium Kont" scope="public">
+        <model tpos="0" ea_localid="26" ea_eleType="element" package="EAID_80204EEB_D1CF_47F7_9362_A189C6AE59EE"/>
+        <properties isSpecification="false" sType="Component" nType="4" scope="public"/>
+        <extendedProperties package_name="Data Layer"/>
+      </element>
+      <element xmi:idref="EAID_35F6ACE8_9873_4225_8EE1_FF2E48412859" xmi:type="uml:Component" name="Repozytorium Płatności" scope="public">
+        <model tpos="0" ea_localid="27" ea_eleType="element" package="EAID_80204EEB_D1CF_47F7_9362_A189C6AE59EE"/>
+        <properties isSpecification="false" sType="Component" nType="4" scope="public"/>
+        <extendedProperties package_name="Data Layer"/>
+      </element>
+      <element xmi:idref="EAID_D8E77112_B16A_4B26_9490_D68F1DB53D35" xmi:type="uml:Component" name="Repozytorium Kart" scope="public">
+        <model tpos="0" ea_localid="28" ea_eleType="element" package="EAID_80204EEB_D1CF_47F7_9362_A189C6AE59EE"/>
+        <properties isSpecification="false" sType="Component" nType="4" scope="public"/>
+        <extendedProperties package_name="Data Layer"/>
+      </element>
+      <element xmi:idref="EAID_95D01741_CDBF_42BB_8A43_9BDE45AD10C6" xmi:type="uml:Component" name="Repozytorium Transakcji" scope="public">
+        <model tpos="0" ea_localid="29" ea_eleType="element" package="EAID_80204EEB_D1CF_47F7_9362_A189C6AE59EE"/>
+        <properties isSpecification="false" sType="Component" nType="4" scope="public"/>
+        <extendedProperties package_name="Data Layer"/>
+      </element>
+      <element xmi:idref="EAID_B65988FA_412C_4ADE_94AE_956800A758C7" xmi:type="uml:Component" name="Magistrala Komunikatów" scope="public">
+        <model tpos="0" ea_localid="30" ea_eleType="element" package="EAID_A856E6E1_812E_4509_B072_B9E14D6A5A4F"/>
+        <properties isSpecification="false" sType="Component" nType="4" scope="public"/>
+        <extendedProperties package_name="Integration Layer"/>
+      </element>
+      <element xmi:idref="EAID_1539154A_C1B6_4006_8167_7CC5DCA8E4A0" xmi:type="uml:Component" name="Adapter SMS" scope="public">
+        <model tpos="0" ea_localid="31" ea_eleType="element" package="EAID_A856E6E1_812E_4509_B072_B9E14D6A5A4F"/>
+        <properties isSpecification="false" sType="Component" nType="4" scope="public"/>
+        <extendedProperties package_name="Integration Layer"/>
+      </element>
+      <element xmi:idref="EAID_BED1E75A_E17F_4BDE_B603_797871B1434A" xmi:type="uml:Component" name="Adapter SMTP" scope="public">
+        <model tpos="0" ea_localid="32" ea_eleType="element" package="EAID_A856E6E1_812E_4509_B072_B9E14D6A5A4F"/>
+        <properties isSpecification="false" sType="Component" nType="4" scope="public"/>
+        <extendedProperties package_name="Integration Layer"/>
+      </element>
+      <element xmi:idref="EAID_95592859_3FC7_495B_8CB2_BF5A8349F640" xmi:type="uml:Component" name="System Logowania" scope="public">
+        <model tpos="0" ea_localid="33" ea_eleType="element" package="EAID_51E8307B_FF4E_4EB4_8BE8_C8795B50DD87"/>
+        <properties isSpecification="false" sType="Component" nType="4" scope="public"/>
+        <extendedProperties package_name="Auxiliary Components"/>
+      </element>
+    </elements>
+    <diagrams>
+      <diagram xmi:id="EAID_6F1EC2D2_DB66_475A_9C93_38F5F893BDD5" name="System Bankowy - Architektura Systemu" type="Component" diagramType="ComponentDiagram">
+        <model package="EAPK_01E390CE_EAA8_4DD2_B31B_EA89C210D3CB" localID="34" owner="EAPK_01E390CE_EAA8_4DD2_B31B_EA89C210D3CB"/>
+        <properties name="System Bankowy - Architektura Systemu" type="Component"/>
+        <project author="195841" version="1.0" created="2025-08-22 00:14:04" modified="2025-08-22 00:14:04"/>
+        <style1 value="ShowPrivate=1;ShowProtected=1;ShowPublic=1;HideRelationships=0;Locked=0;Border=1;HighlightForeign=1;PackageContents=1;SequenceNotes=0;ScalePrintImage=0;PPgs.cx=0;PPgs.cy=0;DocSize.cx=795;DocSize.cy=1134;ShowDetails=0;Orientation=P;Zoom=100;ShowTags=0;OpParams=1;VisibleAttributeDetail=0;ShowOpRetType=1;ShowIcons=1;CollabNums=0;HideProps=0;ShowReqs=0;ShowCons=0;PaperSize=9;HideParents=0;UseAlias=0;HideAtts=0;HideOps=0;HideStereo=0;HideElemStereo=0;ShowTests=0;ShowMaint=0;ConnectorNotation=UML 2.1;ExplicitNavigability=0;ShowShape=1;"/>
+        <elements>
+          <element subject="EAID_031D6636_9B85_4B00_9DAB_08140D15582F" seqno="1" geometry="Left=100;Top=20;Right=900;Bottom=70;" style="DUID=unique_id;BorderColor=-1;BorderWidth=0;BackColor=-1;" elementclass="Text"/>
+          <element subject="EAID_CCFEFB8C_D668_49AA_9167_63A23C9A09A4" seqno="10" geometry="Left=100;Top=100;Right=744;Bottom=370;" style="DUID=unique_id;BorderColor=-1;BorderWidth=1;DUID=unique_id;BorderColor=-1;BorderWidth=1;BackColor=-1249281;" elementclass="Package"/>
+          <element subject="EAID_B3D3B84A_4C1D_425E_B567_5AD4D1C5C9DC" seqno="11" geometry="Left=100;Top=420;Right=1128;Bottom=810;" style="DUID=unique_id;BorderColor=-1;BorderWidth=1;DUID=unique_id;BorderColor=-1;BorderWidth=1;BackColor=-1120086;" elementclass="Package"/>
+          <element subject="EAID_80204EEB_D1CF_47F7_9362_A189C6AE59EE" seqno="12" geometry="Left=100;Top=860;Right=792;Bottom=1250;" style="DUID=unique_id;BorderColor=-1;BorderWidth=1;DUID=unique_id;BorderColor=-1;BorderWidth=1;BackColor=-6337;" elementclass="Package"/>
+          <element subject="EAID_A856E6E1_812E_4509_B072_B9E14D6A5A4F" seqno="13" geometry="Left=100;Top=1300;Right=768;Bottom=1570;" style="DUID=unique_id;BorderColor=-1;BorderWidth=1;DUID=unique_id;BorderColor=-1;BorderWidth=1;BackColor=-3342337;" elementclass="Package"/>
+          <element subject="EAID_51E8307B_FF4E_4EB4_8BE8_C8795B50DD87" seqno="14" geometry="Left=100;Top=1620;Right=550;Bottom=1890;" style="DUID=unique_id;BorderColor=-1;BorderWidth=1;DUID=unique_id;BorderColor=-1;BorderWidth=1;BackColor=-8355712;" elementclass="Package"/>
+          <element subject="EAID_CAACA702_35E8_42E3_8CA7_BC53FBEF1AD0" seqno="100" geometry="Left=1328;Top=845.0;Right=1478;Bottom=915.0;" style="DUID=unique_id;" elementclass="Component"/>
+          <element subject="EAID_B60939EA_39A4_40ED_9C93_DF87146618AB" seqno="101" geometry="Left=1328;Top=955.0;Right=1478;Bottom=1025.0;" style="DUID=unique_id;" elementclass="Component"/>
+          <element subject="EAID_2E72B1CF_CB0B_4ED1_A501_6EA327AB9886" seqno="102" geometry="Left=1328;Top=1065.0;Right=1478;Bottom=1135.0;" style="DUID=unique_id;" elementclass="Component"/>
+          <element subject="EAID_961EBD20_286C_4999_8B42_F4C27ECD8466" seqno="103" geometry="Left=1328;Top=1175.0;Right=1478;Bottom=1245.0;" style="DUID=unique_id;" elementclass="Component"/>
+          <element subject="EAID_6EDF294B_5AF7_4191_9F92_12AF07D488B8" seqno="100" geometry="Left=152.0;Top=160;Right=312.0;Bottom=230;" style="DUID=unique_id;stereotype=controller;BackColor=-1249301;" elementclass="component"/>
+          <element subject="EAID_3FA37EF7_0652_46EB_A62C_A784A57AA220" seqno="101" geometry="Left=338.0;Top=160;Right=506.0;Bottom=230;" style="DUID=unique_id;stereotype=controller;BackColor=-1249301;" elementclass="component"/>
+          <element subject="EAID_D8423DA7_72E0_4985_863A_1149A2DEC046" seqno="102" geometry="Left=532.0;Top=160;Right=692.0;Bottom=230;" style="DUID=unique_id;stereotype=gateway;BackColor=-16711681;" elementclass="component"/>
+          <element subject="EAID_A39C310B_0B52_48B1_99D9_7C6CFB467EC6" seqno="103" geometry="Left=140.0;Top=480;Right=436.0;Bottom=550;" style="DUID=unique_id;stereotype=service;BackColor=-3342357;" elementclass="component"/>
+          <element subject="EAID_ABBCEC25_AB3F_4FAE_B08B_2B6CD1FB209D" seqno="104" geometry="Left=510.0;Top=480;Right=718.0;Bottom=550;" style="DUID=unique_id;stereotype=service;BackColor=-3342357;" elementclass="component"/>
+          <element subject="EAID_7F39CE56_9533_4867_8DEC_88B476D4AD0D" seqno="105" geometry="Left=724.0;Top=480;Right=884.0;Bottom=550;" style="DUID=unique_id;stereotype=service;BackColor=-3342357;" elementclass="component"/>
+          <element subject="EAID_F708ADEA_31E8_4109_AE30_A0A52CD6A466" seqno="106" geometry="Left=272.0;Top=580;Right=480.0;Bottom=650;" style="DUID=unique_id;stereotype=service;BackColor=-3342357;" elementclass="component"/>
+          <element subject="EAID_2988DBB3_6EE6_4A6F_8119_F045422DA14B" seqno="107" geometry="Left=510.0;Top=580;Right=718.0;Bottom=650;" style="DUID=unique_id;stereotype=service;BackColor=-3342357;" elementclass="component"/>
+          <element subject="EAID_800F3F5D_1B00_42D3_A527_7EAB2F11FB2D" seqno="108" geometry="Left=724.0;Top=580;Right=884.0;Bottom=650;" style="DUID=unique_id;stereotype=service;BackColor=-3342357;" elementclass="component"/>
+          <element subject="EAID_825A760A_0BB4_4315_B6E3_490F238D2DEF" seqno="109" geometry="Left=344.0;Top=680;Right=504.0;Bottom=750;" style="DUID=unique_id;stereotype=service;BackColor=-3342357;" elementclass="component"/>
+          <element subject="EAID_1686712F_2D57_4ADD_A51D_F9B91515B0E5" seqno="110" geometry="Left=176.0;Top=920;Right=336.0;Bottom=990;" style="DUID=unique_id;" elementclass="database"/>
+          <element subject="EAID_E52B7A6D_B432_48A4_98B0_323758563348" seqno="111" geometry="Left=362.0;Top=920;Right=530.0;Bottom=990;" style="DUID=unique_id;" elementclass="database"/>
+          <element subject="EAID_194BAF5B_64BD_4039_A77C_324E672E81AE" seqno="112" geometry="Left=556.0;Top=920;Right=716.0;Bottom=990;" style="DUID=unique_id;" elementclass="database"/>
+          <element subject="EAID_7B180B07_57DC_42F7_846C_481BD2E788E3" seqno="113" geometry="Left=152.0;Top=1020;Right=328.0;Bottom=1090;" style="DUID=unique_id;" elementclass="database"/>
+          <element subject="EAID_5409FC80_79DE_4918_88DB_2B2DD1A4C1C1" seqno="114" geometry="Left=354.0;Top=1020;Right=538.0;Bottom=1090;" style="DUID=unique_id;" elementclass="database"/>
+          <element subject="EAID_A8955E11_19DE_40BE_82E6_45E1C8C2C92A" seqno="115" geometry="Left=556.0;Top=1020;Right=716.0;Bottom=1090;" style="DUID=unique_id;stereotype=repository;BackColor=-1120106;" elementclass="component"/>
+          <element subject="EAID_35F6ACE8_9873_4225_8EE1_FF2E48412859" seqno="116" geometry="Left=152.0;Top=1120;Right=328.0;Bottom=1190;" style="DUID=unique_id;stereotype=repository;BackColor=-1120106;" elementclass="component"/>
+          <element subject="EAID_D8E77112_B16A_4B26_9490_D68F1DB53D35" seqno="117" geometry="Left=366.0;Top=1120;Right=526.0;Bottom=1190;" style="DUID=unique_id;stereotype=repository;BackColor=-1120106;" elementclass="component"/>
+          <element subject="EAID_95D01741_CDBF_42BB_8A43_9BDE45AD10C6" seqno="118" geometry="Left=568.0;Top=1120;Right=752.0;Bottom=1190;" style="DUID=unique_id;stereotype=repository;BackColor=-1120106;" elementclass="component"/>
+          <element subject="EAID_B65988FA_412C_4ADE_94AE_956800A758C7" seqno="119" geometry="Left=140.0;Top=1360;Right=316.0;Bottom=1430;" style="DUID=unique_id;" elementclass="queue"/>
+          <element subject="EAID_1539154A_C1B6_4006_8167_7CC5DCA8E4A0" seqno="120" geometry="Left=354.0;Top=1360;Right=514.0;Bottom=1430;" style="DUID=unique_id;stereotype=facade;BackColor=-6357;" elementclass="component"/>
+          <element subject="EAID_BED1E75A_E17F_4BDE_B603_797871B1434A" seqno="121" geometry="Left=544.0;Top=1360;Right=704.0;Bottom=1430;" style="DUID=unique_id;stereotype=facade;BackColor=-6357;" elementclass="component"/>
+          <element subject="EAID_95592859_3FC7_495B_8CB2_BF5A8349F640" seqno="122" geometry="Left=245.0;Top=1680;Right=405.0;Bottom=1750;" style="DUID=unique_id;stereotype=utility;BackColor=-8355732;" elementclass="component"/>
+        </elements>
+        <diagramlinks>
+          <diagramlink connectorID="EAID_2B694E8A_D10E_46E2_AD22_C67345A8B07A" start="EAID_CAACA702_35E8_42E3_8CA7_BC53FBEF1AD0" end="EAID_6EDF294B_5AF7_4191_9F92_12AF07D488B8" linkID="DCLINK_ADD27A2E" hidden="0" geometry="EDGE=1;$LLB=;LLT=;LMT=;LMB=;LRT=;LRB=;IRHS=;ILHS=;Path=;"/>
+          <diagramlink connectorID="EAID_86CB4740_9F8F_44E7_8616_BD55EA06683A" start="EAID_B60939EA_39A4_40ED_9C93_DF87146618AB" end="EAID_3FA37EF7_0652_46EB_A62C_A784A57AA220" linkID="DCLINK_22EA3E1A" hidden="0" geometry="EDGE=1;$LLB=;LLT=;LMT=;LMB=;LRT=;LRB=;IRHS=;ILHS=;Path=;"/>
+          <diagramlink connectorID="EAID_4F92C70D_EAA1_464A_80E2_EBFCE8871D6C" start="EAID_6EDF294B_5AF7_4191_9F92_12AF07D488B8" end="EAID_D8423DA7_72E0_4985_863A_1149A2DEC046" linkID="DCLINK_1BDE9341" hidden="0" geometry="EDGE=1;$LLB=;LLT=;LMT=;LMB=;LRT=;LRB=;IRHS=;ILHS=;Path=;"/>
+          <diagramlink connectorID="EAID_89B97BE2_970C_431D_B390_6A77E105122D" start="EAID_3FA37EF7_0652_46EB_A62C_A784A57AA220" end="EAID_D8423DA7_72E0_4985_863A_1149A2DEC046" linkID="DCLINK_2405E65F" hidden="0" geometry="EDGE=1;$LLB=;LLT=;LMT=;LMB=;LRT=;LRB=;IRHS=;ILHS=;Path=;"/>
+          <diagramlink connectorID="EAID_BE8C2D26_C543_425D_9447_737B91DAF46C" start="EAID_D8423DA7_72E0_4985_863A_1149A2DEC046" end="EAID_A39C310B_0B52_48B1_99D9_7C6CFB467EC6" linkID="DCLINK_D85543EF" hidden="0" geometry="EDGE=1;$LLB=;LLT=;LMT=;LMB=;LRT=;LRB=;IRHS=;ILHS=;Path=;"/>
+          <diagramlink connectorID="EAID_CE4C423A_7F2F_4F10_A261_095A9E1BE796" start="EAID_A39C310B_0B52_48B1_99D9_7C6CFB467EC6" end="EAID_ABBCEC25_AB3F_4FAE_B08B_2B6CD1FB209D" linkID="DCLINK_C1852089" hidden="0" geometry="EDGE=1;$LLB=;LLT=;LMT=;LMB=;LRT=;LRB=;IRHS=;ILHS=;Path=;"/>
+          <diagramlink connectorID="EAID_73FAF811_56A6_4313_9CB0_B4F395FE4CA4" start="EAID_ABBCEC25_AB3F_4FAE_B08B_2B6CD1FB209D" end="EAID_A8955E11_19DE_40BE_82E6_45E1C8C2C92A" linkID="DCLINK_64FFF92C" hidden="0" geometry="EDGE=1;$LLB=;LLT=;LMT=;LMB=;LRT=;LRB=;IRHS=;ILHS=;Path=;"/>
+          <diagramlink connectorID="EAID_23622D51_8945_4B29_95B2_3F5FF5151485" start="EAID_7F39CE56_9533_4867_8DEC_88B476D4AD0D" end="EAID_35F6ACE8_9873_4225_8EE1_FF2E48412859" linkID="DCLINK_54DFDA25" hidden="0" geometry="EDGE=1;$LLB=;LLT=;LMT=;LMB=;LRT=;LRB=;IRHS=;ILHS=;Path=;"/>
+          <diagramlink connectorID="EAID_F394A8B1_3CEC_45D4_BF93_075C7A59306F" start="EAID_F708ADEA_31E8_4109_AE30_A0A52CD6A466" end="EAID_D8E77112_B16A_4B26_9490_D68F1DB53D35" linkID="DCLINK_3886DE44" hidden="0" geometry="EDGE=1;$LLB=;LLT=;LMT=;LMB=;LRT=;LRB=;IRHS=;ILHS=;Path=;"/>
+          <diagramlink connectorID="EAID_09A11DCC_4767_439C_82C2_D75074370956" start="EAID_2988DBB3_6EE6_4A6F_8119_F045422DA14B" end="EAID_95D01741_CDBF_42BB_8A43_9BDE45AD10C6" linkID="DCLINK_48543657" hidden="0" geometry="EDGE=1;$LLB=;LLT=;LMT=;LMB=;LRT=;LRB=;IRHS=;ILHS=;Path=;"/>
+          <diagramlink connectorID="EAID_A8A4536E_0C85_43DC_B644_B5274F983FB2" start="EAID_A8955E11_19DE_40BE_82E6_45E1C8C2C92A" end="EAID_1686712F_2D57_4ADD_A51D_F9B91515B0E5" linkID="DCLINK_248EBE75" hidden="0" geometry="EDGE=1;$LLB=;LLT=;LMT=;LMB=;LRT=;LRB=;IRHS=;ILHS=;Path=;"/>
+          <diagramlink connectorID="EAID_8078C216_3F9C_4352_8D0C_A11DC92E909C" start="EAID_35F6ACE8_9873_4225_8EE1_FF2E48412859" end="EAID_E52B7A6D_B432_48A4_98B0_323758563348" linkID="DCLINK_86EEC396" hidden="0" geometry="EDGE=1;$LLB=;LLT=;LMT=;LMB=;LRT=;LRB=;IRHS=;ILHS=;Path=;"/>
+          <diagramlink connectorID="EAID_CDA9BF28_FA0E_4EE9_8628_B3435CE08C85" start="EAID_D8E77112_B16A_4B26_9490_D68F1DB53D35" end="EAID_194BAF5B_64BD_4039_A77C_324E672E81AE" linkID="DCLINK_B7A8764B" hidden="0" geometry="EDGE=1;$LLB=;LLT=;LMT=;LMB=;LRT=;LRB=;IRHS=;ILHS=;Path=;"/>
+          <diagramlink connectorID="EAID_E34ADEDC_2624_46FD_BF9F_7B895029CA05" start="EAID_95D01741_CDBF_42BB_8A43_9BDE45AD10C6" end="EAID_7B180B07_57DC_42F7_846C_481BD2E788E3" linkID="DCLINK_A88F966C" hidden="0" geometry="EDGE=1;$LLB=;LLT=;LMT=;LMB=;LRT=;LRB=;IRHS=;ILHS=;Path=;"/>
+          <diagramlink connectorID="EAID_2FF793EE_730C_44D1_8BDC_0E826DBA27D8" start="EAID_ABBCEC25_AB3F_4FAE_B08B_2B6CD1FB209D" end="EAID_B65988FA_412C_4ADE_94AE_956800A758C7" linkID="DCLINK_68D43BB9" hidden="0" geometry="EDGE=1;$LLB=;LLT=;LMT=;LMB=;LRT=;LRB=;IRHS=;ILHS=;Path=;"/>
+          <diagramlink connectorID="EAID_C8FDFEB1_88A3_4FAE_94EE_EE80ACB3922B" start="EAID_7F39CE56_9533_4867_8DEC_88B476D4AD0D" end="EAID_B65988FA_412C_4ADE_94AE_956800A758C7" linkID="DCLINK_2CB5270A" hidden="0" geometry="EDGE=1;$LLB=;LLT=;LMT=;LMB=;LRT=;LRB=;IRHS=;ILHS=;Path=;"/>
+          <diagramlink connectorID="EAID_E8374B0E_E183_430E_BA2E_78D640D99958" start="EAID_F708ADEA_31E8_4109_AE30_A0A52CD6A466" end="EAID_B65988FA_412C_4ADE_94AE_956800A758C7" linkID="DCLINK_C44FF9BD" hidden="0" geometry="EDGE=1;$LLB=;LLT=;LMT=;LMB=;LRT=;LRB=;IRHS=;ILHS=;Path=;"/>
+          <diagramlink connectorID="EAID_A81F2E63_D708_4DFF_B1A9_8ABFE3FF07CB" start="EAID_2988DBB3_6EE6_4A6F_8119_F045422DA14B" end="EAID_B65988FA_412C_4ADE_94AE_956800A758C7" linkID="DCLINK_7332B074" hidden="0" geometry="EDGE=1;$LLB=;LLT=;LMT=;LMB=;LRT=;LRB=;IRHS=;ILHS=;Path=;"/>
+          <diagramlink connectorID="EAID_D958BCF6_ACBB_4117_978E_32DF97040CCA" start="EAID_B65988FA_412C_4ADE_94AE_956800A758C7" end="EAID_800F3F5D_1B00_42D3_A527_7EAB2F11FB2D" linkID="DCLINK_9DAA00DE" hidden="0" geometry="EDGE=1;$LLB=;LLT=;LMT=;LMB=;LRT=;LRB=;IRHS=;ILHS=;Path=;"/>
+          <diagramlink connectorID="EAID_85E56896_6F7B_4A73_A444_7BC97E3B0A22" start="EAID_800F3F5D_1B00_42D3_A527_7EAB2F11FB2D" end="EAID_1539154A_C1B6_4006_8167_7CC5DCA8E4A0" linkID="DCLINK_1143068B" hidden="0" geometry="EDGE=1;$LLB=;LLT=;LMT=;LMB=;LRT=;LRB=;IRHS=;ILHS=;Path=;"/>
+          <diagramlink connectorID="EAID_1DF4A610_744F_4242_8743_C2E1FEE597B1" start="EAID_800F3F5D_1B00_42D3_A527_7EAB2F11FB2D" end="EAID_BED1E75A_E17F_4BDE_B603_797871B1434A" linkID="DCLINK_48D5ED09" hidden="0" geometry="EDGE=1;$LLB=;LLT=;LMT=;LMB=;LRT=;LRB=;IRHS=;ILHS=;Path=;"/>
+          <diagramlink connectorID="EAID_E7A9D19C_8F08_450C_871D_3C920DBDE627" start="EAID_1539154A_C1B6_4006_8167_7CC5DCA8E4A0" end="EAID_2E72B1CF_CB0B_4ED1_A501_6EA327AB9886" linkID="DCLINK_0D6BA3FD" hidden="0" geometry="EDGE=1;$LLB=;LLT=;LMT=;LMB=;LRT=;LRB=;IRHS=;ILHS=;Path=;"/>
+          <diagramlink connectorID="EAID_36A86CA2_2FEF_44CF_965D_B85F5B5201F6" start="EAID_BED1E75A_E17F_4BDE_B603_797871B1434A" end="EAID_961EBD20_286C_4999_8B42_F4C27ECD8466" linkID="DCLINK_D54FEDE3" hidden="0" geometry="EDGE=1;$LLB=;LLT=;LMT=;LMB=;LRT=;LRB=;IRHS=;ILHS=;Path=;"/>
+          <diagramlink connectorID="EAID_E8F5101C_6C3A_47EF_815F_B845358BF75D" start="EAID_825A760A_0BB4_4315_B6E3_490F238D2DEF" end="EAID_5409FC80_79DE_4918_88DB_2B2DD1A4C1C1" linkID="DCLINK_62312F3B" hidden="0" geometry="EDGE=1;$LLB=;LLT=;LMT=;LMB=;LRT=;LRB=;IRHS=;ILHS=;Path=;"/>
+          <diagramlink connectorID="EAID_B54CD6FE_DC50_43BE_B3DF_A1CBA310F354" start="EAID_825A760A_0BB4_4315_B6E3_490F238D2DEF" end="EAID_B65988FA_412C_4ADE_94AE_956800A758C7" linkID="DCLINK_0BF11254" hidden="0" geometry="EDGE=1;$LLB=;LLT=;LMT=;LMB=;LRT=;LRB=;IRHS=;ILHS=;Path=;"/>
+          <diagramlink connectorID="EAID_CB67B257_2D76_43D4_97DE_B7F0E2D48CCF" start="EAID_D8423DA7_72E0_4985_863A_1149A2DEC046" end="EAID_95592859_3FC7_495B_8CB2_BF5A8349F640" linkID="DCLINK_C59B196D" hidden="0" geometry="EDGE=1;$LLB=;LLT=;LMT=;LMB=;LRT=;LRB=;IRHS=;ILHS=;Path=;"/>
+          <diagramlink connectorID="EAID_6AE5C2AE_9C66_43B9_945C_8580252493BA" start="EAID_ABBCEC25_AB3F_4FAE_B08B_2B6CD1FB209D" end="EAID_95592859_3FC7_495B_8CB2_BF5A8349F640" linkID="DCLINK_D5E1C31A" hidden="0" geometry="EDGE=1;$LLB=;LLT=;LMT=;LMB=;LRT=;LRB=;IRHS=;ILHS=;Path=;"/>
+          <diagramlink connectorID="EAID_E6B617A5_5810_4D57_AD53_CFC1744C5B45" start="EAID_7F39CE56_9533_4867_8DEC_88B476D4AD0D" end="EAID_95592859_3FC7_495B_8CB2_BF5A8349F640" linkID="DCLINK_0AC6D384" hidden="0" geometry="EDGE=1;$LLB=;LLT=;LMT=;LMB=;LRT=;LRB=;IRHS=;ILHS=;Path=;"/>
+          <diagramlink connectorID="EAID_0C2DA887_1591_4452_A751_44AD55B8FDF8" start="EAID_F708ADEA_31E8_4109_AE30_A0A52CD6A466" end="EAID_95592859_3FC7_495B_8CB2_BF5A8349F640" linkID="DCLINK_6F100BF8" hidden="0" geometry="EDGE=1;$LLB=;LLT=;LMT=;LMB=;LRT=;LRB=;IRHS=;ILHS=;Path=;"/>
+          <diagramlink connectorID="EAID_D80A37A7_5574_4351_B41C_8CD37D832F99" start="EAID_2988DBB3_6EE6_4A6F_8119_F045422DA14B" end="EAID_95592859_3FC7_495B_8CB2_BF5A8349F640" linkID="DCLINK_5C7BDE5D" hidden="0" geometry="EDGE=1;$LLB=;LLT=;LMT=;LMB=;LRT=;LRB=;IRHS=;ILHS=;Path=;"/>
+          <diagramlink connectorID="EAID_D1650D52_2502_4821_9BE6_5DD4C90DC3DB" start="EAID_A39C310B_0B52_48B1_99D9_7C6CFB467EC6" end="EAID_95592859_3FC7_495B_8CB2_BF5A8349F640" linkID="DCLINK_C686F908" hidden="0" geometry="EDGE=1;$LLB=;LLT=;LMT=;LMB=;LRT=;LRB=;IRHS=;ILHS=;Path=;"/>
+        </diagramlinks>
+      </diagram>
+    </diagrams>
+    <connectors>
+      <connector xmi:idref="EAID_2B694E8A_D10E_46E2_AD22_C67345A8B07A">
+        <source xmi:idref="EAID_CAACA702_35E8_42E3_8CA7_BC53FBEF1AD0">
+          <model ea_localid="2" type="Component" name="Użytkownik"/>
+          <role visibility="Public"/>
+          <type aggregation="none"/>
+          <constraints/>
+          <modifiers isNavigable="false"/>
+        </source>
+        <target xmi:idref="EAID_6EDF294B_5AF7_4191_9F92_12AF07D488B8">
+          <model ea_localid="11" type="Component" name="Aplikacja Mobilna"/>
+          <role visibility="Public"/>
+          <type aggregation="none"/>
+          <constraints/>
+          <modifiers isNavigable="true"/>
+        </target>
+        <properties ea_type="Dependency" direction="Source -&gt; Destination" name="&quot;Używa aplikacji&quot;"/>
+        <documentation/>
+        <appearance linemode="1" linecolor="-1" linewidth="1" seqno="0" headStyle="0" lineStyle="0"/>
+      </connector>
+      <connector xmi:idref="EAID_86CB4740_9F8F_44E7_8616_BD55EA06683A">
+        <source xmi:idref="EAID_B60939EA_39A4_40ED_9C93_DF87146618AB">
+          <model ea_localid="3" type="Component" name="Administrator"/>
+          <role visibility="Public"/>
+          <type aggregation="none"/>
+          <constraints/>
+          <modifiers isNavigable="false"/>
+        </source>
+        <target xmi:idref="EAID_3FA37EF7_0652_46EB_A62C_A784A57AA220">
+          <model ea_localid="12" type="Component" name="Panel Administracyjny"/>
+          <role visibility="Public"/>
+          <type aggregation="none"/>
+          <constraints/>
+          <modifiers isNavigable="true"/>
+        </target>
+        <properties ea_type="Dependency" direction="Source -&gt; Destination" name="&quot;Zarządza systemem&quot;"/>
+        <documentation/>
+        <appearance linemode="1" linecolor="-1" linewidth="1" seqno="1" headStyle="0" lineStyle="0"/>
+      </connector>
+      <connector xmi:idref="EAID_4F92C70D_EAA1_464A_80E2_EBFCE8871D6C">
+        <source xmi:idref="EAID_6EDF294B_5AF7_4191_9F92_12AF07D488B8">
+          <model ea_localid="11" type="Component" name="Aplikacja Mobilna"/>
+          <role visibility="Public"/>
+          <type aggregation="none"/>
+          <constraints/>
+          <modifiers isNavigable="false"/>
+        </source>
+        <target xmi:idref="EAID_D8423DA7_72E0_4985_863A_1149A2DEC046">
+          <model ea_localid="13" type="Component" name="API Gateway"/>
+          <role visibility="Public"/>
+          <type aggregation="none"/>
+          <constraints/>
+          <modifiers isNavigable="true"/>
+        </target>
+        <properties ea_type="Dependency" direction="Source -&gt; Destination" name="&quot;HTTP API&quot;"/>
+        <documentation/>
+        <appearance linemode="1" linecolor="-1" linewidth="1" seqno="2" headStyle="0" lineStyle="0"/>
+      </connector>
+      <connector xmi:idref="EAID_89B97BE2_970C_431D_B390_6A77E105122D">
+        <source xmi:idref="EAID_3FA37EF7_0652_46EB_A62C_A784A57AA220">
+          <model ea_localid="12" type="Component" name="Panel Administracyjny"/>
+          <role visibility="Public"/>
+          <type aggregation="none"/>
+          <constraints/>
+          <modifiers isNavigable="false"/>
+        </source>
+        <target xmi:idref="EAID_D8423DA7_72E0_4985_863A_1149A2DEC046">
+          <model ea_localid="13" type="Component" name="API Gateway"/>
+          <role visibility="Public"/>
+          <type aggregation="none"/>
+          <constraints/>
+          <modifiers isNavigable="true"/>
+        </target>
+        <properties ea_type="Dependency" direction="Source -&gt; Destination" name="&quot;HTTP API&quot;"/>
+        <documentation/>
+        <appearance linemode="1" linecolor="-1" linewidth="1" seqno="3" headStyle="0" lineStyle="0"/>
+      </connector>
+      <connector xmi:idref="EAID_BE8C2D26_C543_425D_9447_737B91DAF46C">
+        <source xmi:idref="EAID_D8423DA7_72E0_4985_863A_1149A2DEC046">
+          <model ea_localid="13" type="Component" name="API Gateway"/>
+          <role visibility="Public"/>
+          <type aggregation="none"/>
+          <constraints/>
+          <modifiers isNavigable="false"/>
+        </source>
+        <target xmi:idref="EAID_A39C310B_0B52_48B1_99D9_7C6CFB467EC6">
+          <model ea_localid="14" type="Component" name="Serwis Autoryzacji i Uwierzytelniania"/>
+          <role visibility="Public"/>
+          <type aggregation="none"/>
+          <constraints/>
+          <modifiers isNavigable="true"/>
+        </target>
+        <properties ea_type="Dependency" direction="Source -&gt; Destination" name="&quot;HTTP API&quot;"/>
+        <documentation/>
+        <appearance linemode="1" linecolor="-1" linewidth="1" seqno="4" headStyle="0" lineStyle="0"/>
+      </connector>
+      <connector xmi:idref="EAID_CE4C423A_7F2F_4F10_A261_095A9E1BE796">
+        <source xmi:idref="EAID_A39C310B_0B52_48B1_99D9_7C6CFB467EC6">
+          <model ea_localid="14" type="Component" name="Serwis Autoryzacji i Uwierzytelniania"/>
+          <role visibility="Public"/>
+          <type aggregation="none"/>
+          <constraints/>
+          <modifiers isNavigable="false"/>
+        </source>
+        <target xmi:idref="EAID_ABBCEC25_AB3F_4FAE_B08B_2B6CD1FB209D">
+          <model ea_localid="15" type="Component" name="Serwis Zarządzania Kontami"/>
+          <role visibility="Public"/>
+          <type aggregation="none"/>
+          <constraints/>
+          <modifiers isNavigable="true"/>
+        </target>
+        <properties ea_type="Dependency" direction="Source -&gt; Destination" name="&quot;HTTP API&quot;"/>
+        <documentation/>
+        <appearance linemode="1" linecolor="-1" linewidth="1" seqno="5" headStyle="0" lineStyle="0"/>
+      </connector>
+      <connector xmi:idref="EAID_73FAF811_56A6_4313_9CB0_B4F395FE4CA4">
+        <source xmi:idref="EAID_ABBCEC25_AB3F_4FAE_B08B_2B6CD1FB209D">
+          <model ea_localid="15" type="Component" name="Serwis Zarządzania Kontami"/>
+          <role visibility="Public"/>
+          <type aggregation="none"/>
+          <constraints/>
+          <modifiers isNavigable="false"/>
+        </source>
+        <target xmi:idref="EAID_A8955E11_19DE_40BE_82E6_45E1C8C2C92A">
+          <model ea_localid="26" type="Component" name="Repozytorium Kont"/>
+          <role visibility="Public"/>
+          <type aggregation="none"/>
+          <constraints/>
+          <modifiers isNavigable="true"/>
+        </target>
+        <properties ea_type="Dependency" direction="Source -&gt; Destination" name="&quot;Pobiera/zapisuje dane&quot;"/>
+        <documentation/>
+        <appearance linemode="1" linecolor="-1" linewidth="1" seqno="6" headStyle="0" lineStyle="0"/>
+      </connector>
+      <connector xmi:idref="EAID_23622D51_8945_4B29_95B2_3F5FF5151485">
+        <source xmi:idref="EAID_7F39CE56_9533_4867_8DEC_88B476D4AD0D">
+          <model ea_localid="16" type="Component" name="Serwis Płatności"/>
+          <role visibility="Public"/>
+          <type aggregation="none"/>
+          <constraints/>
+          <modifiers isNavigable="false"/>
+        </source>
+        <target xmi:idref="EAID_35F6ACE8_9873_4225_8EE1_FF2E48412859">
+          <model ea_localid="27" type="Component" name="Repozytorium Płatności"/>
+          <role visibility="Public"/>
+          <type aggregation="none"/>
+          <constraints/>
+          <modifiers isNavigable="true"/>
+        </target>
+        <properties ea_type="Dependency" direction="Source -&gt; Destination" name="&quot;Pobiera/zapisuje dane&quot;"/>
+        <documentation/>
+        <appearance linemode="1" linecolor="-1" linewidth="1" seqno="7" headStyle="0" lineStyle="0"/>
+      </connector>
+      <connector xmi:idref="EAID_F394A8B1_3CEC_45D4_BF93_075C7A59306F">
+        <source xmi:idref="EAID_F708ADEA_31E8_4109_AE30_A0A52CD6A466">
+          <model ea_localid="17" type="Component" name="Serwis Zarządzania Kartami"/>
+          <role visibility="Public"/>
+          <type aggregation="none"/>
+          <constraints/>
+          <modifiers isNavigable="false"/>
+        </source>
+        <target xmi:idref="EAID_D8E77112_B16A_4B26_9490_D68F1DB53D35">
+          <model ea_localid="28" type="Component" name="Repozytorium Kart"/>
+          <role visibility="Public"/>
+          <type aggregation="none"/>
+          <constraints/>
+          <modifiers isNavigable="true"/>
+        </target>
+        <properties ea_type="Dependency" direction="Source -&gt; Destination" name="&quot;Pobiera/zapisuje dane&quot;"/>
+        <documentation/>
+        <appearance linemode="1" linecolor="-1" linewidth="1" seqno="8" headStyle="0" lineStyle="0"/>
+      </connector>
+      <connector xmi:idref="EAID_09A11DCC_4767_439C_82C2_D75074370956">
+        <source xmi:idref="EAID_2988DBB3_6EE6_4A6F_8119_F045422DA14B">
+          <model ea_localid="18" type="Component" name="Serwis Historii Transakcji"/>
+          <role visibility="Public"/>
+          <type aggregation="none"/>
+          <constraints/>
+          <modifiers isNavigable="false"/>
+        </source>
+        <target xmi:idref="EAID_95D01741_CDBF_42BB_8A43_9BDE45AD10C6">
+          <model ea_localid="29" type="Component" name="Repozytorium Transakcji"/>
+          <role visibility="Public"/>
+          <type aggregation="none"/>
+          <constraints/>
+          <modifiers isNavigable="true"/>
+        </target>
+        <properties ea_type="Dependency" direction="Source -&gt; Destination" name="&quot;Pobiera/zapisuje dane&quot;"/>
+        <documentation/>
+        <appearance linemode="1" linecolor="-1" linewidth="1" seqno="9" headStyle="0" lineStyle="0"/>
+      </connector>
+      <connector xmi:idref="EAID_A8A4536E_0C85_43DC_B644_B5274F983FB2">
+        <source xmi:idref="EAID_A8955E11_19DE_40BE_82E6_45E1C8C2C92A">
+          <model ea_localid="26" type="Component" name="Repozytorium Kont"/>
+          <role visibility="Public"/>
+          <type aggregation="none"/>
+          <constraints/>
+          <modifiers isNavigable="false"/>
+        </source>
+        <target xmi:idref="EAID_1686712F_2D57_4ADD_A51D_F9B91515B0E5">
+          <model ea_localid="21" type="Component" name="Baza Danych Kont"/>
+          <role visibility="Public"/>
+          <type aggregation="none"/>
+          <constraints/>
+          <modifiers isNavigable="true"/>
+        </target>
+        <properties ea_type="Dependency" direction="Source -&gt; Destination" name="&quot;SQL Query&quot;"/>
+        <documentation/>
+        <appearance linemode="1" linecolor="-1" linewidth="1" seqno="10" headStyle="0" lineStyle="0"/>
+      </connector>
+      <connector xmi:idref="EAID_8078C216_3F9C_4352_8D0C_A11DC92E909C">
+        <source xmi:idref="EAID_35F6ACE8_9873_4225_8EE1_FF2E48412859">
+          <model ea_localid="27" type="Component" name="Repozytorium Płatności"/>
+          <role visibility="Public"/>
+          <type aggregation="none"/>
+          <constraints/>
+          <modifiers isNavigable="false"/>
+        </source>
+        <target xmi:idref="EAID_E52B7A6D_B432_48A4_98B0_323758563348">
+          <model ea_localid="22" type="Component" name="Baza Danych Płatności"/>
+          <role visibility="Public"/>
+          <type aggregation="none"/>
+          <constraints/>
+          <modifiers isNavigable="true"/>
+        </target>
+        <properties ea_type="Dependency" direction="Source -&gt; Destination" name="&quot;SQL Query&quot;"/>
+        <documentation/>
+        <appearance linemode="1" linecolor="-1" linewidth="1" seqno="11" headStyle="0" lineStyle="0"/>
+      </connector>
+      <connector xmi:idref="EAID_CDA9BF28_FA0E_4EE9_8628_B3435CE08C85">
+        <source xmi:idref="EAID_D8E77112_B16A_4B26_9490_D68F1DB53D35">
+          <model ea_localid="28" type="Component" name="Repozytorium Kart"/>
+          <role visibility="Public"/>
+          <type aggregation="none"/>
+          <constraints/>
+          <modifiers isNavigable="false"/>
+        </source>
+        <target xmi:idref="EAID_194BAF5B_64BD_4039_A77C_324E672E81AE">
+          <model ea_localid="23" type="Component" name="Baza Danych Kart"/>
+          <role visibility="Public"/>
+          <type aggregation="none"/>
+          <constraints/>
+          <modifiers isNavigable="true"/>
+        </target>
+        <properties ea_type="Dependency" direction="Source -&gt; Destination" name="&quot;SQL Query&quot;"/>
+        <documentation/>
+        <appearance linemode="1" linecolor="-1" linewidth="1" seqno="12" headStyle="0" lineStyle="0"/>
+      </connector>
+      <connector xmi:idref="EAID_E34ADEDC_2624_46FD_BF9F_7B895029CA05">
+        <source xmi:idref="EAID_95D01741_CDBF_42BB_8A43_9BDE45AD10C6">
+          <model ea_localid="29" type="Component" name="Repozytorium Transakcji"/>
+          <role visibility="Public"/>
+          <type aggregation="none"/>
+          <constraints/>
+          <modifiers isNavigable="false"/>
+        </source>
+        <target xmi:idref="EAID_7B180B07_57DC_42F7_846C_481BD2E788E3">
+          <model ea_localid="24" type="Component" name="Baza Danych Transakcji"/>
+          <role visibility="Public"/>
+          <type aggregation="none"/>
+          <constraints/>
+          <modifiers isNavigable="true"/>
+        </target>
+        <properties ea_type="Dependency" direction="Source -&gt; Destination" name="&quot;SQL Query&quot;"/>
+        <documentation/>
+        <appearance linemode="1" linecolor="-1" linewidth="1" seqno="13" headStyle="0" lineStyle="0"/>
+      </connector>
+      <connector xmi:idref="EAID_2FF793EE_730C_44D1_8BDC_0E826DBA27D8">
+        <source xmi:idref="EAID_ABBCEC25_AB3F_4FAE_B08B_2B6CD1FB209D">
+          <model ea_localid="15" type="Component" name="Serwis Zarządzania Kontami"/>
+          <role visibility="Public"/>
+          <type aggregation="none"/>
+          <constraints/>
+          <modifiers isNavigable="false"/>
+        </source>
+        <target xmi:idref="EAID_B65988FA_412C_4ADE_94AE_956800A758C7">
+          <model ea_localid="30" type="Component" name="Magistrala Komunikatów"/>
+          <role visibility="Public"/>
+          <type aggregation="none"/>
+          <constraints/>
+          <modifiers isNavigable="true"/>
+        </target>
+        <properties ea_type="Dependency" direction="Source -&gt; Destination" name="&quot;Wysyła zdarzenie&quot;"/>
+        <documentation/>
+        <appearance linemode="1" linecolor="-1" linewidth="1" seqno="14" headStyle="0" lineStyle="0"/>
+      </connector>
+      <connector xmi:idref="EAID_C8FDFEB1_88A3_4FAE_94EE_EE80ACB3922B">
+        <source xmi:idref="EAID_7F39CE56_9533_4867_8DEC_88B476D4AD0D">
+          <model ea_localid="16" type="Component" name="Serwis Płatności"/>
+          <role visibility="Public"/>
+          <type aggregation="none"/>
+          <constraints/>
+          <modifiers isNavigable="false"/>
+        </source>
+        <target xmi:idref="EAID_B65988FA_412C_4ADE_94AE_956800A758C7">
+          <model ea_localid="30" type="Component" name="Magistrala Komunikatów"/>
+          <role visibility="Public"/>
+          <type aggregation="none"/>
+          <constraints/>
+          <modifiers isNavigable="true"/>
+        </target>
+        <properties ea_type="Dependency" direction="Source -&gt; Destination" name="&quot;Wysyła zdarzenie&quot;"/>
+        <documentation/>
+        <appearance linemode="1" linecolor="-1" linewidth="1" seqno="15" headStyle="0" lineStyle="0"/>
+      </connector>
+      <connector xmi:idref="EAID_E8374B0E_E183_430E_BA2E_78D640D99958">
+        <source xmi:idref="EAID_F708ADEA_31E8_4109_AE30_A0A52CD6A466">
+          <model ea_localid="17" type="Component" name="Serwis Zarządzania Kartami"/>
+          <role visibility="Public"/>
+          <type aggregation="none"/>
+          <constraints/>
+          <modifiers isNavigable="false"/>
+        </source>
+        <target xmi:idref="EAID_B65988FA_412C_4ADE_94AE_956800A758C7">
+          <model ea_localid="30" type="Component" name="Magistrala Komunikatów"/>
+          <role visibility="Public"/>
+          <type aggregation="none"/>
+          <constraints/>
+          <modifiers isNavigable="true"/>
+        </target>
+        <properties ea_type="Dependency" direction="Source -&gt; Destination" name="&quot;Wysyła zdarzenie&quot;"/>
+        <documentation/>
+        <appearance linemode="1" linecolor="-1" linewidth="1" seqno="16" headStyle="0" lineStyle="0"/>
+      </connector>
+      <connector xmi:idref="EAID_A81F2E63_D708_4DFF_B1A9_8ABFE3FF07CB">
+        <source xmi:idref="EAID_2988DBB3_6EE6_4A6F_8119_F045422DA14B">
+          <model ea_localid="18" type="Component" name="Serwis Historii Transakcji"/>
+          <role visibility="Public"/>
+          <type aggregation="none"/>
+          <constraints/>
+          <modifiers isNavigable="false"/>
+        </source>
+        <target xmi:idref="EAID_B65988FA_412C_4ADE_94AE_956800A758C7">
+          <model ea_localid="30" type="Component" name="Magistrala Komunikatów"/>
+          <role visibility="Public"/>
+          <type aggregation="none"/>
+          <constraints/>
+          <modifiers isNavigable="true"/>
+        </target>
+        <properties ea_type="Dependency" direction="Source -&gt; Destination" name="&quot;Wysyła zdarzenie&quot;"/>
+        <documentation/>
+        <appearance linemode="1" linecolor="-1" linewidth="1" seqno="17" headStyle="0" lineStyle="0"/>
+      </connector>
+      <connector xmi:idref="EAID_D958BCF6_ACBB_4117_978E_32DF97040CCA">
+        <source xmi:idref="EAID_B65988FA_412C_4ADE_94AE_956800A758C7">
+          <model ea_localid="30" type="Component" name="Magistrala Komunikatów"/>
+          <role visibility="Public"/>
+          <type aggregation="none"/>
+          <constraints/>
+          <modifiers isNavigable="false"/>
+        </source>
+        <target xmi:idref="EAID_800F3F5D_1B00_42D3_A527_7EAB2F11FB2D">
+          <model ea_localid="19" type="Component" name="Serwis Powiadomień"/>
+          <role visibility="Public"/>
+          <type aggregation="none"/>
+          <constraints/>
+          <modifiers isNavigable="true"/>
+        </target>
+        <properties ea_type="Dependency" direction="Source -&gt; Destination" name="&quot;Odbiera zdarzenie&quot;"/>
+        <documentation/>
+        <appearance linemode="1" linecolor="-1" linewidth="1" seqno="18" headStyle="0" lineStyle="0"/>
+      </connector>
+      <connector xmi:idref="EAID_85E56896_6F7B_4A73_A444_7BC97E3B0A22">
+        <source xmi:idref="EAID_800F3F5D_1B00_42D3_A527_7EAB2F11FB2D">
+          <model ea_localid="19" type="Component" name="Serwis Powiadomień"/>
+          <role visibility="Public"/>
+          <type aggregation="none"/>
+          <constraints/>
+          <modifiers isNavigable="false"/>
+        </source>
+        <target xmi:idref="EAID_1539154A_C1B6_4006_8167_7CC5DCA8E4A0">
+          <model ea_localid="31" type="Component" name="Adapter SMS"/>
+          <role visibility="Public"/>
+          <type aggregation="none"/>
+          <constraints/>
+          <modifiers isNavigable="true"/>
+        </target>
+        <properties ea_type="Dependency" direction="Source -&gt; Destination" name="&quot;Wysyła SMS&quot;"/>
+        <documentation/>
+        <appearance linemode="1" linecolor="-1" linewidth="1" seqno="19" headStyle="0" lineStyle="0"/>
+      </connector>
+      <connector xmi:idref="EAID_1DF4A610_744F_4242_8743_C2E1FEE597B1">
+        <source xmi:idref="EAID_800F3F5D_1B00_42D3_A527_7EAB2F11FB2D">
+          <model ea_localid="19" type="Component" name="Serwis Powiadomień"/>
+          <role visibility="Public"/>
+          <type aggregation="none"/>
+          <constraints/>
+          <modifiers isNavigable="false"/>
+        </source>
+        <target xmi:idref="EAID_BED1E75A_E17F_4BDE_B603_797871B1434A">
+          <model ea_localid="32" type="Component" name="Adapter SMTP"/>
+          <role visibility="Public"/>
+          <type aggregation="none"/>
+          <constraints/>
+          <modifiers isNavigable="true"/>
+        </target>
+        <properties ea_type="Dependency" direction="Source -&gt; Destination" name="&quot;Wysyła email&quot;"/>
+        <documentation/>
+        <appearance linemode="1" linecolor="-1" linewidth="1" seqno="20" headStyle="0" lineStyle="0"/>
+      </connector>
+      <connector xmi:idref="EAID_E7A9D19C_8F08_450C_871D_3C920DBDE627">
+        <source xmi:idref="EAID_1539154A_C1B6_4006_8167_7CC5DCA8E4A0">
+          <model ea_localid="31" type="Component" name="Adapter SMS"/>
+          <role visibility="Public"/>
+          <type aggregation="none"/>
+          <constraints/>
+          <modifiers isNavigable="false"/>
+        </source>
+        <target xmi:idref="EAID_2E72B1CF_CB0B_4ED1_A501_6EA327AB9886">
+          <model ea_localid="4" type="Component" name="Bramka SMS"/>
+          <role visibility="Public"/>
+          <type aggregation="none"/>
+          <constraints/>
+          <modifiers isNavigable="true"/>
+        </target>
+        <properties ea_type="Dependency" direction="Source -&gt; Destination" name="&quot;SMS API&quot;"/>
+        <documentation/>
+        <appearance linemode="1" linecolor="-1" linewidth="1" seqno="21" headStyle="0" lineStyle="0"/>
+      </connector>
+      <connector xmi:idref="EAID_36A86CA2_2FEF_44CF_965D_B85F5B5201F6">
+        <source xmi:idref="EAID_BED1E75A_E17F_4BDE_B603_797871B1434A">
+          <model ea_localid="32" type="Component" name="Adapter SMTP"/>
+          <role visibility="Public"/>
+          <type aggregation="none"/>
+          <constraints/>
+          <modifiers isNavigable="false"/>
+        </source>
+        <target xmi:idref="EAID_961EBD20_286C_4999_8B42_F4C27ECD8466">
+          <model ea_localid="5" type="Component" name="Serwer SMTP"/>
+          <role visibility="Public"/>
+          <type aggregation="none"/>
+          <constraints/>
+          <modifiers isNavigable="true"/>
+        </target>
+        <properties ea_type="Dependency" direction="Source -&gt; Destination" name="&quot;SMTP&quot;"/>
+        <documentation/>
+        <appearance linemode="1" linecolor="-1" linewidth="1" seqno="22" headStyle="0" lineStyle="0"/>
+      </connector>
+      <connector xmi:idref="EAID_E8F5101C_6C3A_47EF_815F_B845358BF75D">
+        <source xmi:idref="EAID_825A760A_0BB4_4315_B6E3_490F238D2DEF">
+          <model ea_localid="20" type="Component" name="Serwis Raportowania"/>
+          <role visibility="Public"/>
+          <type aggregation="none"/>
+          <constraints/>
+          <modifiers isNavigable="false"/>
+        </source>
+        <target xmi:idref="EAID_5409FC80_79DE_4918_88DB_2B2DD1A4C1C1">
+          <model ea_localid="25" type="Component" name="Baza Danych Analityczna"/>
+          <role visibility="Public"/>
+          <type aggregation="none"/>
+          <constraints/>
+          <modifiers isNavigable="true"/>
+        </target>
+        <properties ea_type="Dependency" direction="Source -&gt; Destination" name="&quot;SQL Query&quot;"/>
+        <documentation/>
+        <appearance linemode="1" linecolor="-1" linewidth="1" seqno="23" headStyle="0" lineStyle="0"/>
+      </connector>
+      <connector xmi:idref="EAID_B54CD6FE_DC50_43BE_B3DF_A1CBA310F354">
+        <source xmi:idref="EAID_825A760A_0BB4_4315_B6E3_490F238D2DEF">
+          <model ea_localid="20" type="Component" name="Serwis Raportowania"/>
+          <role visibility="Public"/>
+          <type aggregation="none"/>
+          <constraints/>
+          <modifiers isNavigable="false"/>
+        </source>
+        <target xmi:idref="EAID_B65988FA_412C_4ADE_94AE_956800A758C7">
+          <model ea_localid="30" type="Component" name="Magistrala Komunikatów"/>
+          <role visibility="Public"/>
+          <type aggregation="none"/>
+          <constraints/>
+          <modifiers isNavigable="true"/>
+        </target>
+        <properties ea_type="Dependency" direction="Source -&gt; Destination" name="&quot;Odbiera zdarzenie&quot;"/>
+        <documentation/>
+        <appearance linemode="1" linecolor="-1" linewidth="1" seqno="24" headStyle="0" lineStyle="0"/>
+      </connector>
+      <connector xmi:idref="EAID_CB67B257_2D76_43D4_97DE_B7F0E2D48CCF">
+        <source xmi:idref="EAID_D8423DA7_72E0_4985_863A_1149A2DEC046">
+          <model ea_localid="13" type="Component" name="API Gateway"/>
+          <role visibility="Public"/>
+          <type aggregation="none"/>
+          <constraints/>
+          <modifiers isNavigable="false"/>
+        </source>
+        <target xmi:idref="EAID_95592859_3FC7_495B_8CB2_BF5A8349F640">
+          <model ea_localid="33" type="Component" name="System Logowania"/>
+          <role visibility="Public"/>
+          <type aggregation="none"/>
+          <constraints/>
+          <modifiers isNavigable="true"/>
+        </target>
+        <properties ea_type="Dependency" direction="Source -&gt; Destination" name="&quot;Rejestruje zdarzenia&quot;"/>
+        <documentation/>
+        <appearance linemode="1" linecolor="-1" linewidth="1" seqno="25" headStyle="0" lineStyle="0"/>
+      </connector>
+      <connector xmi:idref="EAID_6AE5C2AE_9C66_43B9_945C_8580252493BA">
+        <source xmi:idref="EAID_ABBCEC25_AB3F_4FAE_B08B_2B6CD1FB209D">
+          <model ea_localid="15" type="Component" name="Serwis Zarządzania Kontami"/>
+          <role visibility="Public"/>
+          <type aggregation="none"/>
+          <constraints/>
+          <modifiers isNavigable="false"/>
+        </source>
+        <target xmi:idref="EAID_95592859_3FC7_495B_8CB2_BF5A8349F640">
+          <model ea_localid="33" type="Component" name="System Logowania"/>
+          <role visibility="Public"/>
+          <type aggregation="none"/>
+          <constraints/>
+          <modifiers isNavigable="true"/>
+        </target>
+        <properties ea_type="Dependency" direction="Source -&gt; Destination" name="&quot;Rejestruje zdarzenia&quot;"/>
+        <documentation/>
+        <appearance linemode="1" linecolor="-1" linewidth="1" seqno="26" headStyle="0" lineStyle="0"/>
+      </connector>
+      <connector xmi:idref="EAID_E6B617A5_5810_4D57_AD53_CFC1744C5B45">
+        <source xmi:idref="EAID_7F39CE56_9533_4867_8DEC_88B476D4AD0D">
+          <model ea_localid="16" type="Component" name="Serwis Płatności"/>
+          <role visibility="Public"/>
+          <type aggregation="none"/>
+          <constraints/>
+          <modifiers isNavigable="false"/>
+        </source>
+        <target xmi:idref="EAID_95592859_3FC7_495B_8CB2_BF5A8349F640">
+          <model ea_localid="33" type="Component" name="System Logowania"/>
+          <role visibility="Public"/>
+          <type aggregation="none"/>
+          <constraints/>
+          <modifiers isNavigable="true"/>
+        </target>
+        <properties ea_type="Dependency" direction="Source -&gt; Destination" name="&quot;Rejestruje zdarzenia&quot;"/>
+        <documentation/>
+        <appearance linemode="1" linecolor="-1" linewidth="1" seqno="27" headStyle="0" lineStyle="0"/>
+      </connector>
+      <connector xmi:idref="EAID_0C2DA887_1591_4452_A751_44AD55B8FDF8">
+        <source xmi:idref="EAID_F708ADEA_31E8_4109_AE30_A0A52CD6A466">
+          <model ea_localid="17" type="Component" name="Serwis Zarządzania Kartami"/>
+          <role visibility="Public"/>
+          <type aggregation="none"/>
+          <constraints/>
+          <modifiers isNavigable="false"/>
+        </source>
+        <target xmi:idref="EAID_95592859_3FC7_495B_8CB2_BF5A8349F640">
+          <model ea_localid="33" type="Component" name="System Logowania"/>
+          <role visibility="Public"/>
+          <type aggregation="none"/>
+          <constraints/>
+          <modifiers isNavigable="true"/>
+        </target>
+        <properties ea_type="Dependency" direction="Source -&gt; Destination" name="&quot;Rejestruje zdarzenia&quot;"/>
+        <documentation/>
+        <appearance linemode="1" linecolor="-1" linewidth="1" seqno="28" headStyle="0" lineStyle="0"/>
+      </connector>
+      <connector xmi:idref="EAID_D80A37A7_5574_4351_B41C_8CD37D832F99">
+        <source xmi:idref="EAID_2988DBB3_6EE6_4A6F_8119_F045422DA14B">
+          <model ea_localid="18" type="Component" name="Serwis Historii Transakcji"/>
+          <role visibility="Public"/>
+          <type aggregation="none"/>
+          <constraints/>
+          <modifiers isNavigable="false"/>
+        </source>
+        <target xmi:idref="EAID_95592859_3FC7_495B_8CB2_BF5A8349F640">
+          <model ea_localid="33" type="Component" name="System Logowania"/>
+          <role visibility="Public"/>
+          <type aggregation="none"/>
+          <constraints/>
+          <modifiers isNavigable="true"/>
+        </target>
+        <properties ea_type="Dependency" direction="Source -&gt; Destination" name="&quot;Rejestruje zdarzenia&quot;"/>
+        <documentation/>
+        <appearance linemode="1" linecolor="-1" linewidth="1" seqno="29" headStyle="0" lineStyle="0"/>
+      </connector>
+      <connector xmi:idref="EAID_D1650D52_2502_4821_9BE6_5DD4C90DC3DB">
+        <source xmi:idref="EAID_A39C310B_0B52_48B1_99D9_7C6CFB467EC6">
+          <model ea_localid="14" type="Component" name="Serwis Autoryzacji i Uwierzytelniania"/>
+          <role visibility="Public"/>
+          <type aggregation="none"/>
+          <constraints/>
+          <modifiers isNavigable="false"/>
+        </source>
+        <target xmi:idref="EAID_95592859_3FC7_495B_8CB2_BF5A8349F640">
+          <model ea_localid="33" type="Component" name="System Logowania"/>
+          <role visibility="Public"/>
+          <type aggregation="none"/>
+          <constraints/>
+          <modifiers isNavigable="true"/>
+        </target>
+        <properties ea_type="Dependency" direction="Source -&gt; Destination" name="&quot;Rejestruje zdarzenia&quot;"/>
+        <documentation/>
+        <appearance linemode="1" linecolor="-1" linewidth="1" seqno="30" headStyle="0" lineStyle="0"/>
+      </connector>
+    </connectors>
+  </xmi:Extension>
+  <stereotypeApplications>
+    <controllerApplication xmi:id="EAID_69627D4A_98A9_4DFF_84BE_62267B4C394C" xmi:type="thecustomprofile:controller" base_Component="EAID_6EDF294B_5AF7_4191_9F92_12AF07D488B8"/>
+    <controllerApplication xmi:id="EAID_DFCBA967_0DCC_4449_A1B3_601C0AD91BE2" xmi:type="thecustomprofile:controller" base_Component="EAID_3FA37EF7_0652_46EB_A62C_A784A57AA220"/>
+    <gatewayApplication xmi:id="EAID_DA7714A4_2B13_443A_8566_2EF61E24C72C" xmi:type="thecustomprofile:gateway" base_Component="EAID_D8423DA7_72E0_4985_863A_1149A2DEC046"/>
+    <serviceApplication xmi:id="EAID_FF0C88E4_A3EF_402F_AAF1_AE0C37B2781C" xmi:type="StandardProfileL2:Service" base_Component="EAID_A39C310B_0B52_48B1_99D9_7C6CFB467EC6"/>
+    <serviceApplication xmi:id="EAID_30153FE7_69AF_4AA1_A4FB_CDBCD764B6CA" xmi:type="StandardProfileL2:Service" base_Component="EAID_ABBCEC25_AB3F_4FAE_B08B_2B6CD1FB209D"/>
+    <serviceApplication xmi:id="EAID_BE77D345_D1F9_4E00_8498_4A07DF31527A" xmi:type="StandardProfileL2:Service" base_Component="EAID_7F39CE56_9533_4867_8DEC_88B476D4AD0D"/>
+    <serviceApplication xmi:id="EAID_38397AF1_C8CB_485B_8739_B90988A0EF3F" xmi:type="StandardProfileL2:Service" base_Component="EAID_F708ADEA_31E8_4109_AE30_A0A52CD6A466"/>
+    <serviceApplication xmi:id="EAID_761A232B_214C_4EB1_9E8D_AE2AAB919562" xmi:type="StandardProfileL2:Service" base_Component="EAID_2988DBB3_6EE6_4A6F_8119_F045422DA14B"/>
+    <serviceApplication xmi:id="EAID_B38E85EE_D548_4642_92B5_709512439FFD" xmi:type="StandardProfileL2:Service" base_Component="EAID_800F3F5D_1B00_42D3_A527_7EAB2F11FB2D"/>
+    <serviceApplication xmi:id="EAID_92C58804_AEC8_4BAF_A931_E5CD3E3B1982" xmi:type="StandardProfileL2:Service" base_Component="EAID_825A760A_0BB4_4315_B6E3_490F238D2DEF"/>
+    <repositoryApplication xmi:id="EAID_E6ACC2EA_7F5F_484E_BF47_765D2C81710B" xmi:type="SOMF:repository" base_Class="EAID_A8955E11_19DE_40BE_82E6_45E1C8C2C92A"/>
+    <repositoryApplication xmi:id="EAID_2C010D20_40B0_4B5A_8034_B758D8786D0D" xmi:type="SOMF:repository" base_Class="EAID_35F6ACE8_9873_4225_8EE1_FF2E48412859"/>
+    <repositoryApplication xmi:id="EAID_EA24A354_6E54_4B08_8B20_B041EEC9F99F" xmi:type="SOMF:repository" base_Class="EAID_D8E77112_B16A_4B26_9490_D68F1DB53D35"/>
+    <repositoryApplication xmi:id="EAID_5A2C48BB_7627_47D5_B044_16D3384ABCCE" xmi:type="SOMF:repository" base_Class="EAID_95D01741_CDBF_42BB_8A43_9BDE45AD10C6"/>
+    <facadeApplication xmi:id="EAID_A33D4ADA_4907_4F34_80F6_47E633F437B8" xmi:type="thecustomprofile:facade" base_Component="EAID_1539154A_C1B6_4006_8167_7CC5DCA8E4A0"/>
+    <facadeApplication xmi:id="EAID_2453E8CE_88D4_43A5_A22B_719D604E1855" xmi:type="thecustomprofile:facade" base_Component="EAID_BED1E75A_E17F_4BDE_B603_797871B1434A"/>
+    <utilityApplication xmi:id="EAID_8AF79F7B_31B6_474E_A318_EB46BE0F0560" xmi:type="thecustomprofile:utility" base_Component="EAID_95592859_3FC7_495B_8CB2_BF5A8349F640"/>
+  </stereotypeApplications>
+</xmi:XMI>

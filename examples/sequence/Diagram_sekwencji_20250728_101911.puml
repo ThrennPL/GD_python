@@ -1,0 +1,77 @@
+@startuml
+title System Bankowy - Architektura Systemu
+
+' Systemy zewnętrzne zidentyfikowane w procesie
+cloud "Bramka SMS" as sms_gateway
+cloud "Serwer Poczty" as email_server
+
+frame "System Bankowy" {
+    package "UI Layer" {
+        component "Aplikacja Mobilna" as mobile_app
+        component "Panel Administracyjny" as admin_panel
+        interface "API Gateway" <<gateway>> as api_gateway
+    }
+
+    package "Business Layer" {
+        component "Serwis Uwierzytelniania" <<service>> as auth_service
+        component "Serwis Zarządzania Kontami" <<service>> as account_service
+        component "Serwis Płatności" <<service>> as payment_service
+        component "Serwis Zarządzania Kartami" <<service>> as card_service
+        component "Serwis Historii Transakcji" <<service>> as transaction_service
+    }
+
+    package "Data Layer" {
+        database "Baza Kont" as account_db
+        database "Baza Płatności" as payment_db
+        database "Baza Kart" as card_db
+        database "Baza Transakcji" as transaction_db
+    }
+
+    package "Integration Layer" {
+        queue "Magistrala Komunikatów" as message_bus
+        component "Serwis Powiadomień" <<service>> as notification_service
+        component "Serwis Raportowania" <<service>> as reporting_service
+    }
+
+    package "Monitoring Layer"{
+      component "System Logowania" <<utility>> as logging_system
+    }
+}
+
+' Relacje wyprowadzone z przepływu procesu
+mobile_app --> api_gateway : "HTTP API"
+api_gateway --> auth_service : "Autoryzacja"
+api_gateway --> account_service : "HTTP API"
+api_gateway --> payment_service : "HTTP API"
+api_gateway --> card_service : "HTTP API"
+api_gateway --> transaction_service : "HTTP API"
+
+account_service --> account_db : "SQL Query"
+payment_service --> payment_db : "SQL Query"
+card_service --> card_db : "SQL Query"
+transaction_service --> transaction_db : "SQL Query"
+
+account_service --> message_bus : "Wydarzenie"
+payment_service --> message_bus : "Wydarzenie"
+card_service --> message_bus : "Wydarzenie"
+transaction_service --> message_bus : "Wydarzenie"
+
+message_bus --> notification_service : "Wiadomość"
+notification_service --> sms_gateway : "SMS"
+notification_service --> email_server : "Email"
+
+admin_panel --> reporting_service : "Generuj Raport"
+reporting_service --> account_db : "SQL Query"
+reporting_service --> payment_db : "SQL Query"
+reporting_service --> card_db : "SQL Query"
+reporting_service --> transaction_db : "SQL Query"
+
+api_gateway --> logging_system: "Loguje zdarzenia"
+account_service --> logging_system: "Loguje zdarzenia"
+payment_service --> logging_system: "Loguje zdarzenia"
+card_service --> logging_system: "Loguje zdarzenia"
+transaction_service --> logging_system: "Loguje zdarzenia"
+notification_service --> logging_system: "Loguje zdarzenia"
+reporting_service --> logging_system: "Loguje zdarzenia"
+
+@enduml

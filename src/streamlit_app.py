@@ -58,6 +58,14 @@ try:
     #from plantuml_to_ea import plantuml_to_xmi
     from utils.plantuml.plantuml_sequance_parser import PlantUMLSequenceParser
     from utils.xmi.xmi_sequance_generator import XMISequenceGenerator
+    
+    # Try to import BPMN integration
+    try:
+        from bpmn_integration import create_bpmn_integration, display_bpmn_result, display_bpmn_validation
+        BPMN_AVAILABLE = True
+    except ImportError as e:
+        BPMN_AVAILABLE = False
+        print(f"BPMN integration not available: {e}")
     from utils.plantuml.plantuml_class_parser import PlantUMLClassParser
     from utils.xmi.xmi_class_generator import XMIClassGenerator
     from utils.plantuml.plantuml_activity_parser import PlantUMLActivityParser
@@ -84,6 +92,24 @@ CHAT_URL = os.getenv("CHAT_URL", "http://localhost:1234/v1/chat/completions")
 API_KEY = os.getenv("API_KEY", "")
 API_DEFAULT_MODEL = os.getenv("API_DEFAULT_MODEL", "")
 MODEL_PROVIDER = os.getenv("MODEL_PROVIDER", "local")  # lub "gemini"
+
+# Initialize BPMN Integration if available
+bpmn_integration = None
+if BPMN_AVAILABLE and API_KEY and MODEL_PROVIDER:
+    try:
+        bpmn_integration = create_bpmn_integration(
+            api_key=API_KEY,
+            model_provider=MODEL_PROVIDER,
+            chat_url=CHAT_URL,
+            default_model=API_DEFAULT_MODEL
+        )
+        if bpmn_integration:
+            log_info("BPMN Integration initialized successfully")
+        else:
+            log_info("BPMN Integration not available (configuration issue)")
+    except Exception as e:
+        log_error(f"Failed to initialize BPMN Integration: {e}")
+        bpmn_integration = None
 
 # Page configuration
 st.set_page_config(
@@ -140,12 +166,15 @@ def safe_log_exception(message):
 
 # Helper functions
 @st.cache_data
-def get_loaded_models():
+def get_loaded_models(_model_provider=None, _api_key=None):
     """Pobiera listę załadowanych modeli z API lub Gemini."""
-    if MODEL_PROVIDER == "gemini":
+    provider = _model_provider or MODEL_PROVIDER
+    api_key = _api_key or API_KEY
+    
+    if provider == "gemini":
         try:
             import google.generativeai as genai
-            genai.configure(api_key=API_KEY)
+            genai.configure(api_key=api_key)
             models = genai.list_models()
             # Filtrowanie tylko modeli obsługujących generateContent
             models_data = [
@@ -157,6 +186,12 @@ def get_loaded_models():
         except Exception as e:
             safe_log_exception(f"Gemini error: {e}")
             return None
+    elif provider == "mock":
+        # Mock models for testing
+        return [
+            {"id": "mock-model-1", "description": "Mock model for testing"},
+            {"id": "mock-model-2", "description": "Another mock model"}
+        ]
     else:
         headers = {
             "Content-Type": "application/json", 
@@ -406,7 +441,7 @@ def show_plantuml_modal():
 # Load models
 if not st.session_state.models:
     with st.spinner(tr("loading_models")):
-        models = get_loaded_models()
+        models = get_loaded_models(MODEL_PROVIDER, API_KEY)
         if models:
             st.session_state.models = models
 
@@ -447,13 +482,20 @@ with st.sidebar:
     
     # Template configuration
     st.subheader(tr("template_lable"))
-    template_type = st.radio(tr("template_type_label"), ["PlantUML", "XML"])
+    template_type = st.radio(tr("template_type_label"), ["PlantUML", "BPMN"])
     
     # Filter templates by type
-    filtered_templates = [
-        name for name, data in prompt_templates.items()
-        if data.get("type") == template_type
-    ]
+    if template_type == "BPMN":
+        # Use XML templates for BPMN (they are compatible)
+        filtered_templates = [
+            name for name, data in prompt_templates.items()
+            if data.get("type") == "XML"
+        ]
+    else:
+        filtered_templates = [
+            name for name, data in prompt_templates.items()
+            if data.get("type") == template_type
+        ]
     
     selected_template = st.selectbox(tr("template_selector"), filtered_templates)
     
@@ -483,7 +525,39 @@ with st.sidebar:
         ])
     
     # BPMN specific options
-    if diagram_type.lower() in ["bpmn", "bpmn_flow", "bpmn_component"]:
+    if template_type == "BPMN":
+        st.subheader(tr("bpmn_generation_header"))
+        
+        # Show BPMN availability status
+        if bpmn_integration and bpmn_integration.is_available():
+            st.success(f"✅ BPMN dostępny ({MODEL_PROVIDER})")
+        else:
+            st.error("❌ BPMN niedostępny - sprawdź konfigurację AI")
+        
+        col1, col2, col3 = st.columns(3)
+        
+        with col1:
+            bpmn_quality = st.slider(
+                tr("bpmn_quality_label"), 
+                min_value=0.5, max_value=1.0, value=0.8, step=0.1,
+                help="Minimalna jakość procesu (wyższe wartości = więcej iteracji)"
+            )
+        
+        with col2:
+            bpmn_iterations = st.number_input(
+                tr("bpmn_iterations_label"),
+                min_value=1, max_value=10, value=10,
+                help="Maksymalna liczba iteracji poprawek"
+            )
+            
+        with col3:
+            bpmn_process_type = st.selectbox(
+                tr("bpmn_process_type_label"),
+                ["business", "technical", "administrative", "support"],
+                help="Typ procesu wpływa na styl generowania"
+            )
+    
+    elif diagram_type.lower() in ["bpmn", "bpmn_flow", "bpmn_component"]:
         st.subheader("Opcje BPMN")
         complexity_level = st.selectbox("Poziom złożoności:", 
                                       ["simple", "medium", "complex", "enterprise"])
@@ -579,7 +653,8 @@ with col1:
                 if use_template and selected_template in prompt_templates:
                     template_data = prompt_templates[selected_template]
                     
-                    if diagram_type.lower() in ["bpmn", "bpmn_flow", "bpmn_component"]:
+                    # Use old BPMN logic only if template_type is not "BPMN" (for backward compatibility)
+                    if diagram_type.lower() in ["bpmn", "bpmn_flow", "bpmn_component"] and template_type != "BPMN":
                         if selected_template == tr("bpmn_template_basic"):
                             prompt = template_data["template"].format(
                                 diagram_type=diagram_type,
@@ -621,27 +696,58 @@ with col1:
                 if PDF_SUPPORT and 'pdf_manager' in st.session_state:
                     prompt = st.session_state.pdf_manager.get_enhanced_prompt(prompt, diagram_type)
                 
-                # Call API
-                response = call_api(prompt, selected_model)
-                safe_log_info(f"Response from model: {response[:5000]}...")
+                # Handle BPMN generation using BPMN Integration
+                safe_log_info(f"Template type: {template_type}, BPMN integration available: {bpmn_integration is not None and bpmn_integration.is_available() if bpmn_integration else False}")
                 
-                # Store response
-                st.session_state.latest_response = response
-                st.session_state.conversation_history.append({"role": "user", "content": prompt})
-                st.session_state.conversation_history.append({"role": "assistant", "content": response})
+                if template_type == "BPMN" and bpmn_integration and bpmn_integration.is_available():
+                    safe_log_info("Starting BPMN generation...")
+                    print(f"🔥 STREAMLIT DEBUG: Original process_description length: {len(process_description)}")
+                    print(f"🔥 STREAMLIT DEBUG: Original process_description preview: {process_description[:200]}...")
+                    success, bpmn_result, metadata = bpmn_integration.generate_bpmn_process(
+                        user_input=process_description,  # Use raw process_description, not processed prompt!
+                        process_type=bpmn_process_type,
+                        quality_target=bpmn_quality,
+                        max_iterations=bpmn_iterations
+                    )
+                    
+                    safe_log_info(f"BPMN generation result: success={success}")
+                    
+                    if success:
+                        st.session_state.latest_xml = bpmn_result
+                        st.session_state.latest_response = f"Generated BPMN process:\n\n{bpmn_result}"
+                        st.session_state.conversation_history.append({"role": "user", "content": prompt})
+                        st.session_state.conversation_history.append({"role": "assistant", "content": f"BPMN process generated successfully"})
+                        display_bpmn_result(success, bpmn_result, metadata)
+                        # Don't call st.rerun() here - let Streamlit handle the refresh naturally
+                    else:
+                        st.error(f"BPMN generation failed: {bpmn_result}")
+                        # Add failed attempt to conversation history for transparency
+                        st.session_state.conversation_history.append({"role": "user", "content": prompt})
+                        st.session_state.conversation_history.append({"role": "assistant", "content": f"❌ BPMN generation failed: {bpmn_result}"})
                 
-                # Check for XML content
-                xml_content = extract_xml(response)
-                if xml_content and is_valid_xml(xml_content):
-                    st.session_state.latest_xml = xml_content
-                
-                # Check for PlantUML content
-                plantuml_blocks = extract_plantuml_blocks(response)
-                if plantuml_blocks:
-                    st.session_state.latest_plantuml = plantuml_blocks[-1]
-                    st.session_state.plantuml_diagrams = plantuml_blocks
-                
-                st.rerun()
+                # Regular API call for PlantUML and other types
+                else:
+                    # Call API
+                    response = call_api(prompt, selected_model)
+                    safe_log_info(f"Response from model: {response[:5000]}...")
+                    
+                    # Store response
+                    st.session_state.latest_response = response
+                    st.session_state.conversation_history.append({"role": "user", "content": prompt})
+                    st.session_state.conversation_history.append({"role": "assistant", "content": response})
+                    
+                    # Check for XML content
+                    xml_content = extract_xml(response)
+                    if xml_content and is_valid_xml(xml_content):
+                        st.session_state.latest_xml = xml_content
+                    
+                    # Check for PlantUML content
+                    plantuml_blocks = extract_plantuml_blocks(response)
+                    if plantuml_blocks:
+                        st.session_state.latest_plantuml = plantuml_blocks[-1]
+                        st.session_state.plantuml_diagrams = plantuml_blocks
+                    
+                    st.rerun()
 
 with col2:
     st.header(tr("conversation_lable"))
@@ -980,16 +1086,40 @@ if st.session_state.plantuml_diagrams:
             #    st.button(tr("download_xmi_button"), disabled=True, help=tr("download_xmi_button_help"))
             
 
-# XML download option
+# XML/BPMN download option
 if st.session_state.latest_xml:
-    st.header(tr("download_xml_header"))
+    # Check if this is BPMN or regular XML
+    is_bpmn = "bpmn" in st.session_state.latest_xml.lower() or "process" in st.session_state.latest_xml.lower()
+    
+    if is_bpmn:
+        st.header("🔄 " + tr("download_xml_header") + " (BPMN)")
+        
+        # Quality indicator (automatic, no manual buttons)
+        if bpmn_integration and bpmn_integration.is_available():
+            col1, col2 = st.columns([2, 1])
+            
+            with col1:
+                st.info("ℹ️ Walidacja i ulepszenia BPMN są wykonywane automatycznie podczas generowania")
+            
+            with col2:
+                # Quality indicator
+                with st.spinner("Sprawdzanie jakości..."):
+                    try:
+                        is_valid, quality_score, _ = bpmn_integration.validate_bpmn(st.session_state.latest_xml)
+                        if quality_score > 0:
+                            st.metric("Jakość BPMN", f"{quality_score:.2f}", delta=None)
+                    except:
+                        st.metric("Jakość BPMN", "N/A")
+    else:
+        st.header(tr("download_xml_header"))
+    
     with st.expander(tr("show_xml_button")):
         st.code(st.session_state.latest_xml, language="xml")
     
     if st.download_button(
-        label=tr("download_xml_button"),
+        label=tr("download_xml_button") + (" (BPMN)" if is_bpmn else ""),
         data=st.session_state.latest_xml,
-        file_name=f"output_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xml",
+        file_name=f"{'bpmn_process' if is_bpmn else 'output'}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xml",
         mime="application/xml"
     ):
         st.success(tr("msg_success_ready_for_downloading_XML"))

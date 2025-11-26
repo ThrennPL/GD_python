@@ -1,0 +1,72 @@
+@startuml
+title Weryfikacja Tożsamości Klienta Online - Przepływ Aktywności
+
+|Klient|
+|System|
+|Analityk|
+
+start
+
+:Rozpoczęcie procesu weryfikacji tożsamości online;
+:Przesłanie zdjęcia dokumentu tożsamości i selfie;
+
+:Odczytywanie danych z dokumentu (OCR);
+
+if (OCR odczytał dane poprawnie?) then (tak)
+  :Porównanie selfie z dokumentem (biometria);
+
+  if (Weryfikacja biometryczna OK?) then (tak)
+    #LightGreen:Aktywacja konta;
+    :Wysłanie powiadomienia o aktywacji;
+    #LightGreen:Otrzymanie powiadomienia o aktywacji;
+    end
+  else (nie)
+    :Weryfikacja automatyczna nieudana - Przekazanie do analityka;
+    :Weryfikacja manualna;
+    if (Weryfikacja manualna OK?) then (tak)
+      #LightGreen:Aktywacja konta;
+      :Wysłanie powiadomienia o aktywacji;
+      #LightGreen:Otrzymanie powiadomienia o aktywacji;
+      end
+    else (nie)
+      #Red:Konto zablokowane;
+      #Red:Otrzymanie powiadomienia o zablokowaniu konta;
+      end
+    endif
+  endif
+
+else (nie)
+  :Ponowne przesłanie zdjęcia dokumentu tożsamości i selfie;
+  note right: Może nastąpić kilkukrotne powtórzenie
+  repeat
+  :Odczytywanie danych z dokumentu (OCR);
+  repeat while (OCR odczytał dane poprawnie? is false)
+  if (OCR odczytał dane poprawnie?) then (tak)
+    :Porównanie selfie z dokumentem (biometria);
+    if (Weryfikacja biometryczna OK?) then (tak)
+      #LightGreen:Aktywacja konta;
+      :Wysłanie powiadomienia o aktywacji;
+      #LightGreen:Otrzymanie powiadomienia o aktywacji;
+      end
+    else (nie)
+      :Weryfikacja automatyczna nieudana - Przekazanie do analityka;
+      :Weryfikacja manualna;
+      if (Weryfikacja manualna OK?) then (tak)
+        #LightGreen:Aktywacja konta;
+        :Wysłanie powiadomienia o aktywacji;
+        #LightGreen:Otrzymanie powiadomienia o aktywacji;
+        end
+      else (nie)
+        #Red:Konto zablokowane;
+        #Red:Otrzymanie powiadomienia o zablokowaniu konta;
+        end
+      endif
+    endif
+  else (nie)
+    #Orange:Proces nieudany, klient zrezygnował;
+    #Orange:Koniec procesu;
+    stop
+  endif
+endif
+
+@enduml

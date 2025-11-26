@@ -1,0 +1,20 @@
+@startuml
+title Test Fork/Join Nodes
+
+start
+
+:Rozpocznij proces;
+
+fork
+  :Ścieżka A;
+  :Akcja A1;
+fork again
+  :Ścieżka B;
+  :Akcja B1;
+end fork
+
+:Połącz wyniki;
+:Finalizuj;
+
+stop
+@enduml

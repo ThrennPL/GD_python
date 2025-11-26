@@ -1,0 +1,91 @@
+@startuml
+title Weryfikacja Tożsamości Online - Przepływ Aktywności
+
+|Klient|
+|System|
+|OCR|
+|System Biometryczny|
+|Analityk|
+
+start
+
+|Klient|
+:Rozpoczęcie procesu weryfikacji;
+:Przesłanie zdjęcia dokumentu i selfie;
+
+|System|
+:Oczekiwanie na dane;
+
+|OCR|
+:Odczyt danych z dokumentu za pomocą OCR;
+
+if (Odczyt OCR zakończony sukcesem?) then (tak)
+  |System Biometryczny|
+  :Porównanie selfie z dokumentem;
+
+  if (Weryfikacja biometryczna pozytywna?) then (tak)
+    |System|
+    #LightGreen:Aktywacja konta;
+    :Wysłanie powiadomienia o aktywacji;
+    end
+  else (nie)
+    |Analityk|
+    #Orange:Weryfikacja manualna;
+
+    if (Weryfikacja manualna pozytywna?) then (tak)
+      |System|
+      #LightGreen:Aktywacja konta;
+      :Wysłanie powiadomienia o aktywacji;
+      end
+    else (nie)
+      |System|
+      #Red:Zablokowanie konta;
+      :Wysłanie powiadomienia o blokadzie;
+      stop
+    endif
+
+  endif
+else (nie)
+    note right : Błąd OCR, problem z jakością zdjęcia
+    |Klient|
+    :Ponowne przesłanie zdjęcia dokumentu i selfie;
+    |System|
+    :Oczekiwanie na dane;
+    |OCR|
+    :Odczyt danych z dokumentu za pomocą OCR;
+
+    if (Odczyt OCR zakończony sukcesem?) then (tak)
+        |System Biometryczny|
+        :Porównanie selfie z dokumentem;
+
+        if (Weryfikacja biometryczna pozytywna?) then (tak)
+            |System|
+            #LightGreen:Aktywacja konta;
+            :Wysłanie powiadomienia o aktywacji;
+            end
+        else (nie)
+            |Analityk|
+            #Orange:Weryfikacja manualna;
+
+            if (Weryfikacja manualna pozytywna?) then (tak)
+                |System|
+                #LightGreen:Aktywacja konta;
+                :Wysłanie powiadomienia o aktywacji;
+                end
+            else (nie)
+                |System|
+                #Red:Zablokowanie konta;
+                :Wysłanie powiadomienia o blokadzie;
+                stop
+            endif
+
+        endif
+    else (nie)
+        |System|
+        #Red:Zablokowanie konta z powodu błędów OCR;
+        :Wysłanie powiadomienia o blokadzie;
+        stop
+    endif
+endif
+
+@enduml
