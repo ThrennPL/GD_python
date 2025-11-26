@@ -1,8 +1,8 @@
-# Przewodnik Konfiguracji - System GD_python
+# Przewodnik Konfiguracji - System GD
 
 ## 📋 Przegląd Konfiguracji
 
-System GD_python oferuje elastyczną konfigurację przez zmienne środowiskowe, umożliwiając adaptację do różnych środowisk i wymagań. Konfiguracja obejmuje providerów AI, ustawienia jakości BPMN, parametry analizy PDF oraz opcje środowiska.
+System GD oferuje elastyczną konfigurację przez zmienne środowiskowe, umożliwiając adaptację do różnych środowisk i wymagań. Konfiguracja obejmuje providerów AI, ustawienia jakości BPMN, parametry analizy PDF oraz opcje środowiska.
 
 ## 🔧 Konfiguracja Podstawowa
 
@@ -641,4 +641,4 @@ API_REQUEST_TIMEOUT=90
 ENABLE_CACHING=true
 ```
 
-Ten przewodnik pokrywa wszystkie aspekty konfiguracji systemu GD_python. Dla specificznych przypadków użycia, skonsultuj się z dokumentacją API Reference lub skontaktuj się z zespołem rozwoju.
+Ten przewodnik pokrywa wszystkie aspekty konfiguracji systemu GD. Dla specificznych przypadków użycia, skonsultuj się z dokumentacją API Reference lub skontaktuj się z zespołem rozwoju.

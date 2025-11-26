@@ -1,8 +1,8 @@
-# Configuration Guide - GD_python System
+# Configuration Guide - GD System
 
 ## 📋 Configuration Overview
 
-The GD_python system offers flexible configuration through environment variables, enabling adaptation to different environments and requirements. Configuration includes AI providers, BPMN quality settings, PDF analysis parameters, and environment options.
+The GD system offers flexible configuration through environment variables, enabling adaptation to different environments and requirements. Configuration includes AI providers, BPMN quality settings, PDF analysis parameters, and environment options.
 
 ## 🔧 Basic Configuration
 
@@ -641,4 +641,4 @@ API_REQUEST_TIMEOUT=90
 ENABLE_CACHING=true
 ```
 
-This guide covers all configuration aspects of the GD_python system. For specific use cases, consult the API Reference documentation or contact the development team.
+This guide covers all configuration aspects of the GD system. For specific use cases, consult the API Reference documentation or contact the development team.

@@ -1,4 +1,4 @@
-# Use Cases - GD_python System
+# Use Cases - GD System
 
 ## Primary Use Cases
 
@@ -14,7 +14,7 @@ The business analyst needs to quickly transform process descriptions (from meeti
 
 #### Preconditions
 - Process description available in text form
-- Access to GD_python platform
+- Access to GD platform
 - Basic understanding of business process concepts
 
 #### Main Flow
@@ -299,4 +299,4 @@ International teams working on projects need consistent documentation that serve
 
 ---
 
-*This document provides comprehensive use case analysis for the GD_python system and serves as a foundation for feature prioritization and user experience design.*
+*This document provides comprehensive use case analysis for the GD system and serves as a foundation for feature prioritization and user experience design.*

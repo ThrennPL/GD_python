@@ -1,8 +1,8 @@
-# Architektura Systemu - GD_python
+# Architektura Systemu - GD
 
 ## 📋 Przegląd Architektury
 
-System GD_python został zaprojektowany jako modułowa, skalowalna platforma do automatycznego generowania diagramów UML i BPMN z wykorzystaniem sztucznej inteligencji. Architektura opiera się na zasadach separation of concerns, dependency injection i clean architecture.
+System GD został zaprojektowany jako modułowa, skalowalna platforma do automatycznego generowania diagramów UML i BPMN z wykorzystaniem sztucznej inteligencji. Architektura opiera się na zasadach separation of concerns, dependency injection i clean architecture.
 
 ## 🏗️ Architektura High-Level
 
@@ -255,7 +255,7 @@ utils/
 #### File System
 - **Struktura katalogów:**
 ```
-GD_python/
+GD/
 ├── examples/          # Sample diagrams
 ├── logs/             # Application logs
 ├── cache/            # Temporary files
@@ -658,4 +658,4 @@ def track_error(error: Exception, context: Dict[str, Any]):
 - **Input Validation**: All user inputs sanitized
 - **Privacy**: No sensitive data logging or storage
 
-Ta architektura zapewnia solidną podstawę dla systemu GD_python, umożliwiając łatwe utrzymanie, rozwój i wdrażanie w różnych środowiskach.
+Ta architektura zapewnia solidną podstawę dla systemu GD, umożliwiając łatwe utrzymanie, rozwój i wdrażanie w różnych środowiskach.

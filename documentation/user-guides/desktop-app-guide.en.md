@@ -1,8 +1,8 @@
-# Desktop Application User Guide - GD_python
+# Desktop Application User Guide - GD
 
 ## Overview
 
-The GD_python desktop application is a powerful PyQt5-based tool for generating professional UML and BPMN diagrams using artificial intelligence. This guide provides comprehensive instructions for using all features of the desktop application.
+The GD desktop application is a powerful PyQt5-based tool for generating professional UML and BPMN diagrams using artificial intelligence. This guide provides comprehensive instructions for using all features of the desktop application.
 
 ## Getting Started
 

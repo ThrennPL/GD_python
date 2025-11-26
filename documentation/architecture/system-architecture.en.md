@@ -1,14 +1,14 @@
-# System Architecture - GD_python
+# System Architecture - GD
 
 ## Architectural Overview
 
-The GD_python system is built as a modern, modular architecture supporting multiple AI providers, dual interface deployment (desktop and web), and enterprise-grade BPMN v2 generation capabilities.
+The GD system is built as a modern, modular architecture supporting multiple AI providers, dual interface deployment (desktop and web), and enterprise-grade BPMN v2 generation capabilities.
 
 ## High-Level Architecture
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                    GD_python System Architecture                │
+│                    GD System Architecture                │
 ├─────────────────────────────────────────────────────────────────┤
 │                                                                 │
 │  ┌─────────────────┐    ┌─────────────────┐                   │
@@ -521,7 +521,7 @@ class GenerationRequest(BaseModel):
 
 @app.post("/api/v1/generate")
 async def generate_diagram(request: GenerationRequest):
-    # Integration with GD_python core services
+    # Integration with GD core services
     pass
 
 @app.get("/api/v1/health")
@@ -541,7 +541,7 @@ class WebhookManager:
 
 **GitHub Actions Workflow**:
 ```yaml
-name: GD_python CI/CD
+name: GD CI/CD
 
 on:
   push:
@@ -639,4 +639,4 @@ class MLPipeline:
 
 ---
 
-*This architecture documentation provides a comprehensive overview of the GD_python system design, supporting both current capabilities and future scalability requirements.*
+*This architecture documentation provides a comprehensive overview of the GD system design, supporting both current capabilities and future scalability requirements.*

@@ -1,8 +1,8 @@
-# Data Model - GD_python
+# Data Model - GD
 
 ## Overview
 
-The GD_python system operates with a sophisticated data model designed to support advanced BPMN v2 generation, quality assessment, and multi-provider AI integration. This document outlines the core data structures, relationships, and processing flows.
+The GD system operates with a sophisticated data model designed to support advanced BPMN v2 generation, quality assessment, and multi-provider AI integration. This document outlines the core data structures, relationships, and processing flows.
 
 ## Core Data Entities
 
