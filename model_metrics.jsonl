@@ -26,3 +26,15 @@
 {"timestamp": "2025-11-20 16:47:36.802", "model": "unknown", "function": "get_loaded_models", "status": "SUCCESS", "elapsed_ms": 174, "response_size": 0}
 {"timestamp": "2025-11-20 16:49:26.922", "model": "gemini-2.0-flash", "function": "start_api_thread", "status": "SUCCESS", "elapsed_ms": 0, "response_size": 0}
 {"timestamp": "2025-11-20 16:49:26.922", "model": "gemini-2.0-flash", "function": "run", "status": "SUCCESS", "elapsed_ms": 20250, "response_size": 0}
+{"timestamp": "2025-11-25 11:20:41.630", "model": "unknown", "function": "get_loaded_models", "status": "SUCCESS", "elapsed_ms": 353, "response_size": 0}
+{"timestamp": "2025-11-25 11:21:08.762", "model": "gemini-2.0-flash", "function": "start_api_thread", "status": "SUCCESS", "elapsed_ms": 0, "response_size": 0}
+{"timestamp": "2025-11-25 11:21:08.763", "model": "gemini-2.0-flash", "function": "run", "status": "SUCCESS", "elapsed_ms": 49366, "response_size": 0}
+{"timestamp": "2025-11-25 11:23:17.382", "model": "gemini-2.0-flash", "function": "start_api_thread", "status": "SUCCESS", "elapsed_ms": 21, "response_size": 0}
+{"timestamp": "2025-11-25 11:23:17.404", "model": "gemini-2.0-flash", "function": "run", "status": "SUCCESS", "elapsed_ms": 20887, "response_size": 0}
+{"timestamp": "2025-11-26 15:29:16.741", "model": "unknown", "function": "get_loaded_models", "status": "SUCCESS", "elapsed_ms": 251, "response_size": 0}
+{"timestamp": "2025-11-26 15:34:39.458", "model": "unknown", "function": "get_loaded_models", "status": "SUCCESS", "elapsed_ms": 233, "response_size": 0}
+{"timestamp": "2025-11-26 15:39:58.041", "model": "unknown", "function": "get_loaded_models", "status": "SUCCESS", "elapsed_ms": 246, "response_size": 0}
+{"timestamp": "2025-11-26 15:41:12.592", "model": "unknown", "function": "get_loaded_models", "status": "SUCCESS", "elapsed_ms": 225, "response_size": 0}
+{"timestamp": "2025-11-26 15:42:13.242", "model": "unknown", "function": "get_loaded_models", "status": "SUCCESS", "elapsed_ms": 160, "response_size": 0}
+{"timestamp": "2025-11-26 15:43:39.253", "model": "unknown", "function": "get_loaded_models", "status": "SUCCESS", "elapsed_ms": 256, "response_size": 0}
+{"timestamp": "2025-11-26 16:07:04.661", "model": "unknown", "function": "get_loaded_models", "status": "SUCCESS", "elapsed_ms": 239, "response_size": 0}

@@ -1,0 +1,89 @@
+@startuml
+title Weryfikacja Tożsamości Klienta Online - Przepływ Aktywności
+
+|Klient|
+|System|
+|Analityk|
+
+start
+
+|Klient|
+:Rozpocznij proces weryfikacji tożsamości;
+
+|Klient|
+:Prześlij zdjęcie dokumentu tożsamości;
+
+|Klient|
+:Prześlij selfie;
+
+|System|
+:Odczyt danych z dokumentu (OCR);
+
+if (OCR odczytał dane?) then (tak)
+    |System|
+    :Porównaj selfie z dokumentem (biometria);
+
+    if (Weryfikacja biometryczna pozytywna?) then (tak)
+    else (nie)
+        |System|
+        :Weryfikacja biometryczna negatywna;
+        |Analityk|
+        :Manualna weryfikacja tożsamości;
+
+        if (Manualna weryfikacja pozytywna?) then (tak)
+        else (nie)
+            |System|
+            :Konto zablokowane;
+            #Red:Blokada konta - Niepowodzenie;
+            |System|
+            :Wyślij powiadomienie o blokadzie;
+            end
+        endif
+    endif
+    |System|
+    :Konto aktywowane;
+    #LightGreen:Aktywacja konta - Sukces;
+    |System|
+    :Wyślij powiadomienie o aktywacji;
+else (nie)
+    |Klient|
+    :OCR nie odczytał danych z dokumentu;
+    note right: Sprawdź jakość zdjęcia i spróbuj ponownie. \nKlient ma możliwość ponownego przesłania zdjęcia.
+
+    repeat
+        |Klient|
+        :Ponowne przesłanie zdjęcia dokumentu tożsamości;
+        |System|
+        :Odczyt danych z dokumentu (OCR);
+    repeat while (OCR odczytał dane? is false)
+
+    |System|
+    :Porównaj selfie z dokumentem (biometria);
+
+    if (Weryfikacja biometryczna pozytywna?) then (tak)
+    else (nie)
+        |System|
+        :Weryfikacja biometryczna negatywna;
+        |Analityk|
+        :Manualna weryfikacja tożsamości;
+
+        if (Manualna weryfikacja pozytywna?) then (tak)
+        else (nie)
+            |System|
+            :Konto zablokowane;
+            #Red:Blokada konta - Niepowodzenie;
+            |System|
+            :Wyślij powiadomienie o blokadzie;
+            end
+        endif
+    endif
+    |System|
+    :Konto aktywowane;
+    #LightGreen:Aktywacja konta - Sukces;
+    |System|
+    :Wyślij powiadomienie o aktywacji;
+endif
+
+end
+
+@enduml

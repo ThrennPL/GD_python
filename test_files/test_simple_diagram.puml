@@ -1,0 +1,10 @@
+@startuml
+title Test Prostego Diagramu
+
+start
+:Pierwsza aktywność;
+:Druga aktywność;
+:Trzecia aktywność;
+end
+
+@enduml

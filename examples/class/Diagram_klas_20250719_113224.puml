@@ -1,0 +1,165 @@
+@startuml
+title Zarządzanie Kontem Bankowym - Model Klas
+
+package "Domain Model" {
+    class Bank {
+        -nazwa: string
+        -id: int
+        --
+        +Bank(nazwa: string)
+        +getId(): int
+        +getNazwa(): string
+    }
+
+    class Oddział {
+        -kod: string
+        -adres: Adres
+        -id: int
+        --
+        +Oddział(kod: string, adres: Adres)
+        +getId(): int
+        +getKod(): string
+        +getAdres(): Adres
+    }
+
+    class Klient {
+        -imie: string
+        -nazwisko: string
+        -pesel: string
+        -adres: Adres
+        -id: int
+        --
+        +Klient(imie: string, nazwisko: string, pesel: string, adres: Adres)
+        +getId(): int
+        +getImie(): string
+        +getNazwisko(): string
+    }
+
+    class Konto {
+        -numer: string
+        -typ: TypKonta
+        -saldo: decimal
+        -id: int
+        -klientId: int
+        --
+        +Konto(numer: string, typ: TypKonta, klientId: int)
+        +getId(): int
+        +getNumer(): string
+        +getTyp(): TypKonta
+        +getSaldo(): decimal
+    }
+
+    class Transakcja {
+        -data: DateTime
+        -kwota: decimal
+        -tytuł: string
+        -status: StatusTransakcji
+        -id: int
+        -kontoId: int
+        --
+        +Transakcja(data: DateTime, kwota: decimal, tytuł: string, kontoId: int)
+        +getId(): int
+        +getData(): DateTime
+        +getKwota(): decimal
+    }
+
+    class DoradcaFinansowy {
+        -imie: string
+        -nazwisko: string
+        -id: int
+        -oddziałId: int
+        --
+        +DoradcaFinansowy(imie: string, nazwisko: string, oddziałId: int)
+        +getId(): int
+        +getImie(): string
+        +getNazwisko(): string
+    }
+
+    class Pełnomocnik {
+        -imie: string
+        -nazwisko: string
+        -id: int
+        -kontoId: int
+        --
+        +Pełnomocnik(imie: string, nazwisko: string, kontoId: int)
+        +getId(): int
+        +getImie(): string
+        +getNazwisko(): string
+    }
+
+    enum TypKonta {
+        OSZCZĘDNOŚCIOWE
+        ROZLICZENIOWE
+        KREDYTOWE
+    }
+
+    enum StatusTransakcji {
+        OCZEKUJĄCA
+        ZREALIZOWANA
+        ODRZUCONA
+    }
+
+    Bank ||--o{ Oddział : "posiada"
+    Oddział o-- "*" DoradcaFinansowy : "zatrudnia"
+    Klient o-- "*" Konto : "ma"
+    Konto --> Klient : "należy do"
+    Konto ||--o{ Transakcja : "ma"
+    Konto o-- "*" Pełnomocnik : "ma"
+    Klient o-- "*" DoradcaFinansowy : "może mieć"
+    DoradcaFinansowy --> Oddział : "pracuje w"
+}
+
+package "Value Objects" {
+    class Adres {
+        -ulica: string
+        -numerDomu: string
+        -kodPocztowy: string
+        -miasto: string
+        --
+        +Adres(ulica: string, numerDomu: string, kodPocztowy: string, miasto: string)
+        +getUlica(): string
+        +getNumerDomu(): string
+    }
+
+    class LokalizacjaBankomatu {
+        -szerokosc: decimal
+        -dlugosc: decimal
+        --
+        +LokalizacjaBankomatu(szerokosc: decimal, dlugosc: decimal)
+        +getSzerokosc(): decimal
+        +getDlugosc(): decimal
+    }
+
+    class DaneSprzedawcy {
+        -nazwa: string
+        -adres: Adres
+        --
+        +DaneSprzedawcy(nazwa: string, adres: Adres)
+        +getNazwa(): string
+        +getAdres(): Adres
+    }
+}
+
+package "Transactions" {
+    abstract class TypTransakcji {
+    }
+    Transakcja --|> TypTransakcji : "jest typu"
+
+    class Przelew extends TypTransakcji {
+        -odbiorca: string
+    }
+
+    class Wyplata extends TypTransakcji {
+        -lokalizacja: LokalizacjaBankomatu
+    }
+
+    class PlatnoscKarta extends TypTransakcji {
+        -daneSprzedawcy: DaneSprzedawcy
+    }
+}
+
+Przelew --|> TypTransakcji
+Wyplata --|> TypTransakcji
+PlatnoscKarta --|> TypTransakcji
+
+@enduml

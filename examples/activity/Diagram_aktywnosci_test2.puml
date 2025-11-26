@@ -1,0 +1,43 @@
+@startuml
+title Testowanie Aplikacji do Generowania Diagramów - Przepływ Aktywności
+
+|Użytkownik|
+
+start
+
+:Rozpoczęcie testowania aplikacji do PlantUML;
+:Wprowadzenie przykładowego kodu PlantUML;
+
+if (Kod PlantUML poprawny składniowo?) then (tak)
+:Generowanie diagramu;
+note right: Aplikacja generuje diagram na podstawie kodu;
+
+if (Diagram wygenerowany poprawnie?) then (tak)
+:Weryfikacja wizualna diagramu;
+
+if (Diagram zgodny z oczekiwaniami?) then (tak)
+#LightGreen:Test pozytywny;
+:Zapisanie wyników testu (sukces);
+end
+else (nie)
+#Orange:Test negatywny - Błędy wizualne;
+:Raportowanie błędów wizualnych;
+:Zapisanie wyników testu (błąd wizualny);
+stop
+endif
+
+else (nie)
+#Red:Test negatywny - Błąd generowania;
+:Raportowanie błędu generowania;
+:Zapisanie wyników testu (błąd generowania);
+stop
+endif
+
+else (nie)
+#Red:Test negatywny - Błąd składni;
+:Raportowanie błędu składni PlantUML;
+:Zapisanie wyników testu (błąd składni);
+stop
+endif
+
+@enduml

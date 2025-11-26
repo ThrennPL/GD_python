@@ -1,0 +1,42 @@
+@startuml
+title BLIK Płatność - Sekwencja Interakcji
+
+' Uczestnicy procesu
+actor "Klient" as Klient
+actor "Sprzedawca" as Sprzedawca
+participant "Aplikacja Mobilna" as Aplikacja
+participant "Terminal Płatniczy" as Terminal
+boundary "System BLIK" as BLIK
+database "Bank Klienta" as Bank
+
+' Główny przepływ procesu
+Klient -> Aplikacja : 1. Wybiera BLIK, generuje kod
+activate Aplikacja
+Aplikacja --> Klient : Wyświetla kod BLIK
+deactivate Aplikacja
+Klient -> Sprzedawca : 2. Podaje kod BLIK
+Sprzedawca -> Terminal : 3. Wprowadza kod BLIK
+activate Terminal
+Terminal -> BLIK : 4. Żądanie autoryzacji
+activate BLIK
+BLIK -> Bank : 5. Weryfikacja kodu i autoryzacja
+activate Bank
+Bank -> Bank : 6. Sprawdza saldo i limity
+activate Bank
+alt Saldo wystarczające i limity OK?
+    Bank -> BLIK : 7. Autoryzacja transakcji (sukces)
+    BLIK -> Terminal : 8. Potwierdzenie transakcji
+    Terminal --> Sprzedawca : Wyświetla potwierdzenie
+    BLIK -->> Aplikacja : 9. Powiadomienie push o płatności
+    note right: Asynchroniczne powiadomienie
+else Saldo niewystarczające lub limity przekroczone
+    Bank -x BLIK : 7. Odrzucenie transakcji
+    BLIK -x Terminal : 8. Błąd transakcji
+    Terminal --> Sprzedawca : Wyświetla błąd
+    note right: Wyświetlenie komunikatu o błędzie w aplikacji klienta
+end
+deactivate Bank
+deactivate BLIK
+deactivate Terminal
+
+@enduml

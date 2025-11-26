@@ -1,0 +1,667 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xmi:XMI xmi:version="2.1" xmlns:xmi="http://schema.omg.org/spec/XMI/2.1" xmlns:uml="http://schema.omg.org/spec/UML/2.1" xmlns:StandardProfileL2="http://www.omg.org/spec/UML/20110701/StandardProfileL2.xmi">
+  <xmi:Documentation exporter="Enterprise Architect" exporterVersion="6.5" exporterID="1560"/>
+  <uml:Model xmi:type="uml:Model" name="EA_Model" visibility="public" ea_package_id="EAPK_CB7224AD_95A4_4e31_9549_415EAEE5D3E4" ea_version="2.0">
+    <packagedElement xmi:type="uml:Package" xmi:id="EAID_0298b7d1_903c_4a82_933f_f926148d7e5f" name="DiagramKlas" visibility="public">
+      <packagedElement xmi:type="uml:Enumeration" xmi:id="EAID_0181a520_4981_43c2_a29f_2ee481776036" name="TypKonta" visibility="public">
+        <ownedLiteral xmi:id="EAID_176a4111_0df2_4f48_b33a_e38bf6c379d7" name="OSZCZĘDNOŚCIOWE"/>
+        <ownedLiteral xmi:id="EAID_05d600c7_dcb7_4d14_a8cc_2b537686f514" name="ROZLICZENIOWE"/>
+        <ownedLiteral xmi:id="EAID_9d14edfa_b8c5_40bb_8380_eb10bc69d607" name="KREDYTOWE"/>
+      </packagedElement>
+      <packagedElement xmi:type="uml:Enumeration" xmi:id="EAID_ae2b5cb7_9a28_466e_b4cf_aa084b5d9066" name="StatusTransakcji" visibility="public">
+        <ownedLiteral xmi:id="EAID_8888a14c_9d1e_4dcc_832c_c97218d54ed5" name="OCZEKUJĄCA"/>
+        <ownedLiteral xmi:id="EAID_dce87807_2713_4a3e_bc8c_0f9f8ee2c2b2" name="ZREALIZOWANA"/>
+        <ownedLiteral xmi:id="EAID_d4bffc54_17ad_4795_ab42_9cc298ba7001" name="ODRZUCONA"/>
+      </packagedElement>
+      <packagedElement xmi:type="uml:Enumeration" xmi:id="EAID_f17cfa13_a477_4399_aee5_a15ee22c9bf4" name="StatusKonta" visibility="public">
+        <ownedLiteral xmi:id="EAID_ae2c323f_7791_4b5e_9aab_a6f48f84d1bc" name="AKTYWNE"/>
+        <ownedLiteral xmi:id="EAID_2e0dae25_8215_4187_88b0_cd632b6860ab" name="ZABLOKOWANE"/>
+        <ownedLiteral xmi:id="EAID_f70a3e51_2ba7_4f4e_a4bf_2b6bc1c92488" name="ZAMKNIETE"/>
+      </packagedElement>
+      <packagedElement xmi:type="uml:Class" xmi:id="EAID_bf9f3896_a272_4ff0_8846_23cf5a45c7af" name="Bank" visibility="public">
+        <ownedAttribute xmi:id="EAID_502c7d56_9ae7_423f_8a5b_2646c781a8d7" name="kodBanku" visibility="private"/>
+        <ownedAttribute xmi:id="EAID_8924e725_85c9_44bb_9e8e_1415c2bb859e" name="nazwaBanku" visibility="private"/>
+        <ownedOperation xmi:id="EAID_ae08026c_a45f_44d0_888e_bdbb9c8a467b" name="Bank" visibility="public"/>
+        <ownedOperation xmi:id="EAID_f58142f2_cbbb_4713_a0f6_c6d9967dad4f" name="getKodBanku" visibility="public"/>
+        <ownedOperation xmi:id="EAID_aa1aece8_153d_40e1_b427_4b1e06b1d1bf" name="getNazwaBanku" visibility="public"/>
+      </packagedElement>
+      <packagedElement xmi:type="uml:Class" xmi:id="EAID_46a5f6e2_0305_43d8_a6dc_71bd5cccd4de" name="Oddział" visibility="public">
+        <ownedAttribute xmi:id="EAID_ad7c5de2_e931_4747_a1f3_661ecb184850" name="kodOddziału" visibility="private"/>
+        <ownedAttribute xmi:id="EAID_6ab66664_b095_473b_bd97_e26352d896e5" name="adres" visibility="private">
+          <type xmi:idref="EAJava_Adres"/>
+          <lowerValue xmi:type="uml:LiteralInteger" xmi:id="EAID_39b9c6a1_033d_49fe_a6ac_fbb524b25cb9" value="1"/>
+          <upperValue xmi:type="uml:LiteralInteger" xmi:id="EAID_1d586824_7709_4170_abb1_f40d750cd3ef" value="1"/>
+        </ownedAttribute>
+        <ownedOperation xmi:id="EAID_5f2ac61f_0eec_4dbc_8139_8c38da1eeb6f" name="Oddział" visibility="public"/>
+        <ownedOperation xmi:id="EAID_12622da7_14ce_4be3_9ea3_1afa0a1f7ca6" name="getKodOddziału" visibility="public"/>
+        <ownedOperation xmi:id="EAID_4f975c9b_e4c0_489f_ad54_9ce320e7c275" name="getAdres" visibility="public"/>
+      </packagedElement>
+      <packagedElement xmi:type="uml:Class" xmi:id="EAID_ed443dac_b878_4d96_b493_463ffc17da76" name="Klient" visibility="public">
+        <ownedAttribute xmi:id="EAID_b4d93548_efb8_43cc_9cb2_e46f2b929cef" name="idKlienta" visibility="private"/>
+        <ownedAttribute xmi:id="EAID_abd7031e_7db9_4960_b9b4_e9a6f29c98c9" name="imie" visibility="private"/>
+        <ownedAttribute xmi:id="EAID_4330e5ab_36e0_4f38_a2ca_3cd33668ad97" name="nazwisko" visibility="private"/>
+        <ownedAttribute xmi:id="EAID_28e5729e_ff69_47d9_a8ee_d724b018d6de" name="pesel" visibility="private"/>
+        <ownedAttribute xmi:id="EAID_ca8fb297_b639_4991_a3da_17f5bb3d07b9" name="adres" visibility="private">
+          <type xmi:idref="EAJava_Adres"/>
+          <lowerValue xmi:type="uml:LiteralInteger" xmi:id="EAID_4694d912_ee19_424d_bc41_19cdd9958b40" value="1"/>
+          <upperValue xmi:type="uml:LiteralInteger" xmi:id="EAID_dc4758af_c14f_4671_ba75_0f8b38374074" value="1"/>
+        </ownedAttribute>
+        <ownedOperation xmi:id="EAID_cd493e77_0963_40f0_8ce5_8787a0c6c481" name="Klient" visibility="public"/>
+        <ownedOperation xmi:id="EAID_c0abb5db_0b74_4a35_a968_d43bdf828ff4" name="getIdKlienta" visibility="public"/>
+        <ownedOperation xmi:id="EAID_8d314121_c9f4_4e0d_aab5_a83f775483d1" name="getImie" visibility="public"/>
+        <ownedOperation xmi:id="EAID_f2d74f2f_00cc_4d74_b036_8168a6814769" name="getNazwisko" visibility="public"/>
+        <ownedOperation xmi:id="EAID_7578e3b2_5d4e_4069_8123_ffd94289db55" name="getPesel" visibility="public"/>
+        <ownedOperation xmi:id="EAID_fb6422c9_23f4_4a1d_b9a6_d25e0919f6ca" name="getAdres" visibility="public"/>
+      </packagedElement>
+      <packagedElement xmi:type="uml:Class" xmi:id="EAID_656469af_16c5_40de_b8da_5312363da12b" name="Konto" visibility="public">
+        <ownedAttribute xmi:id="EAID_8bd94404_29c6_4019_9394_6ca59335077c" name="numerKonta" visibility="private"/>
+        <ownedAttribute xmi:id="EAID_871620b8_5fae_4ec8_bdc8_619440133a75" name="typKonta" visibility="private">
+          <type xmi:idref="EAJava_TypKonta"/>
+          <lowerValue xmi:type="uml:LiteralInteger" xmi:id="EAID_09ce8aa9_209a_4f83_a735_a9e5ba89459e" value="1"/>
+          <upperValue xmi:type="uml:LiteralInteger" xmi:id="EAID_464e0a8a_c8fb_474b_963d_f77492446775" value="1"/>
+        </ownedAttribute>
+        <ownedAttribute xmi:id="EAID_a66fe6e1_af1a_4511_9811_94949b79fd7c" name="saldo" visibility="private">
+          <type xmi:idref="EAJava_BigDecimal"/>
+          <lowerValue xmi:type="uml:LiteralInteger" xmi:id="EAID_05d4460b_c0e2_4df7_a556_c197c1e9490b" value="1"/>
+          <upperValue xmi:type="uml:LiteralInteger" xmi:id="EAID_40d68e10_cefe_44ea_9f36_4457fc480e55" value="1"/>
+        </ownedAttribute>
+        <ownedOperation xmi:id="EAID_fee5ea11_0792_439e_9236_a531380febd2" name="Konto" visibility="public"/>
+        <ownedOperation xmi:id="EAID_ed39695b_c865_4963_8c3f_3ac451f6f317" name="getNumerKonta" visibility="public"/>
+        <ownedOperation xmi:id="EAID_840feb48_0a93_4348_9475_438537c4ce4a" name="getTypKonta" visibility="public"/>
+        <ownedOperation xmi:id="EAID_2c8ab1b5_106b_4b6f_a3af_298c8bba2280" name="getSaldo" visibility="public"/>
+        <ownedOperation xmi:id="EAID_3e29d81e_c1c8_4a9f_b43d_b0ff9a11b498" name="wplata" visibility="public"/>
+        <ownedOperation xmi:id="EAID_dbd10c95_7a82_4c4b_a4c5_07609980432d" name="wyplata" visibility="public"/>
+        <ownedOperation xmi:id="EAID_20861014_4961_4a59_901f_6064b58fd195" name="zmienStatus" visibility="public"/>
+      </packagedElement>
+      <packagedElement xmi:type="uml:Class" xmi:id="EAID_fc0be641_2758_4c40_a16f_36834b2560e7" name="Pełnomocnik" visibility="public">
+        <ownedAttribute xmi:id="EAID_83d2d670_6730_4b17_86cf_c9857a53e218" name="idPelnomocnika" visibility="private"/>
+        <ownedAttribute xmi:id="EAID_73cfac11_1b48_4646_88ad_05c408b61a9b" name="imie" visibility="private"/>
+        <ownedAttribute xmi:id="EAID_3e4f9061_420c_4b0e_adad_58a576f38303" name="nazwisko" visibility="private"/>
+        <ownedOperation xmi:id="EAID_56e9afb3_3b63_4631_82fb_38e7ec9a41a6" name="Pełnomocnik" visibility="public"/>
+        <ownedOperation xmi:id="EAID_397bf2b8_d95a_49d5_80ae_a1521c302af7" name="getIdPelnomocnika" visibility="public"/>
+        <ownedOperation xmi:id="EAID_de9918de_b5e3_43c8_8585_97923446bc6b" name="getImie" visibility="public"/>
+        <ownedOperation xmi:id="EAID_761fa4a0_9804_4ced_b3dd_ce8e7e418b5f" name="getNazwisko" visibility="public"/>
+      </packagedElement>
+      <packagedElement xmi:type="uml:Class" xmi:id="EAID_ffc0b98d_41bc_45a4_b3fc_2855479b8c39" name="Transakcja" visibility="public" isAbstract="true">
+        <ownedAttribute xmi:id="EAID_113832ca_57c6_421b_b1a5_fbfe55e574f3" name="idTransakcji" visibility="private"/>
+        <ownedAttribute xmi:id="EAID_d3ae2263_87b8_4394_b456_0ea50f0cddaa" name="data" visibility="private">
+          <type xmi:idref="EAJava_Date"/>
+          <lowerValue xmi:type="uml:LiteralInteger" xmi:id="EAID_571fd8f2_f72e_4ea8_81f7_9aa876418671" value="1"/>
+          <upperValue xmi:type="uml:LiteralInteger" xmi:id="EAID_b9b442b3_192e_48fd_b01c_0f1caca33493" value="1"/>
+        </ownedAttribute>
+        <ownedAttribute xmi:id="EAID_2a4557c5_2b85_451f_84be_1e740a92d5c0" name="kwota" visibility="private">
+          <type xmi:idref="EAJava_BigDecimal"/>
+          <lowerValue xmi:type="uml:LiteralInteger" xmi:id="EAID_14d155e3_e720_4adb_95e2_4e3c056de6ba" value="1"/>
+          <upperValue xmi:type="uml:LiteralInteger" xmi:id="EAID_02103a22_0271_4e20_9f3e_a717226f160f" value="1"/>
+        </ownedAttribute>
+        <ownedAttribute xmi:id="EAID_0472aef2_0245_42c1_88e9_7fc462c3b229" name="tytuł" visibility="private"/>
+        <ownedAttribute xmi:id="EAID_8ff30876_69c5_4829_bbbc_53cb323d19dd" name="status" visibility="private">
+          <type xmi:idref="EAJava_StatusTransakcji"/>
+          <lowerValue xmi:type="uml:LiteralInteger" xmi:id="EAID_2eaef150_7e8a_40e1_a3ab_542b570b1bd3" value="1"/>
+          <upperValue xmi:type="uml:LiteralInteger" xmi:id="EAID_c18f47bd_2f22_4228_a0a0_4720f30e7d1f" value="1"/>
+        </ownedAttribute>
+        <ownedOperation xmi:id="EAID_87e48542_0326_4e07_bf7f_252312cb5d9d" name="Transakcja" visibility="public"/>
+        <ownedOperation xmi:id="EAID_4e90118f_8f9a_4374_b0a8_04bcaf794b3b" name="getIdTransakcji" visibility="public"/>
+        <ownedOperation xmi:id="EAID_bf0b3049_8707_44cf_9bc8_6aa7c0ef44c3" name="getData" visibility="public"/>
+        <ownedOperation xmi:id="EAID_ee22c661_1cfc_49f3_a4f4_42da288d954f" name="getKwota" visibility="public"/>
+        <ownedOperation xmi:id="EAID_e6946f6e_09df_4dca_9b01_b5b47744590a" name="getTytuł" visibility="public"/>
+        <ownedOperation xmi:id="EAID_0b66a753_96b5_4ce0_a50c_58e462455161" name="getStatus" visibility="public"/>
+        <ownedOperation xmi:id="EAID_4307823f_b0e6_47eb_b012_61252c590c14" name="zmienStatus" visibility="public"/>
+      </packagedElement>
+      <packagedElement xmi:type="uml:Class" xmi:id="EAID_8a4f83ea_392b_4742_a609_8fc0ba25658b" name="Przelew" visibility="public">
+        <ownedAttribute xmi:id="EAID_0d525c05_755d_4242_9e2e_4e34a634c64e" name="odbiorca" visibility="private"/>
+        <ownedOperation xmi:id="EAID_d13ee1c2_73c0_450e_ac28_a05b662077e5" name="Przelew" visibility="public"/>
+        <ownedOperation xmi:id="EAID_322a4d0a_9de5_462c_b2ec_1128d956571f" name="getOdbiorca" visibility="public"/>
+      </packagedElement>
+      <packagedElement xmi:type="uml:Class" xmi:id="EAID_10e33a6a_1a7c_47d5_945b_a1051145519d" name="Wypłata" visibility="public">
+        <ownedAttribute xmi:id="EAID_92e0c204_eabe_49a0_9312_a333c7b440b5" name="lokalizacja" visibility="private"/>
+        <ownedOperation xmi:id="EAID_882ee941_13dc_4437_84e9_b44781f27828" name="Wypłata" visibility="public"/>
+        <ownedOperation xmi:id="EAID_296f91c0_9845_43e9_9ba6_7eb7b3be636e" name="getLokalizacja" visibility="public"/>
+      </packagedElement>
+      <packagedElement xmi:type="uml:Class" xmi:id="EAID_0024add4_3a0f_402e_9e29_e88e74274bca" name="PłatnośćKartą" visibility="public">
+        <ownedAttribute xmi:id="EAID_e9e39c5c_1566_46c7_a492_d1a4ffadbfe8" name="daneSprzedawcy" visibility="private"/>
+        <ownedOperation xmi:id="EAID_ff28ae89_6a41_4905_ae97_7c8aac515c62" name="PłatnośćKartą" visibility="public"/>
+        <ownedOperation xmi:id="EAID_14305eb0_ac6e_4443_9317_58c6b63a1ad3" name="getDaneSprzedawcy" visibility="public"/>
+      </packagedElement>
+      <packagedElement xmi:type="uml:Class" xmi:id="EAID_e1a3ed3f_f5a6_4106_ba7f_3bcf5f7722b5" name="DoradcaFinansowy" visibility="public">
+        <ownedAttribute xmi:id="EAID_4ce34e9d_ab87_4c9b_a05d_9ef870851182" name="idDoradcy" visibility="private"/>
+        <ownedAttribute xmi:id="EAID_c19d880f_54ef_485d_9808_28543c8e5b6e" name="imie" visibility="private"/>
+        <ownedAttribute xmi:id="EAID_5a65c7fb_0acb_4b11_b460_838435a2b9d5" name="nazwisko" visibility="private"/>
+        <ownedOperation xmi:id="EAID_654f7aef_f255_487c_910c_24f24851f03f" name="DoradcaFinansowy" visibility="public"/>
+        <ownedOperation xmi:id="EAID_6646da88_bf11_4d8c_b28f_4b48643c87f5" name="getIdDoradcy" visibility="public"/>
+        <ownedOperation xmi:id="EAID_b305cf17_a6b1_4f68_b744_e687e59474ce" name="getImie" visibility="public"/>
+        <ownedOperation xmi:id="EAID_1b4c6254_1d02_47eb_84e6_116f7a6c8919" name="getNazwisko" visibility="public"/>
+      </packagedElement>
+      <packagedElement xmi:type="uml:Class" xmi:id="EAID_b571a223_8c03_4b6e_a310_b53bcc806fbd" name="Adres" visibility="public">
+        <ownedAttribute xmi:id="EAID_d2fc958f_5357_4fb2_ae37_9681d479dc0f" name="ulica" visibility="private"/>
+        <ownedAttribute xmi:id="EAID_b8d51dfd_6624_45b4_a285_4614321b1eaf" name="numerDomu" visibility="private"/>
+        <ownedAttribute xmi:id="EAID_593c8497_d243_4f6e_bf3d_361c9253bff7" name="kodPocztowy" visibility="private"/>
+        <ownedAttribute xmi:id="EAID_3a6a3773_914a_40dc_a18e_78f3d663c326" name="miasto" visibility="private"/>
+        <ownedOperation xmi:id="EAID_95cfac44_3ab0_4a21_8ace_b774559e4acc" name="Adres" visibility="public"/>
+        <ownedOperation xmi:id="EAID_141b8b3f_a03a_4219_bb3c_343bf37ca000" name="getUlica" visibility="public"/>
+        <ownedOperation xmi:id="EAID_dd7ca393_06e5_4f89_b035_2d48822af2c0" name="getNumerDomu" visibility="public"/>
+        <ownedOperation xmi:id="EAID_82549e73_f5b1_475b_a632_99b30f8b781f" name="getKodPocztowy" visibility="public"/>
+        <ownedOperation xmi:id="EAID_785c6fc8_f3a1_402e_829e_5a2e290cc42f" name="getMiasto" visibility="public"/>
+      </packagedElement>
+      <packagedElement xmi:type="uml:Class" xmi:id="EAID_668946b5_b6be_4fb8_ba80_830b51429ef6" name="ObsługaTransakcji" visibility="public">
+        <ownedOperation xmi:id="EAID_5e79b053_2443_4ab4_8787_c773e4bb4791" name="wykonajTransakcje" visibility="public"/>
+        <ownedOperation xmi:id="EAID_e1a02498_d13d_4a6f_9cf6_50baeac18824" name="zatwierdzTransakcje" visibility="public"/>
+        <ownedOperation xmi:id="EAID_14f80079_9d42_46b1_893b_a8481d09a52f" name="odrzucTransakcje" visibility="public"/>
+      </packagedElement>
+      <packagedElement xmi:type="uml:Generalization" xmi:id="EAID_3a5e9749_add4_4dd9_bbf6_0a905234f2b9" general="EAID_ffc0b98d_41bc_45a4_b3fc_2855479b8c39">
+        <client xmi:idref="EAID_8a4f83ea_392b_4742_a609_8fc0ba25658b"/>
+        <supplier xmi:idref="EAID_ffc0b98d_41bc_45a4_b3fc_2855479b8c39"/>
+      </packagedElement>
+      <packagedElement xmi:type="uml:Generalization" xmi:id="EAID_098134af_6a39_4093_a4d9_3a0961e9d22c" general="EAID_ffc0b98d_41bc_45a4_b3fc_2855479b8c39">
+        <client xmi:idref="EAID_10e33a6a_1a7c_47d5_945b_a1051145519d"/>
+        <supplier xmi:idref="EAID_ffc0b98d_41bc_45a4_b3fc_2855479b8c39"/>
+      </packagedElement>
+      <packagedElement xmi:type="uml:Generalization" xmi:id="EAID_6bc12ba6_d54d_4779_a3e4_6888a552e6af" general="EAID_ffc0b98d_41bc_45a4_b3fc_2855479b8c39">
+        <client xmi:idref="EAID_0024add4_3a0f_402e_9e29_e88e74274bca"/>
+        <supplier xmi:idref="EAID_ffc0b98d_41bc_45a4_b3fc_2855479b8c39"/>
+      </packagedElement>
+      <packagedElement xmi:type="uml:Association" xmi:id="EAID_5da35567_385b_4e1d_9c62_2f7914bd338d" name="posiada" memberEnd="EAID_33186dcc_517c_4075_a34b_0943d94fe2d9 EAID_b971aa1c_4b6d_46d3_9e8d_66f177582881">
+        <ownedEnd xmi:id="EAID_33186dcc_517c_4075_a34b_0943d94fe2d9" association="EAID_5da35567_385b_4e1d_9c62_2f7914bd338d">
+          <type xmi:idref="EAID_bf9f3896_a272_4ff0_8846_23cf5a45c7af"/>
+          <lowerValue xmi:type="uml:LiteralInteger" xmi:id="EAID_5054d797_bee0_4da8_be08_dc1bf7317d61" value="1"/>
+          <upperValue xmi:type="uml:LiteralInteger" value="1" xmi:id="EAID_6aa4af68_42ee_4a6c_bd21_7bd2f55d756d"/>
+        </ownedEnd>
+        <ownedEnd xmi:id="EAID_b971aa1c_4b6d_46d3_9e8d_66f177582881" association="EAID_5da35567_385b_4e1d_9c62_2f7914bd338d">
+          <type xmi:idref="EAID_46a5f6e2_0305_43d8_a6dc_71bd5cccd4de"/>
+          <lowerValue xmi:type="uml:LiteralInteger" xmi:id="EAID_da4154c3_3f63_4dff_b08d_0d179aa02224" value="0"/>
+          <upperValue xmi:type="uml:LiteralInteger" value="-1" xmi:id="EAID_a995b183_9b1e_4cba_b08b_56632bb3c636"/>
+        </ownedEnd>
+      </packagedElement>
+      <packagedElement xmi:type="uml:Association" xmi:id="EAID_a63e9958_50d2_461b_af48_fae8890d4846" name="zatrudnia" memberEnd="EAID_d2e6a164_fbfd_4fd2_9d3a_1464398f16f0 EAID_62445d0f_c297_46a7_8fd7_5930e021f9a9">
+        <ownedEnd xmi:id="EAID_d2e6a164_fbfd_4fd2_9d3a_1464398f16f0" association="EAID_a63e9958_50d2_461b_af48_fae8890d4846">
+          <type xmi:idref="EAID_46a5f6e2_0305_43d8_a6dc_71bd5cccd4de"/>
+          <lowerValue xmi:type="uml:LiteralInteger" xmi:id="EAID_3033bff5_bb67_4b11_a098_977c9a9b3f8c" value="1"/>
+          <upperValue xmi:type="uml:LiteralInteger" value="1" xmi:id="EAID_59860b0b_681b_495d_9282_7bbfe673604f"/>
+        </ownedEnd>
+        <ownedEnd xmi:id="EAID_62445d0f_c297_46a7_8fd7_5930e021f9a9" association="EAID_a63e9958_50d2_461b_af48_fae8890d4846">
+          <type xmi:idref="EAID_e1a3ed3f_f5a6_4106_ba7f_3bcf5f7722b5"/>
+          <lowerValue xmi:type="uml:LiteralInteger" xmi:id="EAID_269ed88d_d0ec_421a_b04f_1af517ba9c6c" value="0"/>
+          <upperValue xmi:type="uml:LiteralInteger" value="-1" xmi:id="EAID_60dfa5cc_3d12_44c0_b6fe_bd358e7af7fc"/>
+        </ownedEnd>
+      </packagedElement>
+      <packagedElement xmi:type="uml:Association" xmi:id="EAID_02d1a3b5_af19_4ddd_9daa_4b34b3b344f9" name="posiada" memberEnd="EAID_8c4fc07b_6151_4b36_9a41_018f6f737ae4 EAID_94c9eb26_1927_4efe_9a25_85bd55d5ff64">
+        <ownedEnd xmi:id="EAID_8c4fc07b_6151_4b36_9a41_018f6f737ae4" association="EAID_02d1a3b5_af19_4ddd_9daa_4b34b3b344f9">
+          <type xmi:idref="EAID_ed443dac_b878_4d96_b493_463ffc17da76"/>
+          <lowerValue xmi:type="uml:LiteralInteger" xmi:id="EAID_19b2ec2a_c9bd_4149_960a_505536fd3df0" value="1"/>
+          <upperValue xmi:type="uml:LiteralInteger" value="1" xmi:id="EAID_5eaf0b85_2cd6_4671_8a23_20b079917b72"/>
+        </ownedEnd>
+        <ownedEnd xmi:id="EAID_94c9eb26_1927_4efe_9a25_85bd55d5ff64" association="EAID_02d1a3b5_af19_4ddd_9daa_4b34b3b344f9">
+          <type xmi:idref="EAID_656469af_16c5_40de_b8da_5312363da12b"/>
+          <lowerValue xmi:type="uml:LiteralInteger" xmi:id="EAID_288504e5_60cd_499e_b32d_c8df3233d7fa" value="0"/>
+          <upperValue xmi:type="uml:LiteralInteger" value="-1" xmi:id="EAID_141a4185_df05_4f22_a352_6f97d9387362"/>
+        </ownedEnd>
+      </packagedElement>
+      <packagedElement xmi:type="uml:Association" xmi:id="EAID_d63de778_66e3_49bf_ab4e_3f1f6bae51df" name="ma" memberEnd="EAID_02361a4c_0212_4167_a272_897acf4acab7 EAID_2ed8246c_63d5_4bb1_8a82_aa01cd53d30e">
+        <ownedEnd xmi:id="EAID_02361a4c_0212_4167_a272_897acf4acab7" association="EAID_d63de778_66e3_49bf_ab4e_3f1f6bae51df">
+          <type xmi:idref="EAID_656469af_16c5_40de_b8da_5312363da12b"/>
+          <lowerValue xmi:type="uml:LiteralInteger" xmi:id="EAID_6a88d8ea_8161_4318_b543_ee7ebb88c1c6" value="1"/>
+          <upperValue xmi:type="uml:LiteralInteger" value="1" xmi:id="EAID_437144d1_64f5_4462_8563_f691e26846f7"/>
+        </ownedEnd>
+        <ownedEnd xmi:id="EAID_2ed8246c_63d5_4bb1_8a82_aa01cd53d30e" association="EAID_d63de778_66e3_49bf_ab4e_3f1f6bae51df">
+          <type xmi:idref="EAID_ffc0b98d_41bc_45a4_b3fc_2855479b8c39"/>
+          <lowerValue xmi:type="uml:LiteralInteger" xmi:id="EAID_54a0cfef_470c_450e_8d97_8929c0b78de9" value="0"/>
+          <upperValue xmi:type="uml:LiteralInteger" value="-1" xmi:id="EAID_c955cc42_9011_4929_a031_7243ffc78b9e"/>
+        </ownedEnd>
+      </packagedElement>
+      <packagedElement xmi:type="uml:Association" xmi:id="EAID_5a77cc24_c957_4034_b746_26a0732bde35" name="może" memberEnd="EAID_9a02b279_cef2_45d1_a9ca_2fbd2caf2341 EAID_ee912ba8_d443_4df4_b7ff_4eea0ac5e6bc">
+        <ownedEnd xmi:id="EAID_9a02b279_cef2_45d1_a9ca_2fbd2caf2341" association="EAID_5a77cc24_c957_4034_b746_26a0732bde35">
+          <type xmi:idref="EAID_656469af_16c5_40de_b8da_5312363da12b"/>
+          <lowerValue xmi:type="uml:LiteralInteger" xmi:id="EAID_ed071c62_809c_4541_9a05_ac8826f7577d" value="1"/>
+          <upperValue xmi:type="uml:LiteralInteger" value="1" xmi:id="EAID_1b94359e_889b_4497_996c_21ad7ec2ae27"/>
+        </ownedEnd>
+        <ownedEnd xmi:id="EAID_ee912ba8_d443_4df4_b7ff_4eea0ac5e6bc" association="EAID_5a77cc24_c957_4034_b746_26a0732bde35">
+          <type xmi:idref="EAID_fc0be641_2758_4c40_a16f_36834b2560e7"/>
+          <lowerValue xmi:type="uml:LiteralInteger" xmi:id="EAID_2bfbd2c9_d0d0_473c_a19d_b044bdf31763" value="0"/>
+          <upperValue xmi:type="uml:LiteralInteger" value="-1" xmi:id="EAID_6d343a02_88ee_44de_b310_2d276a7a8237"/>
+        </ownedEnd>
+      </packagedElement>
+      <packagedElement xmi:type="uml:Association" xmi:id="EAID_f2444784_c91d_4345_b7d2_90a80822d613" name="ma" memberEnd="EAID_52986e54_4d8d_4a28_b76b_70e347fdd430 EAID_6c4dfb8e_c72f_4328_b445_1d1316fccdbc">
+        <ownedEnd xmi:id="EAID_52986e54_4d8d_4a28_b76b_70e347fdd430" association="EAID_f2444784_c91d_4345_b7d2_90a80822d613">
+          <type xmi:idref="EAID_ed443dac_b878_4d96_b493_463ffc17da76"/>
+          <lowerValue xmi:type="uml:LiteralInteger" xmi:id="EAID_d9a68f25_89b4_4a9d_adfa_e2f21a56e10f" value="1"/>
+          <upperValue xmi:type="uml:LiteralInteger" value="1" xmi:id="EAID_95b1e431_c48b_4987_94a7_4ea19754ed51"/>
+        </ownedEnd>
+        <ownedEnd xmi:id="EAID_6c4dfb8e_c72f_4328_b445_1d1316fccdbc" association="EAID_f2444784_c91d_4345_b7d2_90a80822d613">
+          <type xmi:idref="EAID_e1a3ed3f_f5a6_4106_ba7f_3bcf5f7722b5"/>
+          <lowerValue xmi:type="uml:LiteralInteger" xmi:id="EAID_a070ca47_608d_4c94_807a_3203721e18b7" value="0"/>
+          <upperValue xmi:type="uml:LiteralInteger" value="-1" xmi:id="EAID_f2382600_1b57_4e09_a5ed_92e6eccb430d"/>
+        </ownedEnd>
+      </packagedElement>
+      <packagedElement xmi:type="uml:Association" xmi:id="EAID_0f682b55_553b_4fc8_8cab_d79b9023f968" name="należy" memberEnd="EAID_467f04df_d84c_4462_99f0_96af89b13e98 EAID_c33f7383_cce0_456c_bfd0_59f2e4080543">
+        <ownedEnd xmi:id="EAID_467f04df_d84c_4462_99f0_96af89b13e98" association="EAID_0f682b55_553b_4fc8_8cab_d79b9023f968">
+          <type xmi:idref="EAID_656469af_16c5_40de_b8da_5312363da12b"/>
+          <lowerValue xmi:type="uml:LiteralInteger" xmi:id="EAID_8f35ff77_908a_4e8e_b225_6d96906e492f" value="1"/>
+          <upperValue xmi:type="uml:LiteralInteger" value="1" xmi:id="EAID_995abca9_84f9_4771_a6c7_44670f39bf69"/>
+        </ownedEnd>
+        <ownedEnd xmi:id="EAID_c33f7383_cce0_456c_bfd0_59f2e4080543" association="EAID_0f682b55_553b_4fc8_8cab_d79b9023f968">
+          <type xmi:idref="EAID_ed443dac_b878_4d96_b493_463ffc17da76"/>
+          <lowerValue xmi:type="uml:LiteralInteger" xmi:id="EAID_90d207bd_4113_4215_9c26_071e1de92b34" value="1"/>
+          <upperValue xmi:type="uml:LiteralInteger" value="1" xmi:id="EAID_668db09c_3dca_42e1_8ed3_159e57919aa4"/>
+        </ownedEnd>
+      </packagedElement>
+      <packagedElement xmi:type="uml:Generalization" xmi:id="EAID_f731f4ff_da70_47f4_9ba7_fced153d4c06" general="EAID_8a4f83ea_392b_4742_a609_8fc0ba25658b">
+        <client xmi:idref="EAID_ffc0b98d_41bc_45a4_b3fc_2855479b8c39"/>
+        <supplier xmi:idref="EAID_8a4f83ea_392b_4742_a609_8fc0ba25658b"/>
+      </packagedElement>
+      <packagedElement xmi:type="uml:Generalization" xmi:id="EAID_9b668bf0_2328_41dd_8811_01bcb2d123c9" general="EAID_10e33a6a_1a7c_47d5_945b_a1051145519d">
+        <client xmi:idref="EAID_ffc0b98d_41bc_45a4_b3fc_2855479b8c39"/>
+        <supplier xmi:idref="EAID_10e33a6a_1a7c_47d5_945b_a1051145519d"/>
+      </packagedElement>
+      <packagedElement xmi:type="uml:Generalization" xmi:id="EAID_3b0e8791_5191_4d1f_9be7_9beaddc57a3d" general="EAID_0024add4_3a0f_402e_9e29_e88e74274bca">
+        <client xmi:idref="EAID_ffc0b98d_41bc_45a4_b3fc_2855479b8c39"/>
+        <supplier xmi:idref="EAID_0024add4_3a0f_402e_9e29_e88e74274bca"/>
+      </packagedElement>
+      <packagedElement xmi:type="uml:Association" xmi:id="EAID_038b1b06_9742_4d88_a651_b3ff4376f0b9" name="prowadzi" memberEnd="EAID_fa5fa969_86fe_4628_bcb6_3e1e396fad6a EAID_4ecc63d4_909d_4513_a7c9_3873d4810bd5">
+        <ownedEnd xmi:id="EAID_fa5fa969_86fe_4628_bcb6_3e1e396fad6a" association="EAID_038b1b06_9742_4d88_a651_b3ff4376f0b9">
+          <type xmi:idref="EAID_46a5f6e2_0305_43d8_a6dc_71bd5cccd4de"/>
+          <lowerValue xmi:type="uml:LiteralInteger" xmi:id="EAID_fc451d06_dbc1_47a6_92bd_900f8fb7c521" value="1"/>
+          <upperValue xmi:type="uml:LiteralInteger" value="1" xmi:id="EAID_e6c2925d_0b2e_4072_85e2_7db04f438769"/>
+        </ownedEnd>
+        <ownedEnd xmi:id="EAID_4ecc63d4_909d_4513_a7c9_3873d4810bd5" association="EAID_038b1b06_9742_4d88_a651_b3ff4376f0b9">
+          <type xmi:idref="EAID_656469af_16c5_40de_b8da_5312363da12b"/>
+          <lowerValue xmi:type="uml:LiteralInteger" xmi:id="EAID_ea58e7f6_6a1d_4245_a506_7d34c8ff8ece" value="0"/>
+          <upperValue xmi:type="uml:LiteralInteger" value="-1" xmi:id="EAID_7eca507e_10b0_4181_9c79_15f4ac19e286"/>
+        </ownedEnd>
+      </packagedElement>
+    </packagedElement>
+  </uml:Model>
+  <xmi:Extension extender="Enterprise Architect" extenderID="6.5">
+    <elements>
+      <element xmi:idref="EAID_0298b7d1_903c_4a82_933f_f926148d7e5f" xmi:type="uml:Package" name="DiagramKlas" scope="public">
+        <model package2="EAID_0298b7d1_903c_4a82_933f_f926148d7e5f" package="EAPK_CB7224AD_95A4_4e31_9549_415EAEE5D3E4" tpos="0" ea_localid="976" ea_eleType="package"/>
+        <properties isSpecification="false" sType="Package" nType="0" scope="public"/>
+        <project author="195841" version="1.0" phase="1.0" created="2025-07-28 10:32:34" modified="2025-07-28 10:32:34" complexity="1" status="Proposed"/>
+        <code gentype="Java"/>
+        <style appearance="BackColor=-1;BorderColor=-1;BorderWidth=-1;FontColor=-1;VSwimLanes=1;HSwimLanes=1;BorderStyle=0;"/>
+        <tags/>
+        <xrefs/>
+        <extendedProperties tagged="0" package_name="DiagramKlas"/>
+        <packageproperties version="1.0"/>
+        <paths/>
+        <times created="2025-07-28 00:00:00" modified="2025-07-28 10:32:34"/>
+        <flags iscontrolled="FALSE" isprotected="FALSE" usedtd="FALSE" logxml="FALSE"/>
+      </element>
+    </elements>
+    <connectors>
+      <connector xmi:idref="EAID_3a5e9749_add4_4dd9_bbf6_0a905234f2b9">
+        <source xmi:idref="EAID_8a4f83ea_392b_4742_a609_8fc0ba25658b">
+          <model ea_localid="3275" type="Class" name="Przelew"/>
+          <role visibility="Public" targetScope="instance"/>
+          <type aggregation="none" containment="Unspecified"/>
+        </source>
+        <target xmi:idref="EAID_ffc0b98d_41bc_45a4_b3fc_2855479b8c39">
+          <model ea_localid="1149" type="Class" name="Transakcja"/>
+          <role visibility="Public" targetScope="instance"/>
+          <type aggregation="none" containment="Unspecified"/>
+        </target>
+        <model ea_localid="4381"/>
+        <properties ea_type="Generalization" direction="Source -&gt; Destination"/>
+        <modifiers isRoot="false" isLeaf="false"/>
+        <documentation/>
+        <appearance linemode="3" linecolor="-1" linewidth="0" seqno="0" headStyle="0" lineStyle="0"/>
+        <style value="Mode=3;EOID=5123C2D9;SOID=DCE:FB48;Color=-1;LWidth=0;TREE=OS;"/>
+        <labels/>
+      </connector>
+      <connector xmi:idref="EAID_098134af_6a39_4093_a4d9_3a0961e9d22c">
+        <source xmi:idref="EAID_10e33a6a_1a7c_47d5_945b_a1051145519d">
+          <model ea_localid="71" type="Class" name="Wypłata"/>
+          <role visibility="Public" targetScope="instance"/>
+          <type aggregation="none" containment="Unspecified"/>
+        </source>
+        <target xmi:idref="EAID_ffc0b98d_41bc_45a4_b3fc_2855479b8c39">
+          <model ea_localid="1149" type="Class" name="Transakcja"/>
+          <role visibility="Public" targetScope="instance"/>
+          <type aggregation="none" containment="Unspecified"/>
+        </target>
+        <model ea_localid="5901"/>
+        <properties ea_type="Generalization" direction="Source -&gt; Destination"/>
+        <modifiers isRoot="false" isLeaf="false"/>
+        <documentation/>
+        <appearance linemode="3" linecolor="-1" linewidth="0" seqno="0" headStyle="0" lineStyle="0"/>
+        <style value="Mode=3;EOID=5123C2D9;SOID=DCE:FB48;Color=-1;LWidth=0;TREE=OS;"/>
+        <labels/>
+      </connector>
+      <connector xmi:idref="EAID_6bc12ba6_d54d_4779_a3e4_6888a552e6af">
+        <source xmi:idref="EAID_0024add4_3a0f_402e_9e29_e88e74274bca">
+          <model ea_localid="3023" type="Class" name="PłatnośćKartą"/>
+          <role visibility="Public" targetScope="instance"/>
+          <type aggregation="none" containment="Unspecified"/>
+        </source>
+        <target xmi:idref="EAID_ffc0b98d_41bc_45a4_b3fc_2855479b8c39">
+          <model ea_localid="1149" type="Class" name="Transakcja"/>
+          <role visibility="Public" targetScope="instance"/>
+          <type aggregation="none" containment="Unspecified"/>
+        </target>
+        <model ea_localid="8708"/>
+        <properties ea_type="Generalization" direction="Source -&gt; Destination"/>
+        <modifiers isRoot="false" isLeaf="false"/>
+        <documentation/>
+        <appearance linemode="3" linecolor="-1" linewidth="0" seqno="0" headStyle="0" lineStyle="0"/>
+        <style value="Mode=3;EOID=5123C2D9;SOID=DCE:FB48;Color=-1;LWidth=0;TREE=OS;"/>
+        <labels/>
+      </connector>
+      <connector xmi:idref="EAID_5da35567_385b_4e1d_9c62_2f7914bd338d">
+        <source xmi:idref="EAID_bf9f3896_a272_4ff0_8846_23cf5a45c7af">
+          <model ea_localid="3797" type="Class" name="Bank"/>
+          <role visibility="Public" targetScope="instance"/>
+          <type multiplicity="1" aggregation="none" containment="Unspecified"/>
+        </source>
+        <target xmi:idref="EAID_46a5f6e2_0305_43d8_a6dc_71bd5cccd4de">
+          <model ea_localid="5706" type="Class" name="Oddział"/>
+          <role visibility="Public" targetScope="instance"/>
+          <type multiplicity="0..-1" aggregation="none" containment="Unspecified"/>
+        </target>
+        <model ea_localid="6174"/>
+        <properties ea_type="Association" name="posiada" sourcecard="1" targetcard="0..-1" direction="Source -&gt; Destination"/>
+        <modifiers isRoot="false" isLeaf="false"/>
+        <documentation/>
+        <appearance linemode="3" linecolor="-1" linewidth="0" seqno="0" headStyle="0" lineStyle="0"/>
+        <style value="Mode=3;EOID=5123C2D9;SOID=DCE:FB48;Color=-1;LWidth=0;"/>
+        <labels>
+          <mt value="posiada"/>
+          <lb value="1"/>
+          <rb value="0..-1"/>
+        </labels>
+      </connector>
+      <connector xmi:idref="EAID_a63e9958_50d2_461b_af48_fae8890d4846">
+        <source xmi:idref="EAID_46a5f6e2_0305_43d8_a6dc_71bd5cccd4de">
+          <model ea_localid="5706" type="Class" name="Oddział"/>
+          <role visibility="Public" targetScope="instance"/>
+          <type multiplicity="1" aggregation="none" containment="Unspecified"/>
+        </source>
+        <target xmi:idref="EAID_e1a3ed3f_f5a6_4106_ba7f_3bcf5f7722b5">
+          <model ea_localid="2145" type="Class" name="DoradcaFinansowy"/>
+          <role visibility="Public" targetScope="instance"/>
+          <type multiplicity="0..-1" aggregation="none" containment="Unspecified"/>
+        </target>
+        <model ea_localid="7790"/>
+        <properties ea_type="Association" name="zatrudnia" sourcecard="1" targetcard="0..-1" direction="Source -&gt; Destination"/>
+        <modifiers isRoot="false" isLeaf="false"/>
+        <documentation/>
+        <appearance linemode="3" linecolor="-1" linewidth="0" seqno="0" headStyle="0" lineStyle="0"/>
+        <style value="Mode=3;EOID=5123C2D9;SOID=DCE:FB48;Color=-1;LWidth=0;"/>
+        <labels>
+          <mt value="zatrudnia"/>
+          <lb value="1"/>
+          <rb value="0..-1"/>
+        </labels>
+      </connector>
+      <connector xmi:idref="EAID_02d1a3b5_af19_4ddd_9daa_4b34b3b344f9">
+        <source xmi:idref="EAID_ed443dac_b878_4d96_b493_463ffc17da76">
+          <model ea_localid="3927" type="Class" name="Klient"/>
+          <role visibility="Public" targetScope="instance"/>
+          <type multiplicity="1" aggregation="none" containment="Unspecified"/>
+        </source>
+        <target xmi:idref="EAID_656469af_16c5_40de_b8da_5312363da12b">
+          <model ea_localid="1559" type="Class" name="Konto"/>
+          <role visibility="Public" targetScope="instance"/>
+          <type multiplicity="0..-1" aggregation="none" containment="Unspecified"/>
+        </target>
+        <model ea_localid="5559"/>
+        <properties ea_type="Association" name="posiada" sourcecard="1" targetcard="0..-1" direction="Source -&gt; Destination"/>
+        <modifiers isRoot="false" isLeaf="false"/>
+        <documentation/>
+        <appearance linemode="3" linecolor="-1" linewidth="0" seqno="0" headStyle="0" lineStyle="0"/>
+        <style value="Mode=3;EOID=5123C2D9;SOID=DCE:FB48;Color=-1;LWidth=0;"/>
+        <labels>
+          <mt value="posiada"/>
+          <lb value="1"/>
+          <rb value="0..-1"/>
+        </labels>
+      </connector>
+      <connector xmi:idref="EAID_d63de778_66e3_49bf_ab4e_3f1f6bae51df">
+        <source xmi:idref="EAID_656469af_16c5_40de_b8da_5312363da12b">
+          <model ea_localid="1559" type="Class" name="Konto"/>
+          <role visibility="Public" targetScope="instance"/>
+          <type multiplicity="1" aggregation="none" containment="Unspecified"/>
+        </source>
+        <target xmi:idref="EAID_ffc0b98d_41bc_45a4_b3fc_2855479b8c39">
+          <model ea_localid="1149" type="Class" name="Transakcja"/>
+          <role visibility="Public" targetScope="instance"/>
+          <type multiplicity="0..-1" aggregation="none" containment="Unspecified"/>
+        </target>
+        <model ea_localid="8095"/>
+        <properties ea_type="Association" name="ma" sourcecard="1" targetcard="0..-1" direction="Source -&gt; Destination"/>
+        <modifiers isRoot="false" isLeaf="false"/>
+        <documentation/>
+        <appearance linemode="3" linecolor="-1" linewidth="0" seqno="0" headStyle="0" lineStyle="0"/>
+        <style value="Mode=3;EOID=5123C2D9;SOID=DCE:FB48;Color=-1;LWidth=0;"/>
+        <labels>
+          <mt value="ma"/>
+          <lb value="1"/>
+          <rb value="0..-1"/>
+        </labels>
+      </connector>
+      <connector xmi:idref="EAID_5a77cc24_c957_4034_b746_26a0732bde35">
+        <source xmi:idref="EAID_656469af_16c5_40de_b8da_5312363da12b">
+          <model ea_localid="1559" type="Class" name="Konto"/>
+          <role visibility="Public" targetScope="instance"/>
+          <type multiplicity="1" aggregation="none" containment="Unspecified"/>
+        </source>
+        <target xmi:idref="EAID_fc0be641_2758_4c40_a16f_36834b2560e7">
+          <model ea_localid="4226" type="Class" name="Pełnomocnik"/>
+          <role visibility="Public" targetScope="instance"/>
+          <type multiplicity="0..-1" aggregation="none" containment="Unspecified"/>
+        </target>
+        <model ea_localid="5378"/>
+        <properties ea_type="Association" name="może" sourcecard="1" targetcard="0..-1" direction="Source -&gt; Destination"/>
+        <modifiers isRoot="false" isLeaf="false"/>
+        <documentation/>
+        <appearance linemode="3" linecolor="-1" linewidth="0" seqno="0" headStyle="0" lineStyle="0"/>
+        <style value="Mode=3;EOID=5123C2D9;SOID=DCE:FB48;Color=-1;LWidth=0;"/>
+        <labels>
+          <mt value="może"/>
+          <lb value="1"/>
+          <rb value="0..-1"/>
+        </labels>
+      </connector>
+      <connector xmi:idref="EAID_f2444784_c91d_4345_b7d2_90a80822d613">
+        <source xmi:idref="EAID_ed443dac_b878_4d96_b493_463ffc17da76">
+          <model ea_localid="3927" type="Class" name="Klient"/>
+          <role visibility="Public" targetScope="instance"/>
+          <type multiplicity="1" aggregation="none" containment="Unspecified"/>
+        </source>
+        <target xmi:idref="EAID_e1a3ed3f_f5a6_4106_ba7f_3bcf5f7722b5">
+          <model ea_localid="2145" type="Class" name="DoradcaFinansowy"/>
+          <role visibility="Public" targetScope="instance"/>
+          <type multiplicity="0..-1" aggregation="none" containment="Unspecified"/>
+        </target>
+        <model ea_localid="2210"/>
+        <properties ea_type="Association" name="ma" sourcecard="1" targetcard="0..-1" direction="Source -&gt; Destination"/>
+        <modifiers isRoot="false" isLeaf="false"/>
+        <documentation/>
+        <appearance linemode="3" linecolor="-1" linewidth="0" seqno="0" headStyle="0" lineStyle="0"/>
+        <style value="Mode=3;EOID=5123C2D9;SOID=DCE:FB48;Color=-1;LWidth=0;"/>
+        <labels>
+          <mt value="ma"/>
+          <lb value="1"/>
+          <rb value="0..-1"/>
+        </labels>
+      </connector>
+      <connector xmi:idref="EAID_0f682b55_553b_4fc8_8cab_d79b9023f968">
+        <source xmi:idref="EAID_656469af_16c5_40de_b8da_5312363da12b">
+          <model ea_localid="1559" type="Class" name="Konto"/>
+          <role visibility="Public" targetScope="instance"/>
+          <type multiplicity="1" aggregation="none" containment="Unspecified"/>
+        </source>
+        <target xmi:idref="EAID_ed443dac_b878_4d96_b493_463ffc17da76">
+          <model ea_localid="3927" type="Class" name="Klient"/>
+          <role visibility="Public" targetScope="instance"/>
+          <type multiplicity="1" aggregation="none" containment="Unspecified"/>
+        </target>
+        <model ea_localid="3476"/>
+        <properties ea_type="Association" name="należy" sourcecard="1" targetcard="1" direction="Source -&gt; Destination"/>
+        <modifiers isRoot="false" isLeaf="false"/>
+        <documentation/>
+        <appearance linemode="3" linecolor="-1" linewidth="0" seqno="0" headStyle="0" lineStyle="0"/>
+        <style value="Mode=3;EOID=5123C2D9;SOID=DCE:FB48;Color=-1;LWidth=0;"/>
+        <labels>
+          <mt value="należy"/>
+          <lb value="1"/>
+          <rb value="1"/>
+        </labels>
+      </connector>
+      <connector xmi:idref="EAID_f731f4ff_da70_47f4_9ba7_fced153d4c06">
+        <source xmi:idref="EAID_ffc0b98d_41bc_45a4_b3fc_2855479b8c39">
+          <model ea_localid="1149" type="Class" name="Transakcja"/>
+          <role visibility="Public" targetScope="instance"/>
+          <type aggregation="none" containment="Unspecified"/>
+        </source>
+        <target xmi:idref="EAID_8a4f83ea_392b_4742_a609_8fc0ba25658b">
+          <model ea_localid="3275" type="Class" name="Przelew"/>
+          <role visibility="Public" targetScope="instance"/>
+          <type aggregation="none" containment="Unspecified"/>
+        </target>
+        <model ea_localid="5200"/>
+        <properties ea_type="Generalization" name="jest" direction="Source -&gt; Destination"/>
+        <modifiers isRoot="false" isLeaf="false"/>
+        <documentation/>
+        <appearance linemode="3" linecolor="-1" linewidth="0" seqno="0" headStyle="0" lineStyle="0"/>
+        <style value="Mode=3;EOID=5123C2D9;SOID=DCE:FB48;Color=-1;LWidth=0;TREE=OS;"/>
+        <labels>
+          <mt value="jest"/>
+        </labels>
+      </connector>
+      <connector xmi:idref="EAID_9b668bf0_2328_41dd_8811_01bcb2d123c9">
+        <source xmi:idref="EAID_ffc0b98d_41bc_45a4_b3fc_2855479b8c39">
+          <model ea_localid="1149" type="Class" name="Transakcja"/>
+          <role visibility="Public" targetScope="instance"/>
+          <type aggregation="none" containment="Unspecified"/>
+        </source>
+        <target xmi:idref="EAID_10e33a6a_1a7c_47d5_945b_a1051145519d">
+          <model ea_localid="71" type="Class" name="Wypłata"/>
+          <role visibility="Public" targetScope="instance"/>
+          <type aggregation="none" containment="Unspecified"/>
+        </target>
+        <model ea_localid="7033"/>
+        <properties ea_type="Generalization" name="jest" direction="Source -&gt; Destination"/>
+        <modifiers isRoot="false" isLeaf="false"/>
+        <documentation/>
+        <appearance linemode="3" linecolor="-1" linewidth="0" seqno="0" headStyle="0" lineStyle="0"/>
+        <style value="Mode=3;EOID=5123C2D9;SOID=DCE:FB48;Color=-1;LWidth=0;TREE=OS;"/>
+        <labels>
+          <mt value="jest"/>
+        </labels>
+      </connector>
+      <connector xmi:idref="EAID_3b0e8791_5191_4d1f_9be7_9beaddc57a3d">
+        <source xmi:idref="EAID_ffc0b98d_41bc_45a4_b3fc_2855479b8c39">
+          <model ea_localid="1149" type="Class" name="Transakcja"/>
+          <role visibility="Public" targetScope="instance"/>
+          <type aggregation="none" containment="Unspecified"/>
+        </source>
+        <target xmi:idref="EAID_0024add4_3a0f_402e_9e29_e88e74274bca">
+          <model ea_localid="3023" type="Class" name="PłatnośćKartą"/>
+          <role visibility="Public" targetScope="instance"/>
+          <type aggregation="none" containment="Unspecified"/>
+        </target>
+        <model ea_localid="8865"/>
+        <properties ea_type="Generalization" name="jest" direction="Source -&gt; Destination"/>
+        <modifiers isRoot="false" isLeaf="false"/>
+        <documentation/>
+        <appearance linemode="3" linecolor="-1" linewidth="0" seqno="0" headStyle="0" lineStyle="0"/>
+        <style value="Mode=3;EOID=5123C2D9;SOID=DCE:FB48;Color=-1;LWidth=0;TREE=OS;"/>
+        <labels>
+          <mt value="jest"/>
+        </labels>
+      </connector>
+      <connector xmi:idref="EAID_038b1b06_9742_4d88_a651_b3ff4376f0b9">
+        <source xmi:idref="EAID_46a5f6e2_0305_43d8_a6dc_71bd5cccd4de">
+          <model ea_localid="5706" type="Class" name="Oddział"/>
+          <role visibility="Public" targetScope="instance"/>
+          <type multiplicity="1" aggregation="none" containment="Unspecified"/>
+        </source>
+        <target xmi:idref="EAID_656469af_16c5_40de_b8da_5312363da12b">
+          <model ea_localid="1559" type="Class" name="Konto"/>
+          <role visibility="Public" targetScope="instance"/>
+          <type multiplicity="0..-1" aggregation="none" containment="Unspecified"/>
+        </target>
+        <model ea_localid="9420"/>
+        <properties ea_type="Association" name="prowadzi" sourcecard="1" targetcard="0..-1" direction="Source -&gt; Destination"/>
+        <modifiers isRoot="false" isLeaf="false"/>
+        <documentation/>
+        <appearance linemode="3" linecolor="-1" linewidth="0" seqno="0" headStyle="0" lineStyle="0"/>
+        <style value="Mode=3;EOID=5123C2D9;SOID=DCE:FB48;Color=-1;LWidth=0;"/>
+        <labels>
+          <mt value="prowadzi"/>
+          <lb value="1"/>
+          <rb value="0..-1"/>
+        </labels>
+      </connector>
+    </connectors>
+    <diagrams>
+      <diagram xmi:id="EAID_3bc7ce38_33cc_4760_b6ed_df8eebe779c8">
+        <model package="EAID_0298b7d1_903c_4a82_933f_f926148d7e5f" localID="1102" owner="EAID_0298b7d1_903c_4a82_933f_f926148d7e5f"/>
+        <properties name="Diagram klas" type="Logical"/>
+        <project author="195841" version="1.0" created="2025-07-28 10:32:34" modified="2025-07-28 10:32:34"/>
+        <style1 value="ShowPrivate=1;ShowProtected=1;ShowPublic=1;HideRelationships=0;Locked=0;Border=1;HighlightForeign=1;PackageContents=1;SequenceNotes=0;ScalePrintImage=0;PPgs.cx=0;PPgs.cy=0;DocSize.cx=795;DocSize.cy=1134;ShowDetails=0;Orientation=P;Zoom=100;ShowTags=0;OpParams=1;VisibleAttributeDetail=0;ShowOpRetType=1;ShowIcons=1;CollabNums=0;HideProps=0;ShowReqs=0;ShowCons=0;PaperSize=9;HideParents=0;UseAlias=0;HideAtts=0;HideOps=0;HideStereo=0;HideElemStereo=0;ShowTests=0;ShowMaint=0;ConnectorNotation=UML 2.1;ExplicitNavigability=0;ShowShape=1;AllDockable=0;AdvancedElementProps=1;AdvancedFeatureProps=1;AdvancedConnectorProps=1;m_bElementClassifier=1;SPT=1;ShowNotes=0;SuppressBrackets=0;SuppConnectorLabels=0;PrintPageHeadFoot=0;ShowAsList=0;"/>
+        <style2 value="ExcludeRTF=0;DocAll=0;HideQuals=0;AttPkg=1;ShowTests=0;ShowMaint=0;SuppressFOC=1;MatrixActive=0;SwimlanesActive=1;KanbanActive=0;MatrixLineWidth=1;MatrixLineClr=0;MatrixLocked=0;TConnectorNotation=UML 2.1;TExplicitNavigability=0;AdvancedElementProps=1;AdvancedFeatureProps=1;AdvancedConnectorProps=1;m_bElementClassifier=1;SPT=1;MDGDgm=;STBLDgm=;ShowNotes=0;VisibleAttributeDetail=0;ShowOpRetType=1;SuppressBrackets=0;SuppConnectorLabels=0;PrintPageHeadFoot=0;ShowAsList=0;SuppressedCompartments=;Theme=:119;SaveTag=4C19637D;"/>
+        <swimlanes value="locked=false;orientation=0;width=0;inbar=false;names=false;color=-1;bold=false;fcol=0;tcol=-1;ofCol=-1;ufCol=-1;hl=1;ufh=0;hh=0;cls=0;bw=0;hli=0;bro=0;"/>
+        <elements>
+          <element geometry="Left=100;Top=100;Right=250;Bottom=220;" subject="EAID_bf9f3896_a272_4ff0_8846_23cf5a45c7af" seqno="0" style="DUID=unique_id;"/>
+          <element geometry="Left=300;Top=100;Right=450;Bottom=220;" subject="EAID_46a5f6e2_0305_43d8_a6dc_71bd5cccd4de" seqno="1" style="DUID=unique_id;"/>
+          <element geometry="Left=500;Top=100;Right=650;Bottom=220;" subject="EAID_ed443dac_b878_4d96_b493_463ffc17da76" seqno="2" style="DUID=unique_id;"/>
+          <element geometry="Left=700;Top=100;Right=850;Bottom=220;" subject="EAID_656469af_16c5_40de_b8da_5312363da12b" seqno="3" style="DUID=unique_id;"/>
+          <element geometry="Left=100;Top=250;Right=250;Bottom=370;" subject="EAID_fc0be641_2758_4c40_a16f_36834b2560e7" seqno="4" style="DUID=unique_id;"/>
+          <element geometry="Left=300;Top=250;Right=450;Bottom=370;" subject="EAID_ffc0b98d_41bc_45a4_b3fc_2855479b8c39" seqno="5" style="DUID=unique_id;"/>
+          <element geometry="Left=500;Top=250;Right=650;Bottom=370;" subject="EAID_8a4f83ea_392b_4742_a609_8fc0ba25658b" seqno="6" style="DUID=unique_id;"/>
+          <element geometry="Left=700;Top=250;Right=850;Bottom=370;" subject="EAID_10e33a6a_1a7c_47d5_945b_a1051145519d" seqno="7" style="DUID=unique_id;"/>
+          <element geometry="Left=100;Top=400;Right=250;Bottom=520;" subject="EAID_0024add4_3a0f_402e_9e29_e88e74274bca" seqno="8" style="DUID=unique_id;"/>
+          <element geometry="Left=300;Top=400;Right=450;Bottom=520;" subject="EAID_e1a3ed3f_f5a6_4106_ba7f_3bcf5f7722b5" seqno="9" style="DUID=unique_id;"/>
+          <element geometry="Left=500;Top=400;Right=650;Bottom=520;" subject="EAID_b571a223_8c03_4b6e_a310_b53bcc806fbd" seqno="10" style="DUID=unique_id;"/>
+          <element geometry="Left=700;Top=400;Right=850;Bottom=520;" subject="EAID_668946b5_b6be_4fb8_ba80_830b51429ef6" seqno="11" style="DUID=unique_id;"/>
+          <element geometry="Left=100;Top=550;Right=250;Bottom=650;" subject="EAID_0181a520_4981_43c2_a29f_2ee481776036" seqno="12" style="DUID=unique_id;"/>
+          <element geometry="Left=300;Top=550;Right=450;Bottom=650;" subject="EAID_ae2b5cb7_9a28_466e_b4cf_aa084b5d9066" seqno="13" style="DUID=unique_id;"/>
+          <element geometry="Left=500;Top=550;Right=650;Bottom=650;" subject="EAID_f17cfa13_a477_4399_aee5_a15ee22c9bf4" seqno="14" style="DUID=unique_id;"/>
+        </elements>
+        <diagramlinks>
+          <diagramlink connectorID="EAID_3a5e9749_add4_4dd9_bbf6_0a905234f2b9" start="EAID_8a4f83ea_392b_4742_a609_8fc0ba25658b" end="EAID_ffc0b98d_41bc_45a4_b3fc_2855479b8c39" linkID="DCLINK_7F7988B2" hidden="0" geometry="EDGE=1;$LLB=;LLT=;LMT=;LMB=;LRT=;LRB=;IRHS=;ILHS=;Path=;"/>
+          <diagramlink connectorID="EAID_098134af_6a39_4093_a4d9_3a0961e9d22c" start="EAID_10e33a6a_1a7c_47d5_945b_a1051145519d" end="EAID_ffc0b98d_41bc_45a4_b3fc_2855479b8c39" linkID="DCLINK_342BDFA8" hidden="0" geometry="EDGE=1;$LLB=;LLT=;LMT=;LMB=;LRT=;LRB=;IRHS=;ILHS=;Path=;"/>
+          <diagramlink connectorID="EAID_6bc12ba6_d54d_4779_a3e4_6888a552e6af" start="EAID_0024add4_3a0f_402e_9e29_e88e74274bca" end="EAID_ffc0b98d_41bc_45a4_b3fc_2855479b8c39" linkID="DCLINK_6C75ACFD" hidden="0" geometry="EDGE=1;$LLB=;LLT=;LMT=;LMB=;LRT=;LRB=;IRHS=;ILHS=;Path=;"/>
+          <diagramlink connectorID="EAID_5da35567_385b_4e1d_9c62_2f7914bd338d" start="EAID_bf9f3896_a272_4ff0_8846_23cf5a45c7af" end="EAID_46a5f6e2_0305_43d8_a6dc_71bd5cccd4de" linkID="DCLINK_D6E0D577" hidden="0" geometry="EDGE=1;$LLB=;LLT=;LMT=;LMB=;LRT=;LRB=;IRHS=;ILHS=;Path=;"/>
+          <diagramlink connectorID="EAID_a63e9958_50d2_461b_af48_fae8890d4846" start="EAID_46a5f6e2_0305_43d8_a6dc_71bd5cccd4de" end="EAID_e1a3ed3f_f5a6_4106_ba7f_3bcf5f7722b5" linkID="DCLINK_FB010106" hidden="0" geometry="EDGE=1;$LLB=;LLT=;LMT=;LMB=;LRT=;LRB=;IRHS=;ILHS=;Path=;"/>
+          <diagramlink connectorID="EAID_02d1a3b5_af19_4ddd_9daa_4b34b3b344f9" start="EAID_ed443dac_b878_4d96_b493_463ffc17da76" end="EAID_656469af_16c5_40de_b8da_5312363da12b" linkID="DCLINK_D727C000" hidden="0" geometry="EDGE=1;$LLB=;LLT=;LMT=;LMB=;LRT=;LRB=;IRHS=;ILHS=;Path=;"/>
+          <diagramlink connectorID="EAID_d63de778_66e3_49bf_ab4e_3f1f6bae51df" start="EAID_656469af_16c5_40de_b8da_5312363da12b" end="EAID_ffc0b98d_41bc_45a4_b3fc_2855479b8c39" linkID="DCLINK_7FF83C2C" hidden="0" geometry="EDGE=1;$LLB=;LLT=;LMT=;LMB=;LRT=;LRB=;IRHS=;ILHS=;Path=;"/>
+          <diagramlink connectorID="EAID_5a77cc24_c957_4034_b746_26a0732bde35" start="EAID_656469af_16c5_40de_b8da_5312363da12b" end="EAID_fc0be641_2758_4c40_a16f_36834b2560e7" linkID="DCLINK_1CF6FFC9" hidden="0" geometry="EDGE=1;$LLB=;LLT=;LMT=;LMB=;LRT=;LRB=;IRHS=;ILHS=;Path=;"/>
+          <diagramlink connectorID="EAID_f2444784_c91d_4345_b7d2_90a80822d613" start="EAID_ed443dac_b878_4d96_b493_463ffc17da76" end="EAID_e1a3ed3f_f5a6_4106_ba7f_3bcf5f7722b5" linkID="DCLINK_756A186A" hidden="0" geometry="EDGE=1;$LLB=;LLT=;LMT=;LMB=;LRT=;LRB=;IRHS=;ILHS=;Path=;"/>
+          <diagramlink connectorID="EAID_0f682b55_553b_4fc8_8cab_d79b9023f968" start="EAID_656469af_16c5_40de_b8da_5312363da12b" end="EAID_ed443dac_b878_4d96_b493_463ffc17da76" linkID="DCLINK_9DC12D25" hidden="0" geometry="EDGE=1;$LLB=;LLT=;LMT=;LMB=;LRT=;LRB=;IRHS=;ILHS=;Path=;"/>
+          <diagramlink connectorID="EAID_f731f4ff_da70_47f4_9ba7_fced153d4c06" start="EAID_ffc0b98d_41bc_45a4_b3fc_2855479b8c39" end="EAID_8a4f83ea_392b_4742_a609_8fc0ba25658b" linkID="DCLINK_E420C0DA" hidden="0" geometry="EDGE=1;$LLB=;LLT=;LMT=;LMB=;LRT=;LRB=;IRHS=;ILHS=;Path=;"/>
+          <diagramlink connectorID="EAID_9b668bf0_2328_41dd_8811_01bcb2d123c9" start="EAID_ffc0b98d_41bc_45a4_b3fc_2855479b8c39" end="EAID_10e33a6a_1a7c_47d5_945b_a1051145519d" linkID="DCLINK_E1F25A35" hidden="0" geometry="EDGE=1;$LLB=;LLT=;LMT=;LMB=;LRT=;LRB=;IRHS=;ILHS=;Path=;"/>
+          <diagramlink connectorID="EAID_3b0e8791_5191_4d1f_9be7_9beaddc57a3d" start="EAID_ffc0b98d_41bc_45a4_b3fc_2855479b8c39" end="EAID_0024add4_3a0f_402e_9e29_e88e74274bca" linkID="DCLINK_AD1959C9" hidden="0" geometry="EDGE=1;$LLB=;LLT=;LMT=;LMB=;LRT=;LRB=;IRHS=;ILHS=;Path=;"/>
+          <diagramlink connectorID="EAID_038b1b06_9742_4d88_a651_b3ff4376f0b9" start="EAID_46a5f6e2_0305_43d8_a6dc_71bd5cccd4de" end="EAID_656469af_16c5_40de_b8da_5312363da12b" linkID="DCLINK_B6BCCAF3" hidden="0" geometry="EDGE=1;$LLB=;LLT=;LMT=;LMB=;LRT=;LRB=;IRHS=;ILHS=;Path=;"/>
+          <diagramlink connectorID="EAID_3a5e9749_add4_4dd9_bbf6_0a905234f2b9" start="EAID_8a4f83ea_392b_4742_a609_8fc0ba25658b" end="EAID_ffc0b98d_41bc_45a4_b3fc_2855479b8c39" linkID="DCLINK_A234A089" hidden="0" geometry="EDGE=1;$LLB=;LLT=;LMT=;LMB=;LRT=;LRB=;IRHS=;ILHS=;Path=;"/>
+          <diagramlink connectorID="EAID_098134af_6a39_4093_a4d9_3a0961e9d22c" start="EAID_10e33a6a_1a7c_47d5_945b_a1051145519d" end="EAID_ffc0b98d_41bc_45a4_b3fc_2855479b8c39" linkID="DCLINK_CCE0F8FB" hidden="0" geometry="EDGE=1;$LLB=;LLT=;LMT=;LMB=;LRT=;LRB=;IRHS=;ILHS=;Path=;"/>
+          <diagramlink connectorID="EAID_6bc12ba6_d54d_4779_a3e4_6888a552e6af" start="EAID_0024add4_3a0f_402e_9e29_e88e74274bca" end="EAID_ffc0b98d_41bc_45a4_b3fc_2855479b8c39" linkID="DCLINK_C94E6742" hidden="0" geometry="EDGE=1;$LLB=;LLT=;LMT=;LMB=;LRT=;LRB=;IRHS=;ILHS=;Path=;"/>
+          <diagramlink connectorID="EAID_5da35567_385b_4e1d_9c62_2f7914bd338d" start="EAID_bf9f3896_a272_4ff0_8846_23cf5a45c7af" end="EAID_46a5f6e2_0305_43d8_a6dc_71bd5cccd4de" linkID="DCLINK_03BE62C3" hidden="0" geometry="EDGE=1;$LLB=;LLT=;LMT=;LMB=;LRT=;LRB=;IRHS=;ILHS=;Path=;" labels="lb=1;mt=posiada;rb=0..-1;"/>
+          <diagramlink connectorID="EAID_a63e9958_50d2_461b_af48_fae8890d4846" start="EAID_46a5f6e2_0305_43d8_a6dc_71bd5cccd4de" end="EAID_e1a3ed3f_f5a6_4106_ba7f_3bcf5f7722b5" linkID="DCLINK_1F1CB056" hidden="0" geometry="EDGE=1;$LLB=;LLT=;LMT=;LMB=;LRT=;LRB=;IRHS=;ILHS=;Path=;" labels="lb=1;mt=zatrudnia;rb=0..-1;"/>
+          <diagramlink connectorID="EAID_02d1a3b5_af19_4ddd_9daa_4b34b3b344f9" start="EAID_ed443dac_b878_4d96_b493_463ffc17da76" end="EAID_656469af_16c5_40de_b8da_5312363da12b" linkID="DCLINK_C8B8BE15" hidden="0" geometry="EDGE=1;$LLB=;LLT=;LMT=;LMB=;LRT=;LRB=;IRHS=;ILHS=;Path=;" labels="lb=1;mt=posiada;rb=0..-1;"/>
+          <diagramlink connectorID="EAID_d63de778_66e3_49bf_ab4e_3f1f6bae51df" start="EAID_656469af_16c5_40de_b8da_5312363da12b" end="EAID_ffc0b98d_41bc_45a4_b3fc_2855479b8c39" linkID="DCLINK_0B869F86" hidden="0" geometry="EDGE=1;$LLB=;LLT=;LMT=;LMB=;LRT=;LRB=;IRHS=;ILHS=;Path=;" labels="lb=1;mt=ma;rb=0..-1;"/>
+          <diagramlink connectorID="EAID_5a77cc24_c957_4034_b746_26a0732bde35" start="EAID_656469af_16c5_40de_b8da_5312363da12b" end="EAID_fc0be641_2758_4c40_a16f_36834b2560e7" linkID="DCLINK_4053E7CD" hidden="0" geometry="EDGE=1;$LLB=;LLT=;LMT=;LMB=;LRT=;LRB=;IRHS=;ILHS=;Path=;" labels="lb=1;mt=może;rb=0..-1;"/>
+          <diagramlink connectorID="EAID_f2444784_c91d_4345_b7d2_90a80822d613" start="EAID_ed443dac_b878_4d96_b493_463ffc17da76" end="EAID_e1a3ed3f_f5a6_4106_ba7f_3bcf5f7722b5" linkID="DCLINK_55F149BB" hidden="0" geometry="EDGE=1;$LLB=;LLT=;LMT=;LMB=;LRT=;LRB=;IRHS=;ILHS=;Path=;" labels="lb=1;mt=ma;rb=0..-1;"/>
+          <diagramlink connectorID="EAID_0f682b55_553b_4fc8_8cab_d79b9023f968" start="EAID_656469af_16c5_40de_b8da_5312363da12b" end="EAID_ed443dac_b878_4d96_b493_463ffc17da76" linkID="DCLINK_51436A22" hidden="0" geometry="EDGE=1;$LLB=;LLT=;LMT=;LMB=;LRT=;LRB=;IRHS=;ILHS=;Path=;" labels="lb=1;mt=należy;rb=1;"/>
+          <diagramlink connectorID="EAID_f731f4ff_da70_47f4_9ba7_fced153d4c06" start="EAID_ffc0b98d_41bc_45a4_b3fc_2855479b8c39" end="EAID_8a4f83ea_392b_4742_a609_8fc0ba25658b" linkID="DCLINK_6F4E0CA5" hidden="0" geometry="EDGE=1;$LLB=;LLT=;LMT=;LMB=;LRT=;LRB=;IRHS=;ILHS=;Path=;" labels="lb=;mt=jest;rb=;"/>
+          <diagramlink connectorID="EAID_9b668bf0_2328_41dd_8811_01bcb2d123c9" start="EAID_ffc0b98d_41bc_45a4_b3fc_2855479b8c39" end="EAID_10e33a6a_1a7c_47d5_945b_a1051145519d" linkID="DCLINK_AAF922A5" hidden="0" geometry="EDGE=1;$LLB=;LLT=;LMT=;LMB=;LRT=;LRB=;IRHS=;ILHS=;Path=;" labels="lb=;mt=jest;rb=;"/>
+          <diagramlink connectorID="EAID_3b0e8791_5191_4d1f_9be7_9beaddc57a3d" start="EAID_ffc0b98d_41bc_45a4_b3fc_2855479b8c39" end="EAID_0024add4_3a0f_402e_9e29_e88e74274bca" linkID="DCLINK_A35358B5" hidden="0" geometry="EDGE=1;$LLB=;LLT=;LMT=;LMB=;LRT=;LRB=;IRHS=;ILHS=;Path=;" labels="lb=;mt=jest;rb=;"/>
+          <diagramlink connectorID="EAID_038b1b06_9742_4d88_a651_b3ff4376f0b9" start="EAID_46a5f6e2_0305_43d8_a6dc_71bd5cccd4de" end="EAID_656469af_16c5_40de_b8da_5312363da12b" linkID="DCLINK_CE884CAE" hidden="0" geometry="EDGE=1;$LLB=;LLT=;LMT=;LMB=;LRT=;LRB=;IRHS=;ILHS=;Path=;" labels="lb=1;mt=prowadzi;rb=0..-1;"/>
+        </diagramlinks>
+      </diagram>
+    </diagrams>
+    <primitivetypes>
+      <packagedElement xmi:type="uml:Package" xmi:id="EAPrimitiveTypesPackage" name="EA_PrimitiveTypes_Package" visibility="public">
+        <packagedElement xmi:type="uml:Package" xmi:id="EAJavaTypesPackage" name="EA_Java_Types_Package" visibility="public">
+          <packagedElement xmi:type="uml:PrimitiveType" xmi:id="EAJava_TypKonta" name="TypKonta" visibility="public"/>
+          <packagedElement xmi:type="uml:PrimitiveType" xmi:id="EAJava_String" name="String" visibility="public"/>
+          <packagedElement xmi:type="uml:PrimitiveType" xmi:id="EAJava_BigDecimal" name="BigDecimal" visibility="public"/>
+          <packagedElement xmi:type="uml:PrimitiveType" xmi:id="EAJava_Date" name="Date" visibility="public"/>
+          <packagedElement xmi:type="uml:PrimitiveType" xmi:id="EAJava_StatusTransakcji" name="StatusTransakcji" visibility="public"/>
+          <packagedElement xmi:type="uml:PrimitiveType" xmi:id="EAJava_Adres" name="Adres" visibility="public"/>
+        </packagedElement>
+      </packagedElement>
+    </primitivetypes>
+    <profiles/>
+  </xmi:Extension>
+</xmi:XMI>

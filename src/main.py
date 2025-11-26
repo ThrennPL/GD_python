@@ -40,6 +40,15 @@ try:
     from utils.plantuml.plantuml_component_parser import PlantUMLComponentParser
     from utils.xmi.xmi_component_generator import XMIComponentGenerator
     from utils.metrics.model_response_metrics import  ModelResponseMetrics, measure_response_time
+    
+    # Try to import BPMN integration
+    try:
+        from bpmn_integration import create_bpmn_integration, display_bpmn_result, display_bpmn_validation
+        BPMN_AVAILABLE = True
+    except ImportError as e:
+        BPMN_AVAILABLE = False
+        print(f"BPMN integration not available: {e}")
+    
     # PDF functionality import
     try:
         from utils.pdf.pdf_processor import PDFProcessor, enhance_prompt_with_pdf_context
@@ -62,6 +71,24 @@ CHAT_URL = os.getenv("CHAT_URL", "http://localhost:1234//v1/chat/completions")
 API_KEY = os.getenv("API_KEY", "")
 API_DEFAULT_MODEL = os.getenv("API_DEFAULT_MODEL", "models/gemini-2.0-flash")
 MODEL_PROVIDER = os.getenv("MODEL_PROVIDER", "gemini")  # lub "gemini"
+
+# Initialize BPMN Integration if available
+bpmn_integration = None
+if BPMN_AVAILABLE and API_KEY and MODEL_PROVIDER:
+    try:
+        bpmn_integration = create_bpmn_integration(
+            api_key=API_KEY,
+            model_provider=MODEL_PROVIDER,
+            chat_url=CHAT_URL,
+            default_model=API_DEFAULT_MODEL
+        )
+        if bpmn_integration:
+            print("✅ BPMN Integration initialized successfully")
+        else:
+            print("⚠️ BPMN Integration not available (configuration issue)")
+    except Exception as e:
+        print(f"❌ Failed to initialize BPMN Integration: {e}")
+        bpmn_integration = None
 
 LANG = "pl"  # Domyślny język, można zmienić na "pl" dla polskiego
 
@@ -134,20 +161,20 @@ class AIApp(QMainWindow):
 
         # Radiobuttony do wyboru typu szablonu
         self.radio_plantuml = QRadioButton("PlantUML")
-        self.radio_xml = QRadioButton("XML")
+        self.radio_bpmn = QRadioButton("BPMN")
         self.radio_plantuml.setChecked(True)  # domyślnie PlantUML
 
         radio_layout = QHBoxLayout()
         radio_layout.addWidget(self.radio_plantuml)
-        radio_layout.addWidget(self.radio_xml)
+        radio_layout.addWidget(self.radio_bpmn)
         template_layout.addLayout(radio_layout)
 
         self.template_type_group = QButtonGroup(self)
         self.template_type_group.addButton(self.radio_plantuml)
-        self.template_type_group.addButton(self.radio_xml)
+        self.template_type_group.addButton(self.radio_bpmn)
 
         self.radio_plantuml.toggled.connect(self.update_template_selector)
-        self.radio_xml.toggled.connect(self.update_template_selector)
+        self.radio_bpmn.toggled.connect(self.update_template_selector)
 
         self.template_selector = QComboBox(self)
         self.template_selector.setToolTip(tr("template_selector.setToolTip"))
@@ -397,16 +424,31 @@ class AIApp(QMainWindow):
         validate_input_text(self, self.diagram_type_selector.currentText(), LANG=LANG)
 
     def update_template_selector(self):
-        selected_type = "PlantUML" if self.radio_plantuml.isChecked() else "XML"
+        if self.radio_bpmn.isChecked():
+            selected_type = "BPMN"
+        else:
+            selected_type = "PlantUML"
+            
         self.template_selector.blockSignals(True)
         self.template_selector.clear()
-        filtered = [
-            name for name, data in self.prompt_templates.items()
-            if data.get("type") == selected_type
-        ]
-        self.template_selector.addItems(filtered)
-        self.template_selector.blockSignals(False)
-        self.on_template_changed(self.template_selector.currentIndex())
+        
+        # For BPMN, show BPMN integration status
+        if selected_type == "BPMN":
+            if BPMN_AVAILABLE and bpmn_integration and bpmn_integration.is_available():
+                self.template_selector.addItem("✅ BPMN Process Generation")
+            else:
+                self.template_selector.addItem("❌ BPMN Not Available")
+            # Don't call on_template_changed for BPMN as it doesn't use templates
+            self.template_selector.blockSignals(False)
+        else:
+            filtered = [
+                name for name, data in self.prompt_templates.items()
+                if data.get("type") == selected_type
+            ]
+            self.template_selector.addItems(filtered)
+            self.template_selector.blockSignals(False)
+            if filtered:  # Only call if there are items
+                self.on_template_changed(self.template_selector.currentIndex())
 
     
     def on_tab_changed(self, index, plantuml_code_id=None):
@@ -423,7 +465,16 @@ class AIApp(QMainWindow):
             self.save_xmi_button.setEnabled(False)
 
     def on_template_changed(self, index):
+        # Skip template logic for BPMN mode
+        if self.radio_bpmn.isChecked():
+            return
+            
         selected_template = self.template_selector.currentText()
+        
+        # Check if template exists in templates
+        if selected_template not in self.prompt_templates:
+            return
+            
         allowed_types = self.prompt_templates[selected_template]["allowed_diagram_types"]
         all_types = [
             "sequence", "activity", "use case", "class", "state",
@@ -572,6 +623,12 @@ class AIApp(QMainWindow):
         self.waiting_timer.timeout.connect(update_waiting_animation)
         self.waiting_timer.start(500)  # Aktualizuj co 500 ms
         
+        # Handle BPMN v2 generation first (bypass old template logic)
+        if self.radio_bpmn.isChecked() and bpmn_integration and bpmn_integration.is_available():
+            self.handle_bpmn_generation(process_description)
+            return
+        
+        # Old template logic for PlantUML only
         selected_template = self.template_selector.currentText()
         template_data = self.prompt_templates[selected_template]
         if diagram_type.lower() in ["bpmn", "bpmn_flow", "bpmn_component"]:
@@ -686,6 +743,61 @@ class AIApp(QMainWindow):
         selected_domain = "banking"
         return tr(f"domain_{selected_domain}")
     
+    def handle_bpmn_generation(self, process_description):
+        """Handles BPMN v2 generation using the new system"""
+        try:
+            # Clear input and add to history
+            self.conversation_history.append({"role": "user", "content": process_description})
+            self.append_to_chat("User", process_description)
+            self.input_box.clear()
+            
+            # Show progress
+            self.append_to_chat("System", "🔄 Generating BPMN process...")
+            
+            # Get BPMN parameters (you can add GUI controls for these later)
+            quality_target = 0.8
+            max_iterations = 10
+            process_type = "business"
+            
+            # Generate BPMN using the new system
+            success, bpmn_result, metadata = bpmn_integration.generate_bpmn_process(
+                user_input=process_description,
+                process_type=process_type,
+                quality_target=quality_target,
+                max_iterations=max_iterations
+            )
+            
+            if success:
+                # Store the XML for saving
+                self.latest_xml = bpmn_result
+                self.save_xml_button.setEnabled(True)
+                
+                # Add to conversation
+                self.conversation_history.append({"role": "assistant", "content": f"BPMN process generated successfully"})
+                self.append_to_chat("BPMN System", "✅ BPMN process generated successfully!")
+                
+                # Show metadata info
+                if metadata:
+                    info_text = f"📊 Iterations: {metadata.get('iterations', 'N/A')}, Quality: {metadata.get('final_score', 0):.2f}"
+                    self.append_to_chat("System", info_text)
+                    
+                # Display the XML content in output
+                self.append_to_chat("BPMN XML", bpmn_result)
+                
+            else:
+                error_msg = f"❌ BPMN generation failed: {bpmn_result}"
+                self.conversation_history.append({"role": "assistant", "content": error_msg})
+                self.append_to_chat("System", error_msg)
+                
+        except Exception as e:
+            error_msg = f"❌ Error during BPMN generation: {str(e)}"
+            self.append_to_chat("System", error_msg)
+            
+        finally:
+            self.send_button.setEnabled(True)
+            if hasattr(self, "waiting_timer") and self.waiting_timer.isActive():
+                self.waiting_timer.stop()
+    
 
     def handle_api_response(self, model_name, response_content):
         """Obsługuje odpowiedź z API."""
@@ -772,17 +884,6 @@ class AIApp(QMainWindow):
 
     def save_xml(self):
         """Zapisuje ostatni poprawny XML do pliku."""
-        xml_content = extract_xml(self.latest_response)
-        if xml_content and is_valid_xml(xml_content):
-            to_save = xml_content
-        else:
-            plantuml_code = extract_plantuml(self.latest_response)
-            if plantuml_code:
-                to_save = bpmn_to_xml(plantuml_code)
-            else:
-                error_msg = (tr("msg_no_valid_xml"))
-                self.append_to_chat("System", error_msg)
-                return
         if hasattr(self, "latest_xml") and self.latest_xml:
             try:
                 timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -797,9 +898,25 @@ class AIApp(QMainWindow):
                 self.append_to_chat("System", error_msg)
                 log_exception(error_msg)
         else:
-            error_msg = (tr("msg_no_valid_xml_to_save"))
-            self.append_to_chat("System", error_msg)
-            log_exception(error_msg)
+            # Try to extract XML from latest response
+            xml_content = extract_xml(self.latest_response) if hasattr(self, 'latest_response') else None
+            if xml_content and is_valid_xml(xml_content):
+                try:
+                    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                    filename = f"output_{timestamp}.xml"
+                    with open(filename, "w", encoding="utf-8") as file:
+                        file.write(xml_content)
+                    ok_msg = (tr("msg_xml_saved").format(filename=filename))
+                    self.append_to_chat("System", ok_msg)
+                    log_info(ok_msg)
+                except Exception as e:
+                    error_msg = (tr("msg_error_saving_xml").format(error=e))
+                    self.append_to_chat("System", error_msg)
+                    log_exception(error_msg)
+            else:
+                error_msg = (tr("msg_no_valid_xml_to_save"))
+                self.append_to_chat("System", error_msg)
+                log_exception(error_msg)
 
     def preview_plantuml_diagram(self, plantuml_code):
         """

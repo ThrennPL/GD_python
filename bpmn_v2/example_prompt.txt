@@ -1,0 +1,432 @@
+**Jako architekt procesów bankowych z 15-letnim doświadczeniem w systemach core banking, Twoim zadaniem jest przeanalizowanie opisu procesu biznesowego i zwrócenie strukturalnej definicji w formacie JSON zgodnym z BPMN 2.0.**
+
+**CELE ANALIZY:**
+1. Zidentyfikuj wszystkich uczestników procesu (participants/pools)
+2. Wyodrębnij sekwencję działań i zadań
+3. Znajdź punkty decyzyjne i bramki (gateways)
+4. Określ przepływy między elementami
+5. Przypisz odpowiednie typy BPMN do każdego elementu
+
+
+**KONTEKST BANKOWY:**
+- Uwzględnij wymagania regulacyjne (KYC, AML, PSD2)
+- Rozróżnij zadania użytkownika od automatyzacji systemowej
+- Identyfikuj procesy autoryzacji i weryfikacji
+- Zadbaj o ślady audytowe i compliance
+- Standardowi uczestnicy: Klient, Bank, Systemy zewnętrzne
+
+
+**WYMAGANY FORMAT ODPOWIEDZI - JSON SCHEMA:**
+
+Twoja odpowiedź MUSI być poprawnym JSON zgodnym z poniższym schema:
+
+```json
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "title": "BPMN Process Definition",
+  "description": "Strukturalna definicja procesu BPMN w JSON",
+  "required": [
+    "process_name",
+    "participants",
+    "elements",
+    "flows"
+  ],
+  "properties": {
+    "process_name": {
+      "type": "string",
+      "description": "Nazwa procesu",
+      "minLength": 3,
+      "maxLength": 100
+    },
+    "description": {
+      "type": "string",
+      "description": "Opis procesu (opcjonalne)"
+    },
+    "participants": {
+      "type": "array",
+      "description": "Uczestnicy procesu (pools)",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "name"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-zA-Z][a-zA-Z0-9_]*$"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 2
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "human",
+              "system",
+              "organization"
+            ]
+          },
+          "lanes": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "id",
+                "name"
+              ],
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "elements": {
+      "type": "array",
+      "description": "Elementy procesu",
+      "minItems": 3,
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "type",
+          "participant"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-zA-Z][a-zA-Z0-9_]*$"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 2
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "startEvent",
+              "endEvent",
+              "userTask",
+              "serviceTask",
+              "exclusiveGateway",
+              "parallelGateway"
+            ]
+          },
+          "participant": {
+            "type": "string"
+          },
+          "lane": {
+            "type": "string"
+          },
+          "task_type": {
+            "type": "string",
+            "enum": [
+              "user",
+              "service",
+              "send",
+              "receive"
+            ]
+          },
+          "gateway_type": {
+            "type": "string",
+            "enum": [
+              "exclusive",
+              "parallel",
+              "inclusive"
+            ]
+          },
+          "assignee": {
+            "type": "string"
+          },
+          "implementation": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "flows": {
+      "type": "array",
+      "description": "Przepływy między elementami",
+      "minItems": 2,
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "source",
+          "target"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "source": {
+            "type": "string"
+          },
+          "target": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "condition": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "sequence",
+              "message"
+            ],
+            "default": "sequence"
+          }
+        }
+      }
+    },
+    "gateways": {
+      "type": "array",
+      "description": "Definicje bramek z warunkami",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "conditions"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "conditions": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "target",
+                "condition"
+              ],
+              "properties": {
+                "target": {
+                  "type": "string"
+                },
+                "condition": {
+                  "type": "string"
+                },
+                "is_default": {
+                  "type": "boolean",
+                  "default": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "metadata": {
+      "type": "object",
+      "description": "Metadane procesu",
+      "properties": {
+        "context": {
+          "type": "string"
+        },
+        "industry": {
+          "type": "string"
+        },
+        "complexity": {
+          "type": "string",
+          "enum": [
+            "simple",
+            "medium",
+            "complex"
+          ]
+        },
+        "compliance_requirements": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "estimated_duration": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}
+```
+
+
+**PRZYKŁAD ODPOWIEDZI (proces bankowy):**
+
+```json
+{
+  "process_name": "Przelew internetowy",
+  "description": "Proces wykonania przelewu przez klienta w bankowości elektronicznej",
+  "participants": [
+    {
+      "id": "klient",
+      "name": "Klient",
+      "type": "human"
+    },
+    {
+      "id": "system_bankowy",
+      "name": "System Bankowy",
+      "type": "system"
+    }
+  ],
+  "elements": [
+    {
+      "id": "start1",
+      "name": "Klient chce wykonać przelew",
+      "type": "startEvent",
+      "participant": "klient"
+    },
+    {
+      "id": "task1",
+      "name": "Logowanie do systemu",
+      "type": "userTask",
+      "participant": "klient",
+      "task_type": "user"
+    },
+    {
+      "id": "task2",
+      "name": "Wypełnienie formularza przelewu",
+      "type": "userTask",
+      "participant": "klient",
+      "task_type": "user"
+    },
+    {
+      "id": "task3",
+      "name": "Weryfikacja danych",
+      "type": "serviceTask",
+      "participant": "system_bankowy",
+      "task_type": "service"
+    },
+    {
+      "id": "gateway1",
+      "name": "Czy dane są poprawne?",
+      "type": "exclusiveGateway",
+      "participant": "system_bankowy",
+      "gateway_type": "exclusive"
+    },
+    {
+      "id": "task4",
+      "name": "Wykonanie przelewu",
+      "type": "serviceTask",
+      "participant": "system_bankowy",
+      "task_type": "service"
+    },
+    {
+      "id": "end1",
+      "name": "Przelew wykonany",
+      "type": "endEvent",
+      "participant": "system_bankowy"
+    }
+  ],
+  "flows": [
+    {
+      "id": "flow1",
+      "source": "start1",
+      "target": "task1"
+    },
+    {
+      "id": "flow2",
+      "source": "task1",
+      "target": "task2"
+    },
+    {
+      "id": "flow3",
+      "source": "task2",
+      "target": "task3"
+    },
+    {
+      "id": "flow4",
+      "source": "task3",
+      "target": "gateway1"
+    },
+    {
+      "id": "flow5",
+      "source": "gateway1",
+      "target": "task4",
+      "name": "tak",
+      "condition": "dane_poprawne"
+    },
+    {
+      "id": "flow6",
+      "source": "gateway1",
+      "target": "task2",
+      "name": "nie",
+      "condition": "dane_niepoprawne"
+    },
+    {
+      "id": "flow7",
+      "source": "task4",
+      "target": "end1"
+    }
+  ],
+  "gateways": [
+    {
+      "id": "gateway1",
+      "conditions": [
+        {
+          "target": "task4",
+          "condition": "dane_poprawne",
+          "is_default": false
+        },
+        {
+          "target": "task2",
+          "condition": "dane_niepoprawne",
+          "is_default": true
+        }
+      ]
+    }
+  ],
+  "metadata": {
+    "context": "banking",
+    "industry": "financial_services",
+    "complexity": "medium",
+    "compliance_requirements": [
+      "PSD2",
+      "RODO"
+    ]
+  }
+}
+```
+
+
+**ZASADY WALIDACJI:**
+
+1. **ID Elementów:** Wszystkie ID muszą być unikalne i składać się z liter, cyfr i podkreśleń
+2. **Uczestnicy:** Każdy element musi być przypisany do istniejącego participant
+3. **Przepływy:** Każdy flow musi łączyć istniejące elementy (source i target)
+4. **Struktura procesu:** Minimum 1 startEvent, 1 aktywność, 1 endEvent
+5. **Bramki:** Każda bramka musi mieć zdefiniowane warunki dla wszystkich wychodzących ścieżek
+6. **Typy zadań:** Rozróżnij userTask (człowiek) od serviceTask (system)
+
+
+**OPIS PROCESU DO ANALIZY:**
+
+    Klient w sklepie wybiera płatność BLIK i otrzymuje 6-cyfrowy kod od sprzedawcy. 
+    Wprowadza kod w aplikacji mobilnej banku i autoryzuje płatność kodem PIN. 
+    System BLIK banku sprawdza dostępność środków na koncie. 
+    Jeśli środki są wystarczające, system blokuje środki i wysyła potwierdzenie. 
+    Clearing BLIK przekazuje potwierdzenie do terminala sprzedawcy.
+    
+
+
+
+
+**INSTRUKCJA WYJŚCIA:**
+
+Zwróć WYŁĄCZNIE poprawny JSON zgodny z podanym schema. 
+Nie dodawaj żadnych komentarzy, objaśnień ani dodatkowego tekstu.
+JSON musi być kompletny i gotowy do parsowania.

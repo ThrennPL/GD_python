@@ -1,0 +1,38 @@
+
+    @startuml
+    title Proces weryfikacji tożsamości
+    
+    |Klient|
+    start
+    :Rozpocznij proces;
+    
+    |System|
+    :Poproś o dane;
+    
+    |Klient|
+    :Wprowadź dane logowania;
+    note right: Użytkownik wpisuje login i hasło.
+    
+    |System|
+    if (Dane poprawne?) then (tak)
+      :Zaloguj użytkownika;
+      if (Wymagana weryfikacja 2FA?) then (tak)
+        :Wyślij kod 2FA;
+        |Klient|
+        :Wprowadź kod 2FA;
+      endif
+      |System|
+      fork
+        :Zapisz logowanie w historii;
+      fork again
+        :Przekieruj na stronę główną;
+      end fork
+    else (nie)
+      :Wyświetl błąd logowania;
+    endif
+    
+    |Klient|
+    stop
+    
+    @enduml
+    

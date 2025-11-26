@@ -1,38 +1,49 @@
 # UML/BPMN Diagram Generator & Validator with AI
 
-**Project Status**: ✅ **REORGANIZATION COMPLETED** (2025-11-20) - New professional structure + Smart PDF Analysis System
+**Project Status**: ✅ **BMPN v2 PRODUCTION READY** (2025-11-26) - Complete system with business and technical documentation
 
-An application for generating, visualizing, and validating UML (PlantUML) and BPMN (XML) diagrams based on process descriptions, using AI models (e.g., LLM). The project offers both a desktop version (PyQt5) and a web version (Streamlit), allowing you to select prompt templates, diagram types, validate process descriptions, and automatically verify PlantUML code.
+An application for generating, visualizing, and validating UML (PlantUML) and BPMN v2 (XML) diagrams based on process descriptions, using AI models (e.g., LLM). The project offers both a desktop version (PyQt5) and a web version (Streamlit), allowing you to select prompt templates, diagram types, validate process descriptions, and automatically verify PlantUML code.
 
-**🆕 Latest Features:**
-- **🧠 Smart PDF Analysis System** - intelligent model capability detection and automatic method selection
-- **📁 Reorganized structure** - professional code organization (src/, tests/, tools/, config/)
-- **⚡ Real-time progress tracking** - live feedback during operations
-- **🔄 Graceful fallback** - automatic method switching on errors
+**🆕 Latest BPMN v2 Features:**
+
+- **🎯 Advanced BPMN v2 System** - iterative quality optimization with real-time monitoring
+- **📊 Quality-driven Generation** - automatic diagram improvement to achieve required quality
+- **🔄 Dynamic Configuration** - flexible AI provider configuration through environment variables
+- **📖 Complete Documentation Suite** - comprehensive business, technical and architectural documentation
+- **🖥️ Dual Interface Support** - full BPMN v2 integration in desktop and web applications
+- **📈 Performance Analytics** - detailed performance and quality metrics
 
 ---
 
 ## Quick Start (for new users)
 
 1. **Clone the repository:**
+
     ```bash
     git clone https://github.com/ThrennPL/GD_python
     cd GD_python
     ```
+
 2. **Install dependencies:**
+
     ```bash
     pip install -r requirements.txt
     ```
+
 3. **Download `plantuml.jar`**  
    Download the file from [PlantUML Download](https://plantuml.com/download) and place it in the project directory.
+
 4. **Check Java:**  
    Make sure Java is installed (run in terminal):
+
     ```bash
     java -version
     ```
+
 5. **Create a `.env` file:**  
    Copy the configuration below into a `.env` file in the main project directory and fill in the required fields (e.g., `API_KEY` for Gemini/OpenAI, database details if you want to save history):
-    ```
+
+    ```env
     PLANTUML_JAR_PATH=plantuml.jar
     PLANTUML_GENERATOR_TYPE=local
     API_URL=http://localhost:1234/v1/models
@@ -53,16 +64,21 @@ An application for generating, visualizing, and validating UML (PlantUML) and BP
     DB_USER=
     DB_PASSWORD=
     ```
+
 6. **Start a local AI server (e.g., LM Studio):**  
    If using a local model, start LM Studio and check if it's available at `http://localhost:1234`.
+
 7. **Run the application:**
    - **Streamlit:**  
+
      ```bash
      streamlit run src/streamlit_app.py
      # or
      scripts/run_streamlit.bat
      ```
+
    - **PyQt5:**  
+
      ```bash
      python main.py
      ```
@@ -71,22 +87,23 @@ An application for generating, visualizing, and validating UML (PlantUML) and BP
 
 ## Features
 
-  * Generate PlantUML or BPMN XML code from process descriptions
-  * **🆕 Smart PDF Analysis System** - intelligent model capability detection and automatic analysis method selection
-  * Select prompt template and diagram type (sequence, activity, class, component, state, use case, etc.)
-  * Visualize PlantUML diagrams (SVG)
-  * **🆕 PlantUML Code Editing** - edit generated code directly in the application
-  * Automatic PlantUML code verification if SVG generation fails
-  * **🆕 Enhanced Error Verification** - more accurate detection of PlantUML syntax errors
-  * **🆕 GUI Language Selection** - dynamic language switching during application use
-  * AI-based process description validation
-  * Conversation history with the AI model
-  * Support for multiple AI models (local or via API, e.g., OpenAI, Gemini)
-  * Download generated diagrams in PlantUML, SVG, XMI formats
-  * Special options for BPMN diagrams (complexity level, validation rule, output format, domain)
-  * Save queries and model responses to a database (mySQL, PostgreSQL)
-  * **Two interface and prompt languages (English and Polish)**
-  * Sample test prompts for the banking industry
+- Generate PlantUML or BPMN XML code from process descriptions
+- **🆕 BPMN v2 System** - advanced BPMN generation with iterative quality optimization
+- **🆕 Dynamic AI Configuration** - flexible AI provider configuration through environment variables
+- Select prompt template and diagram type (sequence, activity, class, component, state, use case, etc.)
+- Visualize PlantUML diagrams (SVG)
+- **🆕 PlantUML Code Editing** - edit generated code directly in the application
+- **🆕 PDF Integration** - analyze PDF documents and enrich diagram context
+- Automatic PlantUML code verification if SVG generation fails
+- **🆕 Quality Analytics** - detailed quality and performance generation metrics
+- **🆕 Dual Interface** - full functionality in desktop (PyQt5) and web (Streamlit) applications
+- AI-based process description validation
+- Conversation history with the AI model
+- Support for multiple AI models (OpenAI GPT-4, Google Gemini, Anthropic Claude, Ollama)
+- Download generated diagrams in PlantUML, SVG, XMI, BPMN formats
+- **🆕 Real-time Progress Monitoring** - track BPMN optimization progress in real-time
+- **Two interface and prompt languages (English and Polish)**
+- **🆕 Complete Documentation Suite** - comprehensive business and technical documentation
 
 ---
 
@@ -260,6 +277,16 @@ GD_python/
 
 ## 📈 Version History
 
+### v4.0.0 - BPMN v2 Production Release (2025-11-26)
+- ✅ **BPMN v2 System** - advanced BPMN generation with iterative quality optimization
+- ✅ **Dynamic AI Configuration** - flexible AI provider configuration through environment variables
+- ✅ **Complete Documentation Suite** - comprehensive business, technical and architectural documentation
+- ✅ **Quality-driven Generation** - automatic diagram improvement to achieve required quality
+- ✅ **Real-time Progress Monitoring** - track optimization progress in real-time
+- ✅ **Dual Interface Integration** - full BPMN v2 integration in desktop and web applications
+- ✅ **Performance Analytics** - detailed performance and quality generation metrics
+- ✅ **Professional Documentation** - business-grade documentation for stakeholders and technical teams
+
 ### v3.0.0 - Project Reorganization (2025-11-20)
 - ✅ **Complete structure reorganization** - professional organization in src/, tests/, tools/, config/
 - ✅ **Smart PDF Analysis System** - intelligent model capability detection and automatic method selection
@@ -274,11 +301,13 @@ GD_python/
 - GUI Language Selection
 - Enhanced Error Verification
 
-### Planned features (v3.1+):
+### Planned features (v4.1+)
 - Cache system for PDF analysis results
 - Batch processing of multiple files
-- User interface progress bars in GUI
-- Model auto-selection
+- Advanced BPMN templates
+- Integration with Enterprise Architect
+- Multi-language support expansion
+- Performance optimization dashboard
 
 ---
 
@@ -394,6 +423,6 @@ Test file: `tests/fixtures/test_documents/Prompty.txt` - business process exampl
   * [GD 2025-11-20 Streamlit](https://github.com/user-attachments/assets/7486a5de-dda8-4f50-9b9e-5fea016d5cdc)
 ---
 
-**Status**: ✅ **PRODUCTION READY v3.0.0** - Reorganization completed + Smart PDF Analysis System  
-**Last Update**: 2025-11-20  
-**Next Steps**: GUI progress bars, cache system, batch processing
+**Status**: ✅ **BPMN v2 PRODUCTION READY v4.0.0** - Complete system with business and technical documentation  
+**Last Update**: 2025-11-26  
+**Next Steps**: Advanced BPMN templates, Enterprise Architect integration, Multi-language expansion

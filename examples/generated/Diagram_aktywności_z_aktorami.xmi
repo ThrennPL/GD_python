@@ -1,0 +1,1295 @@
+<?xml version="1.0" ?>
+<xmi:XMI xmlns:uml="http://schema.omg.org/spec/UML/2.1" xmlns:xmi="http://schema.omg.org/spec/XMI/2.1" xmi:version="2.1">
+  <xmi:Documentation exporter="Enterprise Architect" exporterVersion="6.5" exporterID="1560"/>
+  <uml:Model xmi:type="uml:Model" name="EA_Model" visibility="public">
+    <packagedElement xmi:type="uml:Package" xmi:id="EAPK_BB4CFDCA_F798_451C_A53C_4CB9D909EAE4" name="Diagram aktywności" visibility="public" ea_localid="1">
+      <packagedElement xmi:type="uml:Activity" xmi:id="EAID_1DFDB03F_CB5B_49DD_B237_21FBFF0B50D6" name="EA_Activity1" visibility="public">
+        <group xmi:type="uml:ActivityPartition" xmi:id="EAID_D90B4EE4_B1DF_47B4_8FD8_277A2462D2D8" name="Klient" visibility="public"/>
+        <group xmi:type="uml:ActivityPartition" xmi:id="EAID_A91CBC07_4558_4A7E_80F1_E866694B10BD" name="System" visibility="public"/>
+        <group xmi:type="uml:ActivityPartition" xmi:id="EAID_DF29F80F_C1B3_4154_B81C_A2C8B0CFDBBD" name="Analityk" visibility="public"/>
+        <node xmi:type="uml:InitialNode" xmi:id="EAID_04307566_078D_4F0D_8F5A_100E568AB242" visibility="public" name="Initial" inPartition="EAID_DF29F80F_C1B3_4154_B81C_A2C8B0CFDBBD">
+          <outgoing xmi:idref="EAID_10EF2510_16EA_4ED8_902A_DADF193F0DCC"/>
+        </node>
+        <node xmi:type="uml:Action" xmi:id="EAID_31115E50_265A_4F4D_A72A_0B53B6A9E4E5" visibility="public" name="Rozpocznij proces weryfikacji tożsamości" inPartition="EAID_D90B4EE4_B1DF_47B4_8FD8_277A2462D2D8">
+          <incoming xmi:idref="EAID_10EF2510_16EA_4ED8_902A_DADF193F0DCC"/>
+          <outgoing xmi:idref="EAID_F6CCE55A_A092_404D_BC60_579118D78127"/>
+        </node>
+        <edge xmi:type="uml:ControlFlow" xmi:id="EAID_10EF2510_16EA_4ED8_902A_DADF193F0DCC" source="EAID_04307566_078D_4F0D_8F5A_100E568AB242" target="EAID_31115E50_265A_4F4D_A72A_0B53B6A9E4E5" visibility="public"/>
+        <node xmi:type="uml:Action" xmi:id="EAID_7BAA42EF_ACE7_4965_8D11_5B1A5CF7140D" visibility="public" name="Prześlij zdjęcie dokumentu tożsamości" inPartition="EAID_D90B4EE4_B1DF_47B4_8FD8_277A2462D2D8">
+          <incoming xmi:idref="EAID_F6CCE55A_A092_404D_BC60_579118D78127"/>
+          <outgoing xmi:idref="EAID_C8113251_E76B_4C0F_B762_54B7BD5E1943"/>
+        </node>
+        <edge xmi:type="uml:ControlFlow" xmi:id="EAID_F6CCE55A_A092_404D_BC60_579118D78127" source="EAID_31115E50_265A_4F4D_A72A_0B53B6A9E4E5" target="EAID_7BAA42EF_ACE7_4965_8D11_5B1A5CF7140D" visibility="public"/>
+        <node xmi:type="uml:Action" xmi:id="EAID_BDB68278_E6A9_4756_A270_703808AB4B7F" visibility="public" name="Prześlij selfie" inPartition="EAID_D90B4EE4_B1DF_47B4_8FD8_277A2462D2D8">
+          <incoming xmi:idref="EAID_C8113251_E76B_4C0F_B762_54B7BD5E1943"/>
+          <outgoing xmi:idref="EAID_0E58FA35_6697_4C4D_ABC6_FF48585B38EB"/>
+        </node>
+        <edge xmi:type="uml:ControlFlow" xmi:id="EAID_C8113251_E76B_4C0F_B762_54B7BD5E1943" source="EAID_7BAA42EF_ACE7_4965_8D11_5B1A5CF7140D" target="EAID_BDB68278_E6A9_4756_A270_703808AB4B7F" visibility="public"/>
+        <node xmi:type="uml:Action" xmi:id="EAID_F337381E_2E13_422F_8B82_60DA1C8906FE" visibility="public" name="Odczyt danych z dokumentu (OCR)" inPartition="EAID_A91CBC07_4558_4A7E_80F1_E866694B10BD">
+          <incoming xmi:idref="EAID_0E58FA35_6697_4C4D_ABC6_FF48585B38EB"/>
+          <outgoing xmi:idref="EAID_3A8890A4_4897_4860_A73B_6D6E30A7FE41"/>
+        </node>
+        <edge xmi:type="uml:ControlFlow" xmi:id="EAID_0E58FA35_6697_4C4D_ABC6_FF48585B38EB" source="EAID_BDB68278_E6A9_4756_A270_703808AB4B7F" target="EAID_F337381E_2E13_422F_8B82_60DA1C8906FE" visibility="public"/>
+        <node xmi:type="uml:DecisionNode" xmi:id="EAID_FC4ED8A2_404E_4B97_85E0_1F26FED4FFDA" visibility="public" name="OCR odczytał dane?" inPartition="EAID_A91CBC07_4558_4A7E_80F1_E866694B10BD">
+          <incoming xmi:idref="EAID_3A8890A4_4897_4860_A73B_6D6E30A7FE41"/>
+          <outgoing xmi:idref="EAID_975CA945_3587_4DD4_ADE1_450456812F41"/>
+          <outgoing xmi:idref="EAID_E5C2641A_D1E3_4745_A63D_EDB961448B21"/>
+        </node>
+        <edge xmi:type="uml:ControlFlow" xmi:id="EAID_3A8890A4_4897_4860_A73B_6D6E30A7FE41" source="EAID_F337381E_2E13_422F_8B82_60DA1C8906FE" target="EAID_FC4ED8A2_404E_4B97_85E0_1F26FED4FFDA" visibility="public"/>
+        <node xmi:type="uml:Action" xmi:id="EAID_D7B46D8B_25C1_4FE7_B3AA_FE37FF0D8D3A" visibility="public" name="Porównaj selfie z dokumentem (biometria)" inPartition="EAID_A91CBC07_4558_4A7E_80F1_E866694B10BD">
+          <incoming xmi:idref="EAID_975CA945_3587_4DD4_ADE1_450456812F41"/>
+          <outgoing xmi:idref="EAID_7030B974_7344_4900_92F2_F82FFB50E55D"/>
+        </node>
+        <edge xmi:type="uml:ControlFlow" xmi:id="EAID_975CA945_3587_4DD4_ADE1_450456812F41" source="EAID_FC4ED8A2_404E_4B97_85E0_1F26FED4FFDA" target="EAID_D7B46D8B_25C1_4FE7_B3AA_FE37FF0D8D3A" visibility="public"/>
+        <node xmi:type="uml:DecisionNode" xmi:id="EAID_3ED115A3_E06F_4CCA_B441_2AD2476CA885" visibility="public" name="Weryfikacja biometryczna pozytywna?" inPartition="EAID_A91CBC07_4558_4A7E_80F1_E866694B10BD">
+          <incoming xmi:idref="EAID_7030B974_7344_4900_92F2_F82FFB50E55D"/>
+          <outgoing xmi:idref="EAID_071B711D_9645_4ECD_B370_B87D0D8D172B"/>
+        </node>
+        <edge xmi:type="uml:ControlFlow" xmi:id="EAID_7030B974_7344_4900_92F2_F82FFB50E55D" source="EAID_D7B46D8B_25C1_4FE7_B3AA_FE37FF0D8D3A" target="EAID_3ED115A3_E06F_4CCA_B441_2AD2476CA885" visibility="public"/>
+        <node xmi:type="uml:Action" xmi:id="EAID_C2CE03C8_A002_4B73_B9BB_195927CD05E9" visibility="public" name="Weryfikacja biometryczna negatywna" inPartition="EAID_A91CBC07_4558_4A7E_80F1_E866694B10BD">
+          <incoming xmi:idref="EAID_071B711D_9645_4ECD_B370_B87D0D8D172B"/>
+          <outgoing xmi:idref="EAID_0A0ACD4E_9D00_42E6_809D_996852D06A9A"/>
+        </node>
+        <edge xmi:type="uml:ControlFlow" xmi:id="EAID_071B711D_9645_4ECD_B370_B87D0D8D172B" source="EAID_3ED115A3_E06F_4CCA_B441_2AD2476CA885" target="EAID_C2CE03C8_A002_4B73_B9BB_195927CD05E9" visibility="public" name="nie"/>
+        <node xmi:type="uml:Action" xmi:id="EAID_D4C9F20A_7C12_4CD5_9C8B_8ADAD051E8CE" visibility="public" name="Manualna weryfikacja tożsamości" inPartition="EAID_DF29F80F_C1B3_4154_B81C_A2C8B0CFDBBD">
+          <incoming xmi:idref="EAID_0A0ACD4E_9D00_42E6_809D_996852D06A9A"/>
+          <outgoing xmi:idref="EAID_B129C736_C76E_4CD8_83E3_8CD8CCFDBC13"/>
+        </node>
+        <edge xmi:type="uml:ControlFlow" xmi:id="EAID_0A0ACD4E_9D00_42E6_809D_996852D06A9A" source="EAID_C2CE03C8_A002_4B73_B9BB_195927CD05E9" target="EAID_D4C9F20A_7C12_4CD5_9C8B_8ADAD051E8CE" visibility="public"/>
+        <node xmi:type="uml:DecisionNode" xmi:id="EAID_1F1293EA_7EEB_4E1B_B2C6_DA6AAD6F0D14" visibility="public" name="Manualna weryfikacja pozytywna?" inPartition="EAID_DF29F80F_C1B3_4154_B81C_A2C8B0CFDBBD">
+          <incoming xmi:idref="EAID_B129C736_C76E_4CD8_83E3_8CD8CCFDBC13"/>
+          <outgoing xmi:idref="EAID_BA7A25D3_C2C4_4530_B1B9_2F52D02AA7EA"/>
+        </node>
+        <edge xmi:type="uml:ControlFlow" xmi:id="EAID_B129C736_C76E_4CD8_83E3_8CD8CCFDBC13" source="EAID_D4C9F20A_7C12_4CD5_9C8B_8ADAD051E8CE" target="EAID_1F1293EA_7EEB_4E1B_B2C6_DA6AAD6F0D14" visibility="public"/>
+        <node xmi:type="uml:Action" xmi:id="EAID_EE572EEB_7523_469F_9280_FCB41A74F401" visibility="public" name="Konto zablokowane" inPartition="EAID_A91CBC07_4558_4A7E_80F1_E866694B10BD">
+          <incoming xmi:idref="EAID_BA7A25D3_C2C4_4530_B1B9_2F52D02AA7EA"/>
+          <outgoing xmi:idref="EAID_D547CB11_938B_4A7B_B738_E8C4F9A9B553"/>
+        </node>
+        <edge xmi:type="uml:ControlFlow" xmi:id="EAID_BA7A25D3_C2C4_4530_B1B9_2F52D02AA7EA" source="EAID_1F1293EA_7EEB_4E1B_B2C6_DA6AAD6F0D14" target="EAID_EE572EEB_7523_469F_9280_FCB41A74F401" visibility="public" name="nie"/>
+        <node xmi:type="uml:Action" xmi:id="EAID_55A78430_3759_49D4_A617_17939A9E3880" visibility="public" name="Blokada konta - Niepowodzenie" inPartition="EAID_A91CBC07_4558_4A7E_80F1_E866694B10BD">
+          <incoming xmi:idref="EAID_D547CB11_938B_4A7B_B738_E8C4F9A9B553"/>
+          <outgoing xmi:idref="EAID_184F3D3E_9A70_4048_A500_356A9ACFE67F"/>
+        </node>
+        <edge xmi:type="uml:ControlFlow" xmi:id="EAID_D547CB11_938B_4A7B_B738_E8C4F9A9B553" source="EAID_EE572EEB_7523_469F_9280_FCB41A74F401" target="EAID_55A78430_3759_49D4_A617_17939A9E3880" visibility="public"/>
+        <node xmi:type="uml:Action" xmi:id="EAID_1D69BBE8_2D67_44F1_8CB3_35F7CD5DEC24" visibility="public" name="Wyślij powiadomienie o blokadzie" inPartition="EAID_A91CBC07_4558_4A7E_80F1_E866694B10BD">
+          <incoming xmi:idref="EAID_184F3D3E_9A70_4048_A500_356A9ACFE67F"/>
+          <outgoing xmi:idref="EAID_7A4889F2_2287_48A7_88A7_8356492AAAD7"/>
+        </node>
+        <edge xmi:type="uml:ControlFlow" xmi:id="EAID_184F3D3E_9A70_4048_A500_356A9ACFE67F" source="EAID_55A78430_3759_49D4_A617_17939A9E3880" target="EAID_1D69BBE8_2D67_44F1_8CB3_35F7CD5DEC24" visibility="public"/>
+        <node xmi:type="uml:ActivityFinalNode" xmi:id="EAID_72ED00FA_D5CB_44B3_B00B_22F65FCCE7BD" visibility="public" name="Final" inPartition="EAID_A91CBC07_4558_4A7E_80F1_E866694B10BD">
+          <incoming xmi:idref="EAID_7A4889F2_2287_48A7_88A7_8356492AAAD7"/>
+          <incoming xmi:idref="EAID_73711D91_4DE2_4BD0_A25A_85742F614B4F"/>
+          <incoming xmi:idref="EAID_F6EED6C7_D86C_4608_A1FD_576568F6BAE8"/>
+          <incoming xmi:idref="EAID_83AA5D0E_2136_42ED_ACFB_18A8C6634F68"/>
+        </node>
+        <node xmi:type="uml:Action" xmi:id="EAID_48F5EF16_0F71_4D13_A3F2_1CFEED91D715" visibility="public" name="Konto aktywowane" inPartition="EAID_A91CBC07_4558_4A7E_80F1_E866694B10BD">
+          <outgoing xmi:idref="EAID_BEB657A3_6F16_4E1D_B156_779B9B92CBA9"/>
+        </node>
+        <node xmi:type="uml:Action" xmi:id="EAID_C93418AA_FF9A_4F31_A5BD_8EC075E1FA72" visibility="public" name="Aktywacja konta - Sukces" inPartition="EAID_A91CBC07_4558_4A7E_80F1_E866694B10BD">
+          <incoming xmi:idref="EAID_BEB657A3_6F16_4E1D_B156_779B9B92CBA9"/>
+          <outgoing xmi:idref="EAID_245C2C81_B0D4_4844_8DF8_DE95A35ADF3A"/>
+        </node>
+        <edge xmi:type="uml:ControlFlow" xmi:id="EAID_BEB657A3_6F16_4E1D_B156_779B9B92CBA9" source="EAID_48F5EF16_0F71_4D13_A3F2_1CFEED91D715" target="EAID_C93418AA_FF9A_4F31_A5BD_8EC075E1FA72" visibility="public"/>
+        <node xmi:type="uml:Action" xmi:id="EAID_3CEB7FEB_E633_4F7B_985D_0E3181B3122B" visibility="public" name="Wyślij powiadomienie o aktywacji" inPartition="EAID_A91CBC07_4558_4A7E_80F1_E866694B10BD">
+          <incoming xmi:idref="EAID_245C2C81_B0D4_4844_8DF8_DE95A35ADF3A"/>
+          <outgoing xmi:idref="EAID_73711D91_4DE2_4BD0_A25A_85742F614B4F"/>
+        </node>
+        <edge xmi:type="uml:ControlFlow" xmi:id="EAID_245C2C81_B0D4_4844_8DF8_DE95A35ADF3A" source="EAID_C93418AA_FF9A_4F31_A5BD_8EC075E1FA72" target="EAID_3CEB7FEB_E633_4F7B_985D_0E3181B3122B" visibility="public"/>
+        <node xmi:type="uml:Action" xmi:id="EAID_5D580507_ECA6_4A48_A0F7_05D7D985BE96" visibility="public" name="OCR nie odczytał danych z dokumentu" inPartition="EAID_D90B4EE4_B1DF_47B4_8FD8_277A2462D2D8">
+          <incoming xmi:idref="EAID_E5C2641A_D1E3_4745_A63D_EDB961448B21"/>
+          <outgoing xmi:idref="EAID_3D32D09A_02D5_4EFA_A81F_F728DD95388A"/>
+        </node>
+        <edge xmi:type="uml:ControlFlow" xmi:id="EAID_E5C2641A_D1E3_4745_A63D_EDB961448B21" source="EAID_FC4ED8A2_404E_4B97_85E0_1F26FED4FFDA" target="EAID_5D580507_ECA6_4A48_A0F7_05D7D985BE96" visibility="public" name="nie"/>
+        <ownedComment xmi:type="uml:Comment" xmi:id="EAID_3E9239D2_2D9D_434A_9169_FFC5A372C9B3" visibility="public" name="Sprawdź jakość zdjęcia i sprób...">
+          <body>Sprawdź jakość zdjęcia i spróbuj ponownie. \nKlient ma możliwość ponownego przesłania zdjęcia.</body>
+          <annotatedElement xmi:idref="EAID_5D580507_ECA6_4A48_A0F7_05D7D985BE96"/>
+        </ownedComment>
+        <node xmi:type="uml:Action" xmi:id="EAID_A9304D6E_2AA0_4958_A359_FCE83FCC52E7" visibility="public" name="Ponowne przesłanie zdjęcia dokumentu tożsamości" inPartition="EAID_D90B4EE4_B1DF_47B4_8FD8_277A2462D2D8">
+          <incoming xmi:idref="EAID_3D32D09A_02D5_4EFA_A81F_F728DD95388A"/>
+          <outgoing xmi:idref="EAID_90B41ED3_DFD6_40CB_9373_73AEACEA222D"/>
+        </node>
+        <edge xmi:type="uml:ControlFlow" xmi:id="EAID_3D32D09A_02D5_4EFA_A81F_F728DD95388A" source="EAID_5D580507_ECA6_4A48_A0F7_05D7D985BE96" target="EAID_A9304D6E_2AA0_4958_A359_FCE83FCC52E7" visibility="public"/>
+        <node xmi:type="uml:Action" xmi:id="EAID_3C9F82AA_E88F_4F21_A77D_33EFAD77351A" visibility="public" name="Odczyt danych z dokumentu (OCR)" inPartition="EAID_A91CBC07_4558_4A7E_80F1_E866694B10BD">
+          <incoming xmi:idref="EAID_90B41ED3_DFD6_40CB_9373_73AEACEA222D"/>
+          <outgoing xmi:idref="EAID_2FE640FC_154F_40E9_8599_AE8FF801B60B"/>
+        </node>
+        <edge xmi:type="uml:ControlFlow" xmi:id="EAID_90B41ED3_DFD6_40CB_9373_73AEACEA222D" source="EAID_A9304D6E_2AA0_4958_A359_FCE83FCC52E7" target="EAID_3C9F82AA_E88F_4F21_A77D_33EFAD77351A" visibility="public"/>
+        <node xmi:type="uml:Action" xmi:id="EAID_E50CA686_DE0E_4C98_BADE_FDC077F95B7B" visibility="public" name="Porównaj selfie z dokumentem (biometria)" inPartition="EAID_A91CBC07_4558_4A7E_80F1_E866694B10BD">
+          <incoming xmi:idref="EAID_2FE640FC_154F_40E9_8599_AE8FF801B60B"/>
+          <outgoing xmi:idref="EAID_C8AD703C_8C26_42CB_B3D6_11CF5BD330EF"/>
+        </node>
+        <edge xmi:type="uml:ControlFlow" xmi:id="EAID_2FE640FC_154F_40E9_8599_AE8FF801B60B" source="EAID_3C9F82AA_E88F_4F21_A77D_33EFAD77351A" target="EAID_E50CA686_DE0E_4C98_BADE_FDC077F95B7B" visibility="public"/>
+        <node xmi:type="uml:DecisionNode" xmi:id="EAID_BE75B16A_AE40_4BB8_9D96_F3F2F1E40840" visibility="public" name="Weryfikacja biometryczna pozytywna?" inPartition="EAID_A91CBC07_4558_4A7E_80F1_E866694B10BD">
+          <incoming xmi:idref="EAID_C8AD703C_8C26_42CB_B3D6_11CF5BD330EF"/>
+          <outgoing xmi:idref="EAID_8FD233C5_01A4_4056_AC87_7DCA20E821AE"/>
+        </node>
+        <edge xmi:type="uml:ControlFlow" xmi:id="EAID_C8AD703C_8C26_42CB_B3D6_11CF5BD330EF" source="EAID_E50CA686_DE0E_4C98_BADE_FDC077F95B7B" target="EAID_BE75B16A_AE40_4BB8_9D96_F3F2F1E40840" visibility="public"/>
+        <node xmi:type="uml:Action" xmi:id="EAID_9B328A34_8675_484D_906E_DB26450D520B" visibility="public" name="Weryfikacja biometryczna negatywna" inPartition="EAID_A91CBC07_4558_4A7E_80F1_E866694B10BD">
+          <incoming xmi:idref="EAID_8FD233C5_01A4_4056_AC87_7DCA20E821AE"/>
+          <outgoing xmi:idref="EAID_F960A59B_CBB1_405D_AC38_F7BEB2E66977"/>
+        </node>
+        <edge xmi:type="uml:ControlFlow" xmi:id="EAID_8FD233C5_01A4_4056_AC87_7DCA20E821AE" source="EAID_BE75B16A_AE40_4BB8_9D96_F3F2F1E40840" target="EAID_9B328A34_8675_484D_906E_DB26450D520B" visibility="public" name="nie"/>
+        <node xmi:type="uml:Action" xmi:id="EAID_98FBD00D_1EE0_4CE9_9D0F_FD61C5A037ED" visibility="public" name="Manualna weryfikacja tożsamości" inPartition="EAID_DF29F80F_C1B3_4154_B81C_A2C8B0CFDBBD">
+          <incoming xmi:idref="EAID_F960A59B_CBB1_405D_AC38_F7BEB2E66977"/>
+          <outgoing xmi:idref="EAID_EA4C2989_F0DF_40B7_992D_2EFD67105974"/>
+        </node>
+        <edge xmi:type="uml:ControlFlow" xmi:id="EAID_F960A59B_CBB1_405D_AC38_F7BEB2E66977" source="EAID_9B328A34_8675_484D_906E_DB26450D520B" target="EAID_98FBD00D_1EE0_4CE9_9D0F_FD61C5A037ED" visibility="public"/>
+        <node xmi:type="uml:DecisionNode" xmi:id="EAID_F2876727_05FB_4FAC_97B8_6235D322710D" visibility="public" name="Manualna weryfikacja pozytywna?" inPartition="EAID_DF29F80F_C1B3_4154_B81C_A2C8B0CFDBBD">
+          <incoming xmi:idref="EAID_EA4C2989_F0DF_40B7_992D_2EFD67105974"/>
+          <outgoing xmi:idref="EAID_152F043B_1451_4161_9447_595DFB4B04DA"/>
+        </node>
+        <edge xmi:type="uml:ControlFlow" xmi:id="EAID_EA4C2989_F0DF_40B7_992D_2EFD67105974" source="EAID_98FBD00D_1EE0_4CE9_9D0F_FD61C5A037ED" target="EAID_F2876727_05FB_4FAC_97B8_6235D322710D" visibility="public"/>
+        <node xmi:type="uml:Action" xmi:id="EAID_7BDD6E78_FC98_425C_8C75_E6F839E2188F" visibility="public" name="Konto zablokowane" inPartition="EAID_A91CBC07_4558_4A7E_80F1_E866694B10BD">
+          <incoming xmi:idref="EAID_152F043B_1451_4161_9447_595DFB4B04DA"/>
+          <outgoing xmi:idref="EAID_31F2C3C6_2D67_4562_B1BF_5B9C87E328BB"/>
+        </node>
+        <edge xmi:type="uml:ControlFlow" xmi:id="EAID_152F043B_1451_4161_9447_595DFB4B04DA" source="EAID_F2876727_05FB_4FAC_97B8_6235D322710D" target="EAID_7BDD6E78_FC98_425C_8C75_E6F839E2188F" visibility="public" name="nie"/>
+        <node xmi:type="uml:Action" xmi:id="EAID_986B2223_FA37_4758_B2D6_F2EAE7293A19" visibility="public" name="Blokada konta - Niepowodzenie" inPartition="EAID_A91CBC07_4558_4A7E_80F1_E866694B10BD">
+          <incoming xmi:idref="EAID_31F2C3C6_2D67_4562_B1BF_5B9C87E328BB"/>
+          <outgoing xmi:idref="EAID_55765A97_7BC5_42EF_8CE4_6643D4E4CF7D"/>
+        </node>
+        <edge xmi:type="uml:ControlFlow" xmi:id="EAID_31F2C3C6_2D67_4562_B1BF_5B9C87E328BB" source="EAID_7BDD6E78_FC98_425C_8C75_E6F839E2188F" target="EAID_986B2223_FA37_4758_B2D6_F2EAE7293A19" visibility="public"/>
+        <node xmi:type="uml:Action" xmi:id="EAID_85CD3A1A_7ACE_4193_B1E7_02DAE1FCFB74" visibility="public" name="Wyślij powiadomienie o blokadzie" inPartition="EAID_A91CBC07_4558_4A7E_80F1_E866694B10BD">
+          <incoming xmi:idref="EAID_55765A97_7BC5_42EF_8CE4_6643D4E4CF7D"/>
+          <outgoing xmi:idref="EAID_F6EED6C7_D86C_4608_A1FD_576568F6BAE8"/>
+        </node>
+        <edge xmi:type="uml:ControlFlow" xmi:id="EAID_55765A97_7BC5_42EF_8CE4_6643D4E4CF7D" source="EAID_986B2223_FA37_4758_B2D6_F2EAE7293A19" target="EAID_85CD3A1A_7ACE_4193_B1E7_02DAE1FCFB74" visibility="public"/>
+        <node xmi:type="uml:Action" xmi:id="EAID_7A7A593B_0F29_40FC_A39B_1D88FB2A18F3" visibility="public" name="Konto aktywowane" inPartition="EAID_A91CBC07_4558_4A7E_80F1_E866694B10BD">
+          <outgoing xmi:idref="EAID_9C252453_5309_43B9_A923_8DA69F28B7FF"/>
+        </node>
+        <node xmi:type="uml:Action" xmi:id="EAID_FA49A6D6_4DA4_4071_BB32_3A5580DE4369" visibility="public" name="Aktywacja konta - Sukces" inPartition="EAID_A91CBC07_4558_4A7E_80F1_E866694B10BD">
+          <incoming xmi:idref="EAID_9C252453_5309_43B9_A923_8DA69F28B7FF"/>
+          <outgoing xmi:idref="EAID_4B812CFF_B0E1_4471_9047_BD2FF609AEE9"/>
+        </node>
+        <edge xmi:type="uml:ControlFlow" xmi:id="EAID_9C252453_5309_43B9_A923_8DA69F28B7FF" source="EAID_7A7A593B_0F29_40FC_A39B_1D88FB2A18F3" target="EAID_FA49A6D6_4DA4_4071_BB32_3A5580DE4369" visibility="public"/>
+        <node xmi:type="uml:Action" xmi:id="EAID_C6900036_7274_4F4C_9C42_6CBFEE1B65E5" visibility="public" name="Wyślij powiadomienie o aktywacji" inPartition="EAID_A91CBC07_4558_4A7E_80F1_E866694B10BD">
+          <incoming xmi:idref="EAID_4B812CFF_B0E1_4471_9047_BD2FF609AEE9"/>
+          <outgoing xmi:idref="EAID_83AA5D0E_2136_42ED_ACFB_18A8C6634F68"/>
+        </node>
+        <edge xmi:type="uml:ControlFlow" xmi:id="EAID_4B812CFF_B0E1_4471_9047_BD2FF609AEE9" source="EAID_FA49A6D6_4DA4_4071_BB32_3A5580DE4369" target="EAID_C6900036_7274_4F4C_9C42_6CBFEE1B65E5" visibility="public"/>
+        <edge xmi:type="uml:ControlFlow" xmi:id="EAID_7A4889F2_2287_48A7_88A7_8356492AAAD7" source="EAID_1D69BBE8_2D67_44F1_8CB3_35F7CD5DEC24" target="EAID_72ED00FA_D5CB_44B3_B00B_22F65FCCE7BD" visibility="public"/>
+        <edge xmi:type="uml:ControlFlow" xmi:id="EAID_73711D91_4DE2_4BD0_A25A_85742F614B4F" source="EAID_3CEB7FEB_E633_4F7B_985D_0E3181B3122B" target="EAID_72ED00FA_D5CB_44B3_B00B_22F65FCCE7BD" visibility="public"/>
+        <edge xmi:type="uml:ControlFlow" xmi:id="EAID_F6EED6C7_D86C_4608_A1FD_576568F6BAE8" source="EAID_85CD3A1A_7ACE_4193_B1E7_02DAE1FCFB74" target="EAID_72ED00FA_D5CB_44B3_B00B_22F65FCCE7BD" visibility="public"/>
+        <edge xmi:type="uml:ControlFlow" xmi:id="EAID_83AA5D0E_2136_42ED_ACFB_18A8C6634F68" source="EAID_C6900036_7274_4F4C_9C42_6CBFEE1B65E5" target="EAID_72ED00FA_D5CB_44B3_B00B_22F65FCCE7BD" visibility="public"/>
+      </packagedElement>
+    </packagedElement>
+  </uml:Model>
+  <xmi:Extension extender="Enterprise Architect" extenderID="6.5">
+    <packages>
+      <package xmi:idref="EAPK_BB4CFDCA_F798_451C_A53C_4CB9D909EAE4">
+        <visibility value="public"/>
+      </package>
+    </packages>
+    <elements>
+      <element xmi:idref="EAPK_BB4CFDCA_F798_451C_A53C_4CB9D909EAE4" xmi:type="uml:Package" name="Diagram aktywności" scope="public">
+        <model package2="EAID_BB4CFDCA" package="EAPK_25CB1803_12A5_47b7_BF59_0C80F57AA528" tpos="0" ea_localid="1" ea_eleType="package"/>
+      </element>
+      <element xmi:idref="EAID_D90B4EE4_B1DF_47B4_8FD8_277A2462D2D8" xmi:type="uml:ActivityPartition" name="Klient" scope="public">
+        <model package="EAPK_BB4CFDCA_F798_451C_A53C_4CB9D909EAE4" tpos="0" ea_localid="2" ea_eleType="element"/>
+        <properties isSpecification="false" sType="ActivityPartition" nType="0" scope="public"/>
+      </element>
+      <element xmi:idref="EAID_A91CBC07_4558_4A7E_80F1_E866694B10BD" xmi:type="uml:ActivityPartition" name="System" scope="public">
+        <model package="EAPK_BB4CFDCA_F798_451C_A53C_4CB9D909EAE4" tpos="0" ea_localid="3" ea_eleType="element"/>
+        <properties isSpecification="false" sType="ActivityPartition" nType="0" scope="public"/>
+      </element>
+      <element xmi:idref="EAID_DF29F80F_C1B3_4154_B81C_A2C8B0CFDBBD" xmi:type="uml:ActivityPartition" name="Analityk" scope="public">
+        <model package="EAPK_BB4CFDCA_F798_451C_A53C_4CB9D909EAE4" tpos="0" ea_localid="4" ea_eleType="element"/>
+        <properties isSpecification="false" sType="ActivityPartition" nType="0" scope="public"/>
+      </element>
+      <element xmi:idref="EAID_04307566_078D_4F0D_8F5A_100E568AB242">
+        <model package="EAPK_BB4CFDCA_F798_451C_A53C_4CB9D909EAE4" tpos="0" ea_localid="5" ea_eleType="element" owner="EAID_DF29F80F_C1B3_4154_B81C_A2C8B0CFDBBD"/>
+        <properties isSpecification="false" sType="StateNode" nType="100" scope="public" name="Initial"/>
+      </element>
+      <element xmi:idref="EAID_31115E50_265A_4F4D_A72A_0B53B6A9E4E5">
+        <model package="EAPK_BB4CFDCA_F798_451C_A53C_4CB9D909EAE4" tpos="0" ea_localid="6" ea_eleType="element" owner="EAID_D90B4EE4_B1DF_47B4_8FD8_277A2462D2D8"/>
+        <properties isSpecification="false" sType="Action" nType="0" scope="public" name="Rozpocznij proces weryfikacji tożsamości"/>
+      </element>
+      <element xmi:idref="EAID_7BAA42EF_ACE7_4965_8D11_5B1A5CF7140D">
+        <model package="EAPK_BB4CFDCA_F798_451C_A53C_4CB9D909EAE4" tpos="0" ea_localid="7" ea_eleType="element" owner="EAID_D90B4EE4_B1DF_47B4_8FD8_277A2462D2D8"/>
+        <properties isSpecification="false" sType="Action" nType="0" scope="public" name="Prześlij zdjęcie dokumentu tożsamości"/>
+      </element>
+      <element xmi:idref="EAID_BDB68278_E6A9_4756_A270_703808AB4B7F">
+        <model package="EAPK_BB4CFDCA_F798_451C_A53C_4CB9D909EAE4" tpos="0" ea_localid="8" ea_eleType="element" owner="EAID_D90B4EE4_B1DF_47B4_8FD8_277A2462D2D8"/>
+        <properties isSpecification="false" sType="Action" nType="0" scope="public" name="Prześlij selfie"/>
+      </element>
+      <element xmi:idref="EAID_F337381E_2E13_422F_8B82_60DA1C8906FE">
+        <model package="EAPK_BB4CFDCA_F798_451C_A53C_4CB9D909EAE4" tpos="0" ea_localid="9" ea_eleType="element" owner="EAID_A91CBC07_4558_4A7E_80F1_E866694B10BD"/>
+        <properties isSpecification="false" sType="Action" nType="0" scope="public" name="Odczyt danych z dokumentu (OCR)"/>
+      </element>
+      <element xmi:idref="EAID_FC4ED8A2_404E_4B97_85E0_1F26FED4FFDA">
+        <model package="EAPK_BB4CFDCA_F798_451C_A53C_4CB9D909EAE4" tpos="0" ea_localid="10" ea_eleType="element" owner="EAID_A91CBC07_4558_4A7E_80F1_E866694B10BD"/>
+        <properties isSpecification="false" sType="Decision" nType="131" scope="public" name="OCR odczytał dane?"/>
+      </element>
+      <element xmi:idref="EAID_D7B46D8B_25C1_4FE7_B3AA_FE37FF0D8D3A">
+        <model package="EAPK_BB4CFDCA_F798_451C_A53C_4CB9D909EAE4" tpos="0" ea_localid="11" ea_eleType="element" owner="EAID_A91CBC07_4558_4A7E_80F1_E866694B10BD"/>
+        <properties isSpecification="false" sType="Action" nType="0" scope="public" name="Porównaj selfie z dokumentem (biometria)"/>
+      </element>
+      <element xmi:idref="EAID_3ED115A3_E06F_4CCA_B441_2AD2476CA885">
+        <model package="EAPK_BB4CFDCA_F798_451C_A53C_4CB9D909EAE4" tpos="0" ea_localid="12" ea_eleType="element" owner="EAID_A91CBC07_4558_4A7E_80F1_E866694B10BD"/>
+        <properties isSpecification="false" sType="Decision" nType="131" scope="public" name="Weryfikacja biometryczna pozytywna?"/>
+      </element>
+      <element xmi:idref="EAID_C2CE03C8_A002_4B73_B9BB_195927CD05E9">
+        <model package="EAPK_BB4CFDCA_F798_451C_A53C_4CB9D909EAE4" tpos="0" ea_localid="13" ea_eleType="element" owner="EAID_A91CBC07_4558_4A7E_80F1_E866694B10BD"/>
+        <properties isSpecification="false" sType="Action" nType="0" scope="public" name="Weryfikacja biometryczna negatywna"/>
+      </element>
+      <element xmi:idref="EAID_D4C9F20A_7C12_4CD5_9C8B_8ADAD051E8CE">
+        <model package="EAPK_BB4CFDCA_F798_451C_A53C_4CB9D909EAE4" tpos="0" ea_localid="14" ea_eleType="element" owner="EAID_DF29F80F_C1B3_4154_B81C_A2C8B0CFDBBD"/>
+        <properties isSpecification="false" sType="Action" nType="0" scope="public" name="Manualna weryfikacja tożsamości"/>
+      </element>
+      <element xmi:idref="EAID_1F1293EA_7EEB_4E1B_B2C6_DA6AAD6F0D14">
+        <model package="EAPK_BB4CFDCA_F798_451C_A53C_4CB9D909EAE4" tpos="0" ea_localid="15" ea_eleType="element" owner="EAID_DF29F80F_C1B3_4154_B81C_A2C8B0CFDBBD"/>
+        <properties isSpecification="false" sType="Decision" nType="131" scope="public" name="Manualna weryfikacja pozytywna?"/>
+      </element>
+      <element xmi:idref="EAID_EE572EEB_7523_469F_9280_FCB41A74F401">
+        <model package="EAPK_BB4CFDCA_F798_451C_A53C_4CB9D909EAE4" tpos="0" ea_localid="16" ea_eleType="element" owner="EAID_A91CBC07_4558_4A7E_80F1_E866694B10BD"/>
+        <properties isSpecification="false" sType="Action" nType="0" scope="public" name="Konto zablokowane"/>
+      </element>
+      <element xmi:idref="EAID_55A78430_3759_49D4_A617_17939A9E3880">
+        <model package="EAPK_BB4CFDCA_F798_451C_A53C_4CB9D909EAE4" tpos="0" ea_localid="17" ea_eleType="element" owner="EAID_A91CBC07_4558_4A7E_80F1_E866694B10BD"/>
+        <properties isSpecification="false" sType="Action" nType="0" scope="public" name="Blokada konta - Niepowodzenie"/>
+      </element>
+      <element xmi:idref="EAID_1D69BBE8_2D67_44F1_8CB3_35F7CD5DEC24">
+        <model package="EAPK_BB4CFDCA_F798_451C_A53C_4CB9D909EAE4" tpos="0" ea_localid="18" ea_eleType="element" owner="EAID_A91CBC07_4558_4A7E_80F1_E866694B10BD"/>
+        <properties isSpecification="false" sType="Action" nType="0" scope="public" name="Wyślij powiadomienie o blokadzie"/>
+      </element>
+      <element xmi:idref="EAID_72ED00FA_D5CB_44B3_B00B_22F65FCCE7BD">
+        <model package="EAPK_BB4CFDCA_F798_451C_A53C_4CB9D909EAE4" tpos="0" ea_localid="19" ea_eleType="element" owner="EAID_A91CBC07_4558_4A7E_80F1_E866694B10BD"/>
+        <properties isSpecification="false" sType="StateNode" nType="101" scope="public" name="Final"/>
+      </element>
+      <element xmi:idref="EAID_48F5EF16_0F71_4D13_A3F2_1CFEED91D715">
+        <model package="EAPK_BB4CFDCA_F798_451C_A53C_4CB9D909EAE4" tpos="0" ea_localid="20" ea_eleType="element" owner="EAID_A91CBC07_4558_4A7E_80F1_E866694B10BD"/>
+        <properties isSpecification="false" sType="Action" nType="0" scope="public" name="Konto aktywowane"/>
+      </element>
+      <element xmi:idref="EAID_C93418AA_FF9A_4F31_A5BD_8EC075E1FA72">
+        <model package="EAPK_BB4CFDCA_F798_451C_A53C_4CB9D909EAE4" tpos="0" ea_localid="21" ea_eleType="element" owner="EAID_A91CBC07_4558_4A7E_80F1_E866694B10BD"/>
+        <properties isSpecification="false" sType="Action" nType="0" scope="public" name="Aktywacja konta - Sukces"/>
+      </element>
+      <element xmi:idref="EAID_3CEB7FEB_E633_4F7B_985D_0E3181B3122B">
+        <model package="EAPK_BB4CFDCA_F798_451C_A53C_4CB9D909EAE4" tpos="0" ea_localid="22" ea_eleType="element" owner="EAID_A91CBC07_4558_4A7E_80F1_E866694B10BD"/>
+        <properties isSpecification="false" sType="Action" nType="0" scope="public" name="Wyślij powiadomienie o aktywacji"/>
+      </element>
+      <element xmi:idref="EAID_5D580507_ECA6_4A48_A0F7_05D7D985BE96">
+        <model package="EAPK_BB4CFDCA_F798_451C_A53C_4CB9D909EAE4" tpos="0" ea_localid="23" ea_eleType="element" owner="EAID_D90B4EE4_B1DF_47B4_8FD8_277A2462D2D8"/>
+        <properties isSpecification="false" sType="Action" nType="0" scope="public" name="OCR nie odczytał danych z dokumentu"/>
+      </element>
+      <element xmi:idref="EAID_A9304D6E_2AA0_4958_A359_FCE83FCC52E7">
+        <model package="EAPK_BB4CFDCA_F798_451C_A53C_4CB9D909EAE4" tpos="0" ea_localid="24" ea_eleType="element" owner="EAID_D90B4EE4_B1DF_47B4_8FD8_277A2462D2D8"/>
+        <properties isSpecification="false" sType="Action" nType="0" scope="public" name="Ponowne przesłanie zdjęcia dokumentu tożsamości"/>
+      </element>
+      <element xmi:idref="EAID_3C9F82AA_E88F_4F21_A77D_33EFAD77351A">
+        <model package="EAPK_BB4CFDCA_F798_451C_A53C_4CB9D909EAE4" tpos="0" ea_localid="25" ea_eleType="element" owner="EAID_A91CBC07_4558_4A7E_80F1_E866694B10BD"/>
+        <properties isSpecification="false" sType="Action" nType="0" scope="public" name="Odczyt danych z dokumentu (OCR)"/>
+      </element>
+      <element xmi:idref="EAID_E50CA686_DE0E_4C98_BADE_FDC077F95B7B">
+        <model package="EAPK_BB4CFDCA_F798_451C_A53C_4CB9D909EAE4" tpos="0" ea_localid="26" ea_eleType="element" owner="EAID_A91CBC07_4558_4A7E_80F1_E866694B10BD"/>
+        <properties isSpecification="false" sType="Action" nType="0" scope="public" name="Porównaj selfie z dokumentem (biometria)"/>
+      </element>
+      <element xmi:idref="EAID_BE75B16A_AE40_4BB8_9D96_F3F2F1E40840">
+        <model package="EAPK_BB4CFDCA_F798_451C_A53C_4CB9D909EAE4" tpos="0" ea_localid="27" ea_eleType="element" owner="EAID_A91CBC07_4558_4A7E_80F1_E866694B10BD"/>
+        <properties isSpecification="false" sType="Decision" nType="131" scope="public" name="Weryfikacja biometryczna pozytywna?"/>
+      </element>
+      <element xmi:idref="EAID_9B328A34_8675_484D_906E_DB26450D520B">
+        <model package="EAPK_BB4CFDCA_F798_451C_A53C_4CB9D909EAE4" tpos="0" ea_localid="28" ea_eleType="element" owner="EAID_A91CBC07_4558_4A7E_80F1_E866694B10BD"/>
+        <properties isSpecification="false" sType="Action" nType="0" scope="public" name="Weryfikacja biometryczna negatywna"/>
+      </element>
+      <element xmi:idref="EAID_98FBD00D_1EE0_4CE9_9D0F_FD61C5A037ED">
+        <model package="EAPK_BB4CFDCA_F798_451C_A53C_4CB9D909EAE4" tpos="0" ea_localid="29" ea_eleType="element" owner="EAID_DF29F80F_C1B3_4154_B81C_A2C8B0CFDBBD"/>
+        <properties isSpecification="false" sType="Action" nType="0" scope="public" name="Manualna weryfikacja tożsamości"/>
+      </element>
+      <element xmi:idref="EAID_F2876727_05FB_4FAC_97B8_6235D322710D">
+        <model package="EAPK_BB4CFDCA_F798_451C_A53C_4CB9D909EAE4" tpos="0" ea_localid="30" ea_eleType="element" owner="EAID_DF29F80F_C1B3_4154_B81C_A2C8B0CFDBBD"/>
+        <properties isSpecification="false" sType="Decision" nType="131" scope="public" name="Manualna weryfikacja pozytywna?"/>
+      </element>
+      <element xmi:idref="EAID_7BDD6E78_FC98_425C_8C75_E6F839E2188F">
+        <model package="EAPK_BB4CFDCA_F798_451C_A53C_4CB9D909EAE4" tpos="0" ea_localid="31" ea_eleType="element" owner="EAID_A91CBC07_4558_4A7E_80F1_E866694B10BD"/>
+        <properties isSpecification="false" sType="Action" nType="0" scope="public" name="Konto zablokowane"/>
+      </element>
+      <element xmi:idref="EAID_986B2223_FA37_4758_B2D6_F2EAE7293A19">
+        <model package="EAPK_BB4CFDCA_F798_451C_A53C_4CB9D909EAE4" tpos="0" ea_localid="32" ea_eleType="element" owner="EAID_A91CBC07_4558_4A7E_80F1_E866694B10BD"/>
+        <properties isSpecification="false" sType="Action" nType="0" scope="public" name="Blokada konta - Niepowodzenie"/>
+      </element>
+      <element xmi:idref="EAID_85CD3A1A_7ACE_4193_B1E7_02DAE1FCFB74">
+        <model package="EAPK_BB4CFDCA_F798_451C_A53C_4CB9D909EAE4" tpos="0" ea_localid="33" ea_eleType="element" owner="EAID_A91CBC07_4558_4A7E_80F1_E866694B10BD"/>
+        <properties isSpecification="false" sType="Action" nType="0" scope="public" name="Wyślij powiadomienie o blokadzie"/>
+      </element>
+      <element xmi:idref="EAID_7A7A593B_0F29_40FC_A39B_1D88FB2A18F3">
+        <model package="EAPK_BB4CFDCA_F798_451C_A53C_4CB9D909EAE4" tpos="0" ea_localid="34" ea_eleType="element" owner="EAID_A91CBC07_4558_4A7E_80F1_E866694B10BD"/>
+        <properties isSpecification="false" sType="Action" nType="0" scope="public" name="Konto aktywowane"/>
+      </element>
+      <element xmi:idref="EAID_FA49A6D6_4DA4_4071_BB32_3A5580DE4369">
+        <model package="EAPK_BB4CFDCA_F798_451C_A53C_4CB9D909EAE4" tpos="0" ea_localid="35" ea_eleType="element" owner="EAID_A91CBC07_4558_4A7E_80F1_E866694B10BD"/>
+        <properties isSpecification="false" sType="Action" nType="0" scope="public" name="Aktywacja konta - Sukces"/>
+      </element>
+      <element xmi:idref="EAID_C6900036_7274_4F4C_9C42_6CBFEE1B65E5">
+        <model package="EAPK_BB4CFDCA_F798_451C_A53C_4CB9D909EAE4" tpos="0" ea_localid="36" ea_eleType="element" owner="EAID_A91CBC07_4558_4A7E_80F1_E866694B10BD"/>
+        <properties isSpecification="false" sType="Action" nType="0" scope="public" name="Wyślij powiadomienie o aktywacji"/>
+      </element>
+    </elements>
+    <connectors>
+      <connector xmi:idref="EAID_10EF2510_16EA_4ED8_902A_DADF193F0DCC">
+        <source xmi:idref="EAID_04307566_078D_4F0D_8F5A_100E568AB242">
+          <model ea_localid="5" type="StateNode" name="Initial"/>
+          <role visibility="Public" targetScope="instance"/>
+          <type aggregation="none" containment="Unspecified"/>
+          <constraints/>
+          <modifiers isOrdered="false" changeable="none" isNavigable="false"/>
+          <style value="Union=0;Derived=0;AllowDuplicates=0;"/>
+          <properties swimlane="Analityk"/>
+        </source>
+        <target xmi:idref="EAID_31115E50_265A_4F4D_A72A_0B53B6A9E4E5">
+          <model ea_localid="6" type="Action" name="Rozpocznij proces weryfikacji tożsamości"/>
+          <role visibility="Public" targetScope="instance"/>
+          <type aggregation="none" containment="Unspecified"/>
+          <constraints/>
+          <modifiers isOrdered="false" changeable="none" isNavigable="true"/>
+          <style value="Union=0;Derived=0;AllowDuplicates=0;"/>
+          <properties swimlane="Klient"/>
+        </target>
+        <properties ea_type="ControlFlow" stereotype="" direction="Source -&gt; Destination" virtualInheritance="0"/>
+        <documentation value=""/>
+        <appearance linemode="3" linecolor="-1" linewidth="1" seqno="0" headStyle="0" lineStyle="0" routing="Orthogonal" startPointX="-1" startPointY="-1" endPointX="-1" endPointY="-1"/>
+        <xrefs/>
+        <extendedProperties conditional="false" diagram="EAID_94431DC8_F0C0_474A_BCBD_E0F387A00562"/>
+      </connector>
+      <connector xmi:idref="EAID_F6CCE55A_A092_404D_BC60_579118D78127">
+        <source xmi:idref="EAID_31115E50_265A_4F4D_A72A_0B53B6A9E4E5">
+          <model ea_localid="6" type="Action" name="Rozpocznij proces weryfikacji tożsamości"/>
+          <role visibility="Public" targetScope="instance"/>
+          <type aggregation="none" containment="Unspecified"/>
+          <constraints/>
+          <modifiers isOrdered="false" changeable="none" isNavigable="false"/>
+          <style value="Union=0;Derived=0;AllowDuplicates=0;"/>
+          <properties swimlane="Klient"/>
+        </source>
+        <target xmi:idref="EAID_7BAA42EF_ACE7_4965_8D11_5B1A5CF7140D">
+          <model ea_localid="7" type="Action" name="Prześlij zdjęcie dokumentu tożsamości"/>
+          <role visibility="Public" targetScope="instance"/>
+          <type aggregation="none" containment="Unspecified"/>
+          <constraints/>
+          <modifiers isOrdered="false" changeable="none" isNavigable="true"/>
+          <style value="Union=0;Derived=0;AllowDuplicates=0;"/>
+          <properties swimlane="Klient"/>
+        </target>
+        <properties ea_type="ControlFlow" stereotype="" direction="Source -&gt; Destination" virtualInheritance="0"/>
+        <documentation value=""/>
+        <appearance linemode="1" linecolor="-1" linewidth="1" seqno="1" headStyle="0" lineStyle="0"/>
+        <xrefs/>
+        <extendedProperties conditional="false" diagram="EAID_94431DC8_F0C0_474A_BCBD_E0F387A00562"/>
+      </connector>
+      <connector xmi:idref="EAID_C8113251_E76B_4C0F_B762_54B7BD5E1943">
+        <source xmi:idref="EAID_7BAA42EF_ACE7_4965_8D11_5B1A5CF7140D">
+          <model ea_localid="7" type="Action" name="Prześlij zdjęcie dokumentu tożsamości"/>
+          <role visibility="Public" targetScope="instance"/>
+          <type aggregation="none" containment="Unspecified"/>
+          <constraints/>
+          <modifiers isOrdered="false" changeable="none" isNavigable="false"/>
+          <style value="Union=0;Derived=0;AllowDuplicates=0;"/>
+          <properties swimlane="Klient"/>
+        </source>
+        <target xmi:idref="EAID_BDB68278_E6A9_4756_A270_703808AB4B7F">
+          <model ea_localid="8" type="Action" name="Prześlij selfie"/>
+          <role visibility="Public" targetScope="instance"/>
+          <type aggregation="none" containment="Unspecified"/>
+          <constraints/>
+          <modifiers isOrdered="false" changeable="none" isNavigable="true"/>
+          <style value="Union=0;Derived=0;AllowDuplicates=0;"/>
+          <properties swimlane="Klient"/>
+        </target>
+        <properties ea_type="ControlFlow" stereotype="" direction="Source -&gt; Destination" virtualInheritance="0"/>
+        <documentation value=""/>
+        <appearance linemode="1" linecolor="-1" linewidth="1" seqno="2" headStyle="0" lineStyle="0"/>
+        <xrefs/>
+        <extendedProperties conditional="false" diagram="EAID_94431DC8_F0C0_474A_BCBD_E0F387A00562"/>
+      </connector>
+      <connector xmi:idref="EAID_0E58FA35_6697_4C4D_ABC6_FF48585B38EB">
+        <source xmi:idref="EAID_BDB68278_E6A9_4756_A270_703808AB4B7F">
+          <model ea_localid="8" type="Action" name="Prześlij selfie"/>
+          <role visibility="Public" targetScope="instance"/>
+          <type aggregation="none" containment="Unspecified"/>
+          <constraints/>
+          <modifiers isOrdered="false" changeable="none" isNavigable="false"/>
+          <style value="Union=0;Derived=0;AllowDuplicates=0;"/>
+          <properties swimlane="Klient"/>
+        </source>
+        <target xmi:idref="EAID_F337381E_2E13_422F_8B82_60DA1C8906FE">
+          <model ea_localid="9" type="Action" name="Odczyt danych z dokumentu (OCR)"/>
+          <role visibility="Public" targetScope="instance"/>
+          <type aggregation="none" containment="Unspecified"/>
+          <constraints/>
+          <modifiers isOrdered="false" changeable="none" isNavigable="true"/>
+          <style value="Union=0;Derived=0;AllowDuplicates=0;"/>
+          <properties swimlane="System"/>
+        </target>
+        <properties ea_type="ControlFlow" stereotype="" direction="Source -&gt; Destination" virtualInheritance="0"/>
+        <documentation value=""/>
+        <appearance linemode="3" linecolor="-1" linewidth="1" seqno="3" headStyle="0" lineStyle="0" routing="Orthogonal" startPointX="-1" startPointY="-1" endPointX="-1" endPointY="-1"/>
+        <xrefs/>
+        <extendedProperties conditional="false" diagram="EAID_94431DC8_F0C0_474A_BCBD_E0F387A00562"/>
+      </connector>
+      <connector xmi:idref="EAID_3A8890A4_4897_4860_A73B_6D6E30A7FE41">
+        <source xmi:idref="EAID_F337381E_2E13_422F_8B82_60DA1C8906FE">
+          <model ea_localid="9" type="Action" name="Odczyt danych z dokumentu (OCR)"/>
+          <role visibility="Public" targetScope="instance"/>
+          <type aggregation="none" containment="Unspecified"/>
+          <constraints/>
+          <modifiers isOrdered="false" changeable="none" isNavigable="false"/>
+          <style value="Union=0;Derived=0;AllowDuplicates=0;"/>
+          <properties swimlane="System"/>
+        </source>
+        <target xmi:idref="EAID_FC4ED8A2_404E_4B97_85E0_1F26FED4FFDA">
+          <model ea_localid="10" type="Decision" name="OCR odczytał dane?"/>
+          <role visibility="Public" targetScope="instance"/>
+          <type aggregation="none" containment="Unspecified"/>
+          <constraints/>
+          <modifiers isOrdered="false" changeable="none" isNavigable="true"/>
+          <style value="Union=0;Derived=0;AllowDuplicates=0;"/>
+          <properties swimlane="System"/>
+        </target>
+        <properties ea_type="ControlFlow" stereotype="" direction="Source -&gt; Destination" virtualInheritance="0"/>
+        <documentation value=""/>
+        <appearance linemode="1" linecolor="-1" linewidth="1" seqno="4" headStyle="0" lineStyle="0"/>
+        <xrefs/>
+        <extendedProperties conditional="false" diagram="EAID_94431DC8_F0C0_474A_BCBD_E0F387A00562"/>
+      </connector>
+      <connector xmi:idref="EAID_975CA945_3587_4DD4_ADE1_450456812F41">
+        <source xmi:idref="EAID_FC4ED8A2_404E_4B97_85E0_1F26FED4FFDA">
+          <model ea_localid="10" type="Decision" name="OCR odczytał dane?"/>
+          <role visibility="Public" targetScope="instance"/>
+          <type aggregation="none" containment="Unspecified"/>
+          <constraints/>
+          <modifiers isOrdered="false" changeable="none" isNavigable="false"/>
+          <style value="Union=0;Derived=0;AllowDuplicates=0;"/>
+          <properties swimlane="System"/>
+        </source>
+        <target xmi:idref="EAID_D7B46D8B_25C1_4FE7_B3AA_FE37FF0D8D3A">
+          <model ea_localid="11" type="Action" name="Porównaj selfie z dokumentem (biometria)"/>
+          <role visibility="Public" targetScope="instance"/>
+          <type aggregation="none" containment="Unspecified"/>
+          <constraints/>
+          <modifiers isOrdered="false" changeable="none" isNavigable="true"/>
+          <style value="Union=0;Derived=0;AllowDuplicates=0;"/>
+          <properties swimlane="System"/>
+        </target>
+        <properties ea_type="ControlFlow" stereotype="" direction="Source -&gt; Destination" virtualInheritance="0"/>
+        <documentation value=""/>
+        <appearance linemode="1" linecolor="-1" linewidth="1" seqno="5" headStyle="0" lineStyle="0"/>
+        <xrefs/>
+        <extendedProperties conditional="false" diagram="EAID_94431DC8_F0C0_474A_BCBD_E0F387A00562"/>
+      </connector>
+      <connector xmi:idref="EAID_7030B974_7344_4900_92F2_F82FFB50E55D">
+        <source xmi:idref="EAID_D7B46D8B_25C1_4FE7_B3AA_FE37FF0D8D3A">
+          <model ea_localid="11" type="Action" name="Porównaj selfie z dokumentem (biometria)"/>
+          <role visibility="Public" targetScope="instance"/>
+          <type aggregation="none" containment="Unspecified"/>
+          <constraints/>
+          <modifiers isOrdered="false" changeable="none" isNavigable="false"/>
+          <style value="Union=0;Derived=0;AllowDuplicates=0;"/>
+          <properties swimlane="System"/>
+        </source>
+        <target xmi:idref="EAID_3ED115A3_E06F_4CCA_B441_2AD2476CA885">
+          <model ea_localid="12" type="Decision" name="Weryfikacja biometryczna pozytywna?"/>
+          <role visibility="Public" targetScope="instance"/>
+          <type aggregation="none" containment="Unspecified"/>
+          <constraints/>
+          <modifiers isOrdered="false" changeable="none" isNavigable="true"/>
+          <style value="Union=0;Derived=0;AllowDuplicates=0;"/>
+          <properties swimlane="System"/>
+        </target>
+        <properties ea_type="ControlFlow" stereotype="" direction="Source -&gt; Destination" virtualInheritance="0"/>
+        <documentation value=""/>
+        <appearance linemode="1" linecolor="-1" linewidth="1" seqno="6" headStyle="0" lineStyle="0"/>
+        <xrefs/>
+        <extendedProperties conditional="false" diagram="EAID_94431DC8_F0C0_474A_BCBD_E0F387A00562"/>
+      </connector>
+      <connector xmi:idref="EAID_071B711D_9645_4ECD_B370_B87D0D8D172B">
+        <source xmi:idref="EAID_3ED115A3_E06F_4CCA_B441_2AD2476CA885">
+          <model ea_localid="12" type="Decision" name="Weryfikacja biometryczna pozytywna?"/>
+          <role visibility="Public" targetScope="instance"/>
+          <type aggregation="none" containment="Unspecified"/>
+          <constraints/>
+          <modifiers isOrdered="false" changeable="none" isNavigable="false"/>
+          <style value="Union=0;Derived=0;AllowDuplicates=0;"/>
+          <properties swimlane="System"/>
+        </source>
+        <target xmi:idref="EAID_C2CE03C8_A002_4B73_B9BB_195927CD05E9">
+          <model ea_localid="13" type="Action" name="Weryfikacja biometryczna negatywna"/>
+          <role visibility="Public" targetScope="instance"/>
+          <type aggregation="none" containment="Unspecified"/>
+          <constraints/>
+          <modifiers isOrdered="false" changeable="none" isNavigable="true"/>
+          <style value="Union=0;Derived=0;AllowDuplicates=0;"/>
+          <properties swimlane="System"/>
+        </target>
+        <properties ea_type="ControlFlow" stereotype="" direction="Source -&gt; Destination" virtualInheritance="0" name="nie" guard="nie"/>
+        <labels lb="nie" mt="0" ea_localid="37_lbl" pt="MiddleRight"/>
+        <documentation value="nie"/>
+        <appearance linemode="1" linecolor="-1" linewidth="1" seqno="7" headStyle="0" lineStyle="0"/>
+        <tags>
+          <tag name="guard" value="nie" modelElement="EAID_071B711D_9645_4ECD_B370_B87D0D8D172B"/>
+        </tags>
+        <xrefs/>
+        <extendedProperties conditional="true" diagram="EAID_94431DC8_F0C0_474A_BCBD_E0F387A00562"/>
+      </connector>
+      <connector xmi:idref="EAID_0A0ACD4E_9D00_42E6_809D_996852D06A9A">
+        <source xmi:idref="EAID_C2CE03C8_A002_4B73_B9BB_195927CD05E9">
+          <model ea_localid="13" type="Action" name="Weryfikacja biometryczna negatywna"/>
+          <role visibility="Public" targetScope="instance"/>
+          <type aggregation="none" containment="Unspecified"/>
+          <constraints/>
+          <modifiers isOrdered="false" changeable="none" isNavigable="false"/>
+          <style value="Union=0;Derived=0;AllowDuplicates=0;"/>
+          <properties swimlane="System"/>
+        </source>
+        <target xmi:idref="EAID_D4C9F20A_7C12_4CD5_9C8B_8ADAD051E8CE">
+          <model ea_localid="14" type="Action" name="Manualna weryfikacja tożsamości"/>
+          <role visibility="Public" targetScope="instance"/>
+          <type aggregation="none" containment="Unspecified"/>
+          <constraints/>
+          <modifiers isOrdered="false" changeable="none" isNavigable="true"/>
+          <style value="Union=0;Derived=0;AllowDuplicates=0;"/>
+          <properties swimlane="Analityk"/>
+        </target>
+        <properties ea_type="ControlFlow" stereotype="" direction="Source -&gt; Destination" virtualInheritance="0"/>
+        <documentation value=""/>
+        <appearance linemode="3" linecolor="-1" linewidth="1" seqno="8" headStyle="0" lineStyle="0" routing="Orthogonal" startPointX="-1" startPointY="-1" endPointX="-1" endPointY="-1"/>
+        <xrefs/>
+        <extendedProperties conditional="false" diagram="EAID_94431DC8_F0C0_474A_BCBD_E0F387A00562"/>
+      </connector>
+      <connector xmi:idref="EAID_B129C736_C76E_4CD8_83E3_8CD8CCFDBC13">
+        <source xmi:idref="EAID_D4C9F20A_7C12_4CD5_9C8B_8ADAD051E8CE">
+          <model ea_localid="14" type="Action" name="Manualna weryfikacja tożsamości"/>
+          <role visibility="Public" targetScope="instance"/>
+          <type aggregation="none" containment="Unspecified"/>
+          <constraints/>
+          <modifiers isOrdered="false" changeable="none" isNavigable="false"/>
+          <style value="Union=0;Derived=0;AllowDuplicates=0;"/>
+          <properties swimlane="Analityk"/>
+        </source>
+        <target xmi:idref="EAID_1F1293EA_7EEB_4E1B_B2C6_DA6AAD6F0D14">
+          <model ea_localid="15" type="Decision" name="Manualna weryfikacja pozytywna?"/>
+          <role visibility="Public" targetScope="instance"/>
+          <type aggregation="none" containment="Unspecified"/>
+          <constraints/>
+          <modifiers isOrdered="false" changeable="none" isNavigable="true"/>
+          <style value="Union=0;Derived=0;AllowDuplicates=0;"/>
+          <properties swimlane="Analityk"/>
+        </target>
+        <properties ea_type="ControlFlow" stereotype="" direction="Source -&gt; Destination" virtualInheritance="0"/>
+        <documentation value=""/>
+        <appearance linemode="1" linecolor="-1" linewidth="1" seqno="9" headStyle="0" lineStyle="0"/>
+        <xrefs/>
+        <extendedProperties conditional="false" diagram="EAID_94431DC8_F0C0_474A_BCBD_E0F387A00562"/>
+      </connector>
+      <connector xmi:idref="EAID_BA7A25D3_C2C4_4530_B1B9_2F52D02AA7EA">
+        <source xmi:idref="EAID_1F1293EA_7EEB_4E1B_B2C6_DA6AAD6F0D14">
+          <model ea_localid="15" type="Decision" name="Manualna weryfikacja pozytywna?"/>
+          <role visibility="Public" targetScope="instance"/>
+          <type aggregation="none" containment="Unspecified"/>
+          <constraints/>
+          <modifiers isOrdered="false" changeable="none" isNavigable="false"/>
+          <style value="Union=0;Derived=0;AllowDuplicates=0;"/>
+          <properties swimlane="Analityk"/>
+        </source>
+        <target xmi:idref="EAID_EE572EEB_7523_469F_9280_FCB41A74F401">
+          <model ea_localid="16" type="Action" name="Konto zablokowane"/>
+          <role visibility="Public" targetScope="instance"/>
+          <type aggregation="none" containment="Unspecified"/>
+          <constraints/>
+          <modifiers isOrdered="false" changeable="none" isNavigable="true"/>
+          <style value="Union=0;Derived=0;AllowDuplicates=0;"/>
+          <properties swimlane="System"/>
+        </target>
+        <properties ea_type="ControlFlow" stereotype="" direction="Source -&gt; Destination" virtualInheritance="0" name="nie" guard="nie"/>
+        <labels lb="nie" mt="0" ea_localid="38_lbl" pt="Center"/>
+        <documentation value="nie"/>
+        <appearance linemode="3" linecolor="-1" linewidth="1" seqno="10" headStyle="0" lineStyle="0" routing="Orthogonal" startPointX="-1" startPointY="-1" endPointX="-1" endPointY="-1"/>
+        <tags>
+          <tag name="guard" value="nie" modelElement="EAID_BA7A25D3_C2C4_4530_B1B9_2F52D02AA7EA"/>
+        </tags>
+        <xrefs/>
+        <extendedProperties conditional="true" diagram="EAID_94431DC8_F0C0_474A_BCBD_E0F387A00562"/>
+      </connector>
+      <connector xmi:idref="EAID_D547CB11_938B_4A7B_B738_E8C4F9A9B553">
+        <source xmi:idref="EAID_EE572EEB_7523_469F_9280_FCB41A74F401">
+          <model ea_localid="16" type="Action" name="Konto zablokowane"/>
+          <role visibility="Public" targetScope="instance"/>
+          <type aggregation="none" containment="Unspecified"/>
+          <constraints/>
+          <modifiers isOrdered="false" changeable="none" isNavigable="false"/>
+          <style value="Union=0;Derived=0;AllowDuplicates=0;"/>
+          <properties swimlane="System"/>
+        </source>
+        <target xmi:idref="EAID_55A78430_3759_49D4_A617_17939A9E3880">
+          <model ea_localid="17" type="Action" name="Blokada konta - Niepowodzenie"/>
+          <role visibility="Public" targetScope="instance"/>
+          <type aggregation="none" containment="Unspecified"/>
+          <constraints/>
+          <modifiers isOrdered="false" changeable="none" isNavigable="true"/>
+          <style value="Union=0;Derived=0;AllowDuplicates=0;"/>
+          <properties swimlane="System"/>
+        </target>
+        <properties ea_type="ControlFlow" stereotype="" direction="Source -&gt; Destination" virtualInheritance="0"/>
+        <documentation value=""/>
+        <appearance linemode="1" linecolor="-1" linewidth="1" seqno="11" headStyle="0" lineStyle="0"/>
+        <xrefs/>
+        <extendedProperties conditional="false" diagram="EAID_94431DC8_F0C0_474A_BCBD_E0F387A00562"/>
+      </connector>
+      <connector xmi:idref="EAID_184F3D3E_9A70_4048_A500_356A9ACFE67F">
+        <source xmi:idref="EAID_55A78430_3759_49D4_A617_17939A9E3880">
+          <model ea_localid="17" type="Action" name="Blokada konta - Niepowodzenie"/>
+          <role visibility="Public" targetScope="instance"/>
+          <type aggregation="none" containment="Unspecified"/>
+          <constraints/>
+          <modifiers isOrdered="false" changeable="none" isNavigable="false"/>
+          <style value="Union=0;Derived=0;AllowDuplicates=0;"/>
+          <properties swimlane="System"/>
+        </source>
+        <target xmi:idref="EAID_1D69BBE8_2D67_44F1_8CB3_35F7CD5DEC24">
+          <model ea_localid="18" type="Action" name="Wyślij powiadomienie o blokadzie"/>
+          <role visibility="Public" targetScope="instance"/>
+          <type aggregation="none" containment="Unspecified"/>
+          <constraints/>
+          <modifiers isOrdered="false" changeable="none" isNavigable="true"/>
+          <style value="Union=0;Derived=0;AllowDuplicates=0;"/>
+          <properties swimlane="System"/>
+        </target>
+        <properties ea_type="ControlFlow" stereotype="" direction="Source -&gt; Destination" virtualInheritance="0"/>
+        <documentation value=""/>
+        <appearance linemode="1" linecolor="-1" linewidth="1" seqno="12" headStyle="0" lineStyle="0"/>
+        <xrefs/>
+        <extendedProperties conditional="false" diagram="EAID_94431DC8_F0C0_474A_BCBD_E0F387A00562"/>
+      </connector>
+      <connector xmi:idref="EAID_BEB657A3_6F16_4E1D_B156_779B9B92CBA9">
+        <source xmi:idref="EAID_48F5EF16_0F71_4D13_A3F2_1CFEED91D715">
+          <model ea_localid="20" type="Action" name="Konto aktywowane"/>
+          <role visibility="Public" targetScope="instance"/>
+          <type aggregation="none" containment="Unspecified"/>
+          <constraints/>
+          <modifiers isOrdered="false" changeable="none" isNavigable="false"/>
+          <style value="Union=0;Derived=0;AllowDuplicates=0;"/>
+          <properties swimlane="System"/>
+        </source>
+        <target xmi:idref="EAID_C93418AA_FF9A_4F31_A5BD_8EC075E1FA72">
+          <model ea_localid="21" type="Action" name="Aktywacja konta - Sukces"/>
+          <role visibility="Public" targetScope="instance"/>
+          <type aggregation="none" containment="Unspecified"/>
+          <constraints/>
+          <modifiers isOrdered="false" changeable="none" isNavigable="true"/>
+          <style value="Union=0;Derived=0;AllowDuplicates=0;"/>
+          <properties swimlane="System"/>
+        </target>
+        <properties ea_type="ControlFlow" stereotype="" direction="Source -&gt; Destination" virtualInheritance="0"/>
+        <documentation value=""/>
+        <appearance linemode="1" linecolor="-1" linewidth="1" seqno="13" headStyle="0" lineStyle="0"/>
+        <xrefs/>
+        <extendedProperties conditional="false" diagram="EAID_94431DC8_F0C0_474A_BCBD_E0F387A00562"/>
+      </connector>
+      <connector xmi:idref="EAID_245C2C81_B0D4_4844_8DF8_DE95A35ADF3A">
+        <source xmi:idref="EAID_C93418AA_FF9A_4F31_A5BD_8EC075E1FA72">
+          <model ea_localid="21" type="Action" name="Aktywacja konta - Sukces"/>
+          <role visibility="Public" targetScope="instance"/>
+          <type aggregation="none" containment="Unspecified"/>
+          <constraints/>
+          <modifiers isOrdered="false" changeable="none" isNavigable="false"/>
+          <style value="Union=0;Derived=0;AllowDuplicates=0;"/>
+          <properties swimlane="System"/>
+        </source>
+        <target xmi:idref="EAID_3CEB7FEB_E633_4F7B_985D_0E3181B3122B">
+          <model ea_localid="22" type="Action" name="Wyślij powiadomienie o aktywacji"/>
+          <role visibility="Public" targetScope="instance"/>
+          <type aggregation="none" containment="Unspecified"/>
+          <constraints/>
+          <modifiers isOrdered="false" changeable="none" isNavigable="true"/>
+          <style value="Union=0;Derived=0;AllowDuplicates=0;"/>
+          <properties swimlane="System"/>
+        </target>
+        <properties ea_type="ControlFlow" stereotype="" direction="Source -&gt; Destination" virtualInheritance="0"/>
+        <documentation value=""/>
+        <appearance linemode="1" linecolor="-1" linewidth="1" seqno="14" headStyle="0" lineStyle="0"/>
+        <xrefs/>
+        <extendedProperties conditional="false" diagram="EAID_94431DC8_F0C0_474A_BCBD_E0F387A00562"/>
+      </connector>
+      <connector xmi:idref="EAID_E5C2641A_D1E3_4745_A63D_EDB961448B21">
+        <source xmi:idref="EAID_FC4ED8A2_404E_4B97_85E0_1F26FED4FFDA">
+          <model ea_localid="10" type="Decision" name="OCR odczytał dane?"/>
+          <role visibility="Public" targetScope="instance"/>
+          <type aggregation="none" containment="Unspecified"/>
+          <constraints/>
+          <modifiers isOrdered="false" changeable="none" isNavigable="false"/>
+          <style value="Union=0;Derived=0;AllowDuplicates=0;"/>
+          <properties swimlane="System"/>
+        </source>
+        <target xmi:idref="EAID_5D580507_ECA6_4A48_A0F7_05D7D985BE96">
+          <model ea_localid="23" type="Action" name="OCR nie odczytał danych z dokumentu"/>
+          <role visibility="Public" targetScope="instance"/>
+          <type aggregation="none" containment="Unspecified"/>
+          <constraints/>
+          <modifiers isOrdered="false" changeable="none" isNavigable="true"/>
+          <style value="Union=0;Derived=0;AllowDuplicates=0;"/>
+          <properties swimlane="Klient"/>
+        </target>
+        <properties ea_type="ControlFlow" stereotype="" direction="Source -&gt; Destination" virtualInheritance="0" name="nie" guard="nie"/>
+        <labels lb="nie" mt="0" ea_localid="39_lbl" pt="Center"/>
+        <documentation value="nie"/>
+        <appearance linemode="3" linecolor="-1" linewidth="1" seqno="15" headStyle="0" lineStyle="0" routing="Orthogonal" startPointX="-1" startPointY="-1" endPointX="-1" endPointY="-1"/>
+        <tags>
+          <tag name="guard" value="nie" modelElement="EAID_E5C2641A_D1E3_4745_A63D_EDB961448B21"/>
+        </tags>
+        <xrefs/>
+        <extendedProperties conditional="true" diagram="EAID_94431DC8_F0C0_474A_BCBD_E0F387A00562"/>
+      </connector>
+      <connector xmi:idref="EAID_3D32D09A_02D5_4EFA_A81F_F728DD95388A">
+        <source xmi:idref="EAID_5D580507_ECA6_4A48_A0F7_05D7D985BE96">
+          <model ea_localid="23" type="Action" name="OCR nie odczytał danych z dokumentu"/>
+          <role visibility="Public" targetScope="instance"/>
+          <type aggregation="none" containment="Unspecified"/>
+          <constraints/>
+          <modifiers isOrdered="false" changeable="none" isNavigable="false"/>
+          <style value="Union=0;Derived=0;AllowDuplicates=0;"/>
+          <properties swimlane="Klient"/>
+        </source>
+        <target xmi:idref="EAID_A9304D6E_2AA0_4958_A359_FCE83FCC52E7">
+          <model ea_localid="24" type="Action" name="Ponowne przesłanie zdjęcia dokumentu tożsamości"/>
+          <role visibility="Public" targetScope="instance"/>
+          <type aggregation="none" containment="Unspecified"/>
+          <constraints/>
+          <modifiers isOrdered="false" changeable="none" isNavigable="true"/>
+          <style value="Union=0;Derived=0;AllowDuplicates=0;"/>
+          <properties swimlane="Klient"/>
+        </target>
+        <properties ea_type="ControlFlow" stereotype="" direction="Source -&gt; Destination" virtualInheritance="0"/>
+        <documentation value=""/>
+        <appearance linemode="1" linecolor="-1" linewidth="1" seqno="16" headStyle="0" lineStyle="0"/>
+        <xrefs/>
+        <extendedProperties conditional="false" diagram="EAID_94431DC8_F0C0_474A_BCBD_E0F387A00562"/>
+      </connector>
+      <connector xmi:idref="EAID_90B41ED3_DFD6_40CB_9373_73AEACEA222D">
+        <source xmi:idref="EAID_A9304D6E_2AA0_4958_A359_FCE83FCC52E7">
+          <model ea_localid="24" type="Action" name="Ponowne przesłanie zdjęcia dokumentu tożsamości"/>
+          <role visibility="Public" targetScope="instance"/>
+          <type aggregation="none" containment="Unspecified"/>
+          <constraints/>
+          <modifiers isOrdered="false" changeable="none" isNavigable="false"/>
+          <style value="Union=0;Derived=0;AllowDuplicates=0;"/>
+          <properties swimlane="Klient"/>
+        </source>
+        <target xmi:idref="EAID_3C9F82AA_E88F_4F21_A77D_33EFAD77351A">
+          <model ea_localid="25" type="Action" name="Odczyt danych z dokumentu (OCR)"/>
+          <role visibility="Public" targetScope="instance"/>
+          <type aggregation="none" containment="Unspecified"/>
+          <constraints/>
+          <modifiers isOrdered="false" changeable="none" isNavigable="true"/>
+          <style value="Union=0;Derived=0;AllowDuplicates=0;"/>
+          <properties swimlane="System"/>
+        </target>
+        <properties ea_type="ControlFlow" stereotype="" direction="Source -&gt; Destination" virtualInheritance="0"/>
+        <documentation value=""/>
+        <appearance linemode="3" linecolor="-1" linewidth="1" seqno="17" headStyle="0" lineStyle="0" routing="Orthogonal" startPointX="-1" startPointY="-1" endPointX="-1" endPointY="-1"/>
+        <xrefs/>
+        <extendedProperties conditional="false" diagram="EAID_94431DC8_F0C0_474A_BCBD_E0F387A00562"/>
+      </connector>
+      <connector xmi:idref="EAID_2FE640FC_154F_40E9_8599_AE8FF801B60B">
+        <source xmi:idref="EAID_3C9F82AA_E88F_4F21_A77D_33EFAD77351A">
+          <model ea_localid="25" type="Action" name="Odczyt danych z dokumentu (OCR)"/>
+          <role visibility="Public" targetScope="instance"/>
+          <type aggregation="none" containment="Unspecified"/>
+          <constraints/>
+          <modifiers isOrdered="false" changeable="none" isNavigable="false"/>
+          <style value="Union=0;Derived=0;AllowDuplicates=0;"/>
+          <properties swimlane="System"/>
+        </source>
+        <target xmi:idref="EAID_E50CA686_DE0E_4C98_BADE_FDC077F95B7B">
+          <model ea_localid="26" type="Action" name="Porównaj selfie z dokumentem (biometria)"/>
+          <role visibility="Public" targetScope="instance"/>
+          <type aggregation="none" containment="Unspecified"/>
+          <constraints/>
+          <modifiers isOrdered="false" changeable="none" isNavigable="true"/>
+          <style value="Union=0;Derived=0;AllowDuplicates=0;"/>
+          <properties swimlane="System"/>
+        </target>
+        <properties ea_type="ControlFlow" stereotype="" direction="Source -&gt; Destination" virtualInheritance="0"/>
+        <documentation value=""/>
+        <appearance linemode="1" linecolor="-1" linewidth="1" seqno="18" headStyle="0" lineStyle="0"/>
+        <xrefs/>
+        <extendedProperties conditional="false" diagram="EAID_94431DC8_F0C0_474A_BCBD_E0F387A00562"/>
+      </connector>
+      <connector xmi:idref="EAID_C8AD703C_8C26_42CB_B3D6_11CF5BD330EF">
+        <source xmi:idref="EAID_E50CA686_DE0E_4C98_BADE_FDC077F95B7B">
+          <model ea_localid="26" type="Action" name="Porównaj selfie z dokumentem (biometria)"/>
+          <role visibility="Public" targetScope="instance"/>
+          <type aggregation="none" containment="Unspecified"/>
+          <constraints/>
+          <modifiers isOrdered="false" changeable="none" isNavigable="false"/>
+          <style value="Union=0;Derived=0;AllowDuplicates=0;"/>
+          <properties swimlane="System"/>
+        </source>
+        <target xmi:idref="EAID_BE75B16A_AE40_4BB8_9D96_F3F2F1E40840">
+          <model ea_localid="27" type="Decision" name="Weryfikacja biometryczna pozytywna?"/>
+          <role visibility="Public" targetScope="instance"/>
+          <type aggregation="none" containment="Unspecified"/>
+          <constraints/>
+          <modifiers isOrdered="false" changeable="none" isNavigable="true"/>
+          <style value="Union=0;Derived=0;AllowDuplicates=0;"/>
+          <properties swimlane="System"/>
+        </target>
+        <properties ea_type="ControlFlow" stereotype="" direction="Source -&gt; Destination" virtualInheritance="0"/>
+        <documentation value=""/>
+        <appearance linemode="1" linecolor="-1" linewidth="1" seqno="19" headStyle="0" lineStyle="0"/>
+        <xrefs/>
+        <extendedProperties conditional="false" diagram="EAID_94431DC8_F0C0_474A_BCBD_E0F387A00562"/>
+      </connector>
+      <connector xmi:idref="EAID_8FD233C5_01A4_4056_AC87_7DCA20E821AE">
+        <source xmi:idref="EAID_BE75B16A_AE40_4BB8_9D96_F3F2F1E40840">
+          <model ea_localid="27" type="Decision" name="Weryfikacja biometryczna pozytywna?"/>
+          <role visibility="Public" targetScope="instance"/>
+          <type aggregation="none" containment="Unspecified"/>
+          <constraints/>
+          <modifiers isOrdered="false" changeable="none" isNavigable="false"/>
+          <style value="Union=0;Derived=0;AllowDuplicates=0;"/>
+          <properties swimlane="System"/>
+        </source>
+        <target xmi:idref="EAID_9B328A34_8675_484D_906E_DB26450D520B">
+          <model ea_localid="28" type="Action" name="Weryfikacja biometryczna negatywna"/>
+          <role visibility="Public" targetScope="instance"/>
+          <type aggregation="none" containment="Unspecified"/>
+          <constraints/>
+          <modifiers isOrdered="false" changeable="none" isNavigable="true"/>
+          <style value="Union=0;Derived=0;AllowDuplicates=0;"/>
+          <properties swimlane="System"/>
+        </target>
+        <properties ea_type="ControlFlow" stereotype="" direction="Source -&gt; Destination" virtualInheritance="0" name="nie" guard="nie"/>
+        <labels lb="nie" mt="0" ea_localid="40_lbl" pt="MiddleRight"/>
+        <documentation value="nie"/>
+        <appearance linemode="1" linecolor="-1" linewidth="1" seqno="20" headStyle="0" lineStyle="0"/>
+        <tags>
+          <tag name="guard" value="nie" modelElement="EAID_8FD233C5_01A4_4056_AC87_7DCA20E821AE"/>
+        </tags>
+        <xrefs/>
+        <extendedProperties conditional="true" diagram="EAID_94431DC8_F0C0_474A_BCBD_E0F387A00562"/>
+      </connector>
+      <connector xmi:idref="EAID_F960A59B_CBB1_405D_AC38_F7BEB2E66977">
+        <source xmi:idref="EAID_9B328A34_8675_484D_906E_DB26450D520B">
+          <model ea_localid="28" type="Action" name="Weryfikacja biometryczna negatywna"/>
+          <role visibility="Public" targetScope="instance"/>
+          <type aggregation="none" containment="Unspecified"/>
+          <constraints/>
+          <modifiers isOrdered="false" changeable="none" isNavigable="false"/>
+          <style value="Union=0;Derived=0;AllowDuplicates=0;"/>
+          <properties swimlane="System"/>
+        </source>
+        <target xmi:idref="EAID_98FBD00D_1EE0_4CE9_9D0F_FD61C5A037ED">
+          <model ea_localid="29" type="Action" name="Manualna weryfikacja tożsamości"/>
+          <role visibility="Public" targetScope="instance"/>
+          <type aggregation="none" containment="Unspecified"/>
+          <constraints/>
+          <modifiers isOrdered="false" changeable="none" isNavigable="true"/>
+          <style value="Union=0;Derived=0;AllowDuplicates=0;"/>
+          <properties swimlane="Analityk"/>
+        </target>
+        <properties ea_type="ControlFlow" stereotype="" direction="Source -&gt; Destination" virtualInheritance="0"/>
+        <documentation value=""/>
+        <appearance linemode="3" linecolor="-1" linewidth="1" seqno="21" headStyle="0" lineStyle="0" routing="Orthogonal" startPointX="-1" startPointY="-1" endPointX="-1" endPointY="-1"/>
+        <xrefs/>
+        <extendedProperties conditional="false" diagram="EAID_94431DC8_F0C0_474A_BCBD_E0F387A00562"/>
+      </connector>
+      <connector xmi:idref="EAID_EA4C2989_F0DF_40B7_992D_2EFD67105974">
+        <source xmi:idref="EAID_98FBD00D_1EE0_4CE9_9D0F_FD61C5A037ED">
+          <model ea_localid="29" type="Action" name="Manualna weryfikacja tożsamości"/>
+          <role visibility="Public" targetScope="instance"/>
+          <type aggregation="none" containment="Unspecified"/>
+          <constraints/>
+          <modifiers isOrdered="false" changeable="none" isNavigable="false"/>
+          <style value="Union=0;Derived=0;AllowDuplicates=0;"/>
+          <properties swimlane="Analityk"/>
+        </source>
+        <target xmi:idref="EAID_F2876727_05FB_4FAC_97B8_6235D322710D">
+          <model ea_localid="30" type="Decision" name="Manualna weryfikacja pozytywna?"/>
+          <role visibility="Public" targetScope="instance"/>
+          <type aggregation="none" containment="Unspecified"/>
+          <constraints/>
+          <modifiers isOrdered="false" changeable="none" isNavigable="true"/>
+          <style value="Union=0;Derived=0;AllowDuplicates=0;"/>
+          <properties swimlane="Analityk"/>
+        </target>
+        <properties ea_type="ControlFlow" stereotype="" direction="Source -&gt; Destination" virtualInheritance="0"/>
+        <documentation value=""/>
+        <appearance linemode="1" linecolor="-1" linewidth="1" seqno="22" headStyle="0" lineStyle="0"/>
+        <xrefs/>
+        <extendedProperties conditional="false" diagram="EAID_94431DC8_F0C0_474A_BCBD_E0F387A00562"/>
+      </connector>
+      <connector xmi:idref="EAID_152F043B_1451_4161_9447_595DFB4B04DA">
+        <source xmi:idref="EAID_F2876727_05FB_4FAC_97B8_6235D322710D">
+          <model ea_localid="30" type="Decision" name="Manualna weryfikacja pozytywna?"/>
+          <role visibility="Public" targetScope="instance"/>
+          <type aggregation="none" containment="Unspecified"/>
+          <constraints/>
+          <modifiers isOrdered="false" changeable="none" isNavigable="false"/>
+          <style value="Union=0;Derived=0;AllowDuplicates=0;"/>
+          <properties swimlane="Analityk"/>
+        </source>
+        <target xmi:idref="EAID_7BDD6E78_FC98_425C_8C75_E6F839E2188F">
+          <model ea_localid="31" type="Action" name="Konto zablokowane"/>
+          <role visibility="Public" targetScope="instance"/>
+          <type aggregation="none" containment="Unspecified"/>
+          <constraints/>
+          <modifiers isOrdered="false" changeable="none" isNavigable="true"/>
+          <style value="Union=0;Derived=0;AllowDuplicates=0;"/>
+          <properties swimlane="System"/>
+        </target>
+        <properties ea_type="ControlFlow" stereotype="" direction="Source -&gt; Destination" virtualInheritance="0" name="nie" guard="nie"/>
+        <labels lb="nie" mt="0" ea_localid="41_lbl" pt="Center"/>
+        <documentation value="nie"/>
+        <appearance linemode="3" linecolor="-1" linewidth="1" seqno="23" headStyle="0" lineStyle="0" routing="Orthogonal" startPointX="-1" startPointY="-1" endPointX="-1" endPointY="-1"/>
+        <tags>
+          <tag name="guard" value="nie" modelElement="EAID_152F043B_1451_4161_9447_595DFB4B04DA"/>
+        </tags>
+        <xrefs/>
+        <extendedProperties conditional="true" diagram="EAID_94431DC8_F0C0_474A_BCBD_E0F387A00562"/>
+      </connector>
+      <connector xmi:idref="EAID_31F2C3C6_2D67_4562_B1BF_5B9C87E328BB">
+        <source xmi:idref="EAID_7BDD6E78_FC98_425C_8C75_E6F839E2188F">
+          <model ea_localid="31" type="Action" name="Konto zablokowane"/>
+          <role visibility="Public" targetScope="instance"/>
+          <type aggregation="none" containment="Unspecified"/>
+          <constraints/>
+          <modifiers isOrdered="false" changeable="none" isNavigable="false"/>
+          <style value="Union=0;Derived=0;AllowDuplicates=0;"/>
+          <properties swimlane="System"/>
+        </source>
+        <target xmi:idref="EAID_986B2223_FA37_4758_B2D6_F2EAE7293A19">
+          <model ea_localid="32" type="Action" name="Blokada konta - Niepowodzenie"/>
+          <role visibility="Public" targetScope="instance"/>
+          <type aggregation="none" containment="Unspecified"/>
+          <constraints/>
+          <modifiers isOrdered="false" changeable="none" isNavigable="true"/>
+          <style value="Union=0;Derived=0;AllowDuplicates=0;"/>
+          <properties swimlane="System"/>
+        </target>
+        <properties ea_type="ControlFlow" stereotype="" direction="Source -&gt; Destination" virtualInheritance="0"/>
+        <documentation value=""/>
+        <appearance linemode="1" linecolor="-1" linewidth="1" seqno="24" headStyle="0" lineStyle="0"/>
+        <xrefs/>
+        <extendedProperties conditional="false" diagram="EAID_94431DC8_F0C0_474A_BCBD_E0F387A00562"/>
+      </connector>
+      <connector xmi:idref="EAID_55765A97_7BC5_42EF_8CE4_6643D4E4CF7D">
+        <source xmi:idref="EAID_986B2223_FA37_4758_B2D6_F2EAE7293A19">
+          <model ea_localid="32" type="Action" name="Blokada konta - Niepowodzenie"/>
+          <role visibility="Public" targetScope="instance"/>
+          <type aggregation="none" containment="Unspecified"/>
+          <constraints/>
+          <modifiers isOrdered="false" changeable="none" isNavigable="false"/>
+          <style value="Union=0;Derived=0;AllowDuplicates=0;"/>
+          <properties swimlane="System"/>
+        </source>
+        <target xmi:idref="EAID_85CD3A1A_7ACE_4193_B1E7_02DAE1FCFB74">
+          <model ea_localid="33" type="Action" name="Wyślij powiadomienie o blokadzie"/>
+          <role visibility="Public" targetScope="instance"/>
+          <type aggregation="none" containment="Unspecified"/>
+          <constraints/>
+          <modifiers isOrdered="false" changeable="none" isNavigable="true"/>
+          <style value="Union=0;Derived=0;AllowDuplicates=0;"/>
+          <properties swimlane="System"/>
+        </target>
+        <properties ea_type="ControlFlow" stereotype="" direction="Source -&gt; Destination" virtualInheritance="0"/>
+        <documentation value=""/>
+        <appearance linemode="1" linecolor="-1" linewidth="1" seqno="25" headStyle="0" lineStyle="0"/>
+        <xrefs/>
+        <extendedProperties conditional="false" diagram="EAID_94431DC8_F0C0_474A_BCBD_E0F387A00562"/>
+      </connector>
+      <connector xmi:idref="EAID_9C252453_5309_43B9_A923_8DA69F28B7FF">
+        <source xmi:idref="EAID_7A7A593B_0F29_40FC_A39B_1D88FB2A18F3">
+          <model ea_localid="34" type="Action" name="Konto aktywowane"/>
+          <role visibility="Public" targetScope="instance"/>
+          <type aggregation="none" containment="Unspecified"/>
+          <constraints/>
+          <modifiers isOrdered="false" changeable="none" isNavigable="false"/>
+          <style value="Union=0;Derived=0;AllowDuplicates=0;"/>
+          <properties swimlane="System"/>
+        </source>
+        <target xmi:idref="EAID_FA49A6D6_4DA4_4071_BB32_3A5580DE4369">
+          <model ea_localid="35" type="Action" name="Aktywacja konta - Sukces"/>
+          <role visibility="Public" targetScope="instance"/>
+          <type aggregation="none" containment="Unspecified"/>
+          <constraints/>
+          <modifiers isOrdered="false" changeable="none" isNavigable="true"/>
+          <style value="Union=0;Derived=0;AllowDuplicates=0;"/>
+          <properties swimlane="System"/>
+        </target>
+        <properties ea_type="ControlFlow" stereotype="" direction="Source -&gt; Destination" virtualInheritance="0"/>
+        <documentation value=""/>
+        <appearance linemode="1" linecolor="-1" linewidth="1" seqno="26" headStyle="0" lineStyle="0"/>
+        <xrefs/>
+        <extendedProperties conditional="false" diagram="EAID_94431DC8_F0C0_474A_BCBD_E0F387A00562"/>
+      </connector>
+      <connector xmi:idref="EAID_4B812CFF_B0E1_4471_9047_BD2FF609AEE9">
+        <source xmi:idref="EAID_FA49A6D6_4DA4_4071_BB32_3A5580DE4369">
+          <model ea_localid="35" type="Action" name="Aktywacja konta - Sukces"/>
+          <role visibility="Public" targetScope="instance"/>
+          <type aggregation="none" containment="Unspecified"/>
+          <constraints/>
+          <modifiers isOrdered="false" changeable="none" isNavigable="false"/>
+          <style value="Union=0;Derived=0;AllowDuplicates=0;"/>
+          <properties swimlane="System"/>
+        </source>
+        <target xmi:idref="EAID_C6900036_7274_4F4C_9C42_6CBFEE1B65E5">
+          <model ea_localid="36" type="Action" name="Wyślij powiadomienie o aktywacji"/>
+          <role visibility="Public" targetScope="instance"/>
+          <type aggregation="none" containment="Unspecified"/>
+          <constraints/>
+          <modifiers isOrdered="false" changeable="none" isNavigable="true"/>
+          <style value="Union=0;Derived=0;AllowDuplicates=0;"/>
+          <properties swimlane="System"/>
+        </target>
+        <properties ea_type="ControlFlow" stereotype="" direction="Source -&gt; Destination" virtualInheritance="0"/>
+        <documentation value=""/>
+        <appearance linemode="1" linecolor="-1" linewidth="1" seqno="27" headStyle="0" lineStyle="0"/>
+        <xrefs/>
+        <extendedProperties conditional="false" diagram="EAID_94431DC8_F0C0_474A_BCBD_E0F387A00562"/>
+      </connector>
+      <connector xmi:idref="EAID_7A4889F2_2287_48A7_88A7_8356492AAAD7">
+        <source xmi:idref="EAID_1D69BBE8_2D67_44F1_8CB3_35F7CD5DEC24">
+          <model ea_localid="18" type="Action" name="Wyślij powiadomienie o blokadzie"/>
+          <role visibility="Public" targetScope="instance"/>
+          <type aggregation="none" containment="Unspecified"/>
+          <constraints/>
+          <modifiers isOrdered="false" changeable="none" isNavigable="false"/>
+          <style value="Union=0;Derived=0;AllowDuplicates=0;"/>
+          <properties swimlane="System"/>
+        </source>
+        <target xmi:idref="EAID_72ED00FA_D5CB_44B3_B00B_22F65FCCE7BD">
+          <model ea_localid="19" type="StateNode" name="Final"/>
+          <role visibility="Public" targetScope="instance"/>
+          <type aggregation="none" containment="Unspecified"/>
+          <constraints/>
+          <modifiers isOrdered="false" changeable="none" isNavigable="true"/>
+          <style value="Union=0;Derived=0;AllowDuplicates=0;"/>
+          <properties swimlane="System"/>
+        </target>
+        <properties ea_type="ControlFlow" stereotype="" direction="Source -&gt; Destination" virtualInheritance="0"/>
+        <documentation value=""/>
+        <appearance linemode="1" linecolor="-1" linewidth="1" seqno="28" headStyle="0" lineStyle="0"/>
+        <xrefs/>
+        <extendedProperties conditional="false" diagram="EAID_94431DC8_F0C0_474A_BCBD_E0F387A00562"/>
+      </connector>
+      <connector xmi:idref="EAID_73711D91_4DE2_4BD0_A25A_85742F614B4F">
+        <source xmi:idref="EAID_3CEB7FEB_E633_4F7B_985D_0E3181B3122B">
+          <model ea_localid="22" type="Action" name="Wyślij powiadomienie o aktywacji"/>
+          <role visibility="Public" targetScope="instance"/>
+          <type aggregation="none" containment="Unspecified"/>
+          <constraints/>
+          <modifiers isOrdered="false" changeable="none" isNavigable="false"/>
+          <style value="Union=0;Derived=0;AllowDuplicates=0;"/>
+          <properties swimlane="System"/>
+        </source>
+        <target xmi:idref="EAID_72ED00FA_D5CB_44B3_B00B_22F65FCCE7BD">
+          <model ea_localid="19" type="StateNode" name="Final"/>
+          <role visibility="Public" targetScope="instance"/>
+          <type aggregation="none" containment="Unspecified"/>
+          <constraints/>
+          <modifiers isOrdered="false" changeable="none" isNavigable="true"/>
+          <style value="Union=0;Derived=0;AllowDuplicates=0;"/>
+          <properties swimlane="System"/>
+        </target>
+        <properties ea_type="ControlFlow" stereotype="" direction="Source -&gt; Destination" virtualInheritance="0"/>
+        <documentation value=""/>
+        <appearance linemode="1" linecolor="-1" linewidth="1" seqno="29" headStyle="0" lineStyle="0"/>
+        <xrefs/>
+        <extendedProperties conditional="false" diagram="EAID_94431DC8_F0C0_474A_BCBD_E0F387A00562"/>
+      </connector>
+      <connector xmi:idref="EAID_F6EED6C7_D86C_4608_A1FD_576568F6BAE8">
+        <source xmi:idref="EAID_85CD3A1A_7ACE_4193_B1E7_02DAE1FCFB74">
+          <model ea_localid="33" type="Action" name="Wyślij powiadomienie o blokadzie"/>
+          <role visibility="Public" targetScope="instance"/>
+          <type aggregation="none" containment="Unspecified"/>
+          <constraints/>
+          <modifiers isOrdered="false" changeable="none" isNavigable="false"/>
+          <style value="Union=0;Derived=0;AllowDuplicates=0;"/>
+          <properties swimlane="System"/>
+        </source>
+        <target xmi:idref="EAID_72ED00FA_D5CB_44B3_B00B_22F65FCCE7BD">
+          <model ea_localid="19" type="StateNode" name="Final"/>
+          <role visibility="Public" targetScope="instance"/>
+          <type aggregation="none" containment="Unspecified"/>
+          <constraints/>
+          <modifiers isOrdered="false" changeable="none" isNavigable="true"/>
+          <style value="Union=0;Derived=0;AllowDuplicates=0;"/>
+          <properties swimlane="System"/>
+        </target>
+        <properties ea_type="ControlFlow" stereotype="" direction="Source -&gt; Destination" virtualInheritance="0"/>
+        <documentation value=""/>
+        <appearance linemode="1" linecolor="-1" linewidth="1" seqno="30" headStyle="0" lineStyle="0"/>
+        <xrefs/>
+        <extendedProperties conditional="false" diagram="EAID_94431DC8_F0C0_474A_BCBD_E0F387A00562"/>
+      </connector>
+      <connector xmi:idref="EAID_83AA5D0E_2136_42ED_ACFB_18A8C6634F68">
+        <source xmi:idref="EAID_C6900036_7274_4F4C_9C42_6CBFEE1B65E5">
+          <model ea_localid="36" type="Action" name="Wyślij powiadomienie o aktywacji"/>
+          <role visibility="Public" targetScope="instance"/>
+          <type aggregation="none" containment="Unspecified"/>
+          <constraints/>
+          <modifiers isOrdered="false" changeable="none" isNavigable="false"/>
+          <style value="Union=0;Derived=0;AllowDuplicates=0;"/>
+          <properties swimlane="System"/>
+        </source>
+        <target xmi:idref="EAID_72ED00FA_D5CB_44B3_B00B_22F65FCCE7BD">
+          <model ea_localid="19" type="StateNode" name="Final"/>
+          <role visibility="Public" targetScope="instance"/>
+          <type aggregation="none" containment="Unspecified"/>
+          <constraints/>
+          <modifiers isOrdered="false" changeable="none" isNavigable="true"/>
+          <style value="Union=0;Derived=0;AllowDuplicates=0;"/>
+          <properties swimlane="System"/>
+        </target>
+        <properties ea_type="ControlFlow" stereotype="" direction="Source -&gt; Destination" virtualInheritance="0"/>
+        <documentation value=""/>
+        <appearance linemode="1" linecolor="-1" linewidth="1" seqno="31" headStyle="0" lineStyle="0"/>
+        <xrefs/>
+        <extendedProperties conditional="false" diagram="EAID_94431DC8_F0C0_474A_BCBD_E0F387A00562"/>
+      </connector>
+    </connectors>
+    <diagrams>
+      <diagram xmi:id="EAID_94431DC8_F0C0_474A_BCBD_E0F387A00562" name="Weryfikacja Tożsamości Klienta Online - Przepływ Aktywności" type="Activity" diagramType="ActivityDiagram">
+        <model package="EAPK_BB4CFDCA_F798_451C_A53C_4CB9D909EAE4" localID="42" owner="EAPK_BB4CFDCA_F798_451C_A53C_4CB9D909EAE4" ea_localid="42" tpos="0"/>
+        <style1 value="ShowPrivate=1;ShowProtected=1;ShowPublic=1;HideRelationships=0;Locked=0;Border=1;HighlightForeign=1;PackageContents=1;SequenceNotes=0;ScalePrintImage=0;PPgs.cx=0;PPgs.cy=0;DocSize.cx=795;DocSize.cy=1134;ShowDetails=0;Orientation=P;Zoom=100;ShowTags=0;OpParams=1;VisibleAttributeDetail=0;ShowOpRetType=1;ShowIcons=1;CollabNums=0;HideProps=0;ShowReqs=0;ShowCons=0;PaperSize=9;HideParents=0;UseAlias=0;HideAtts=0;HideOps=0;HideStereo=0;HideElemStereo=0;ShowTests=0;ShowMaint=0;ConnectorNotation=UML 2.1;ExplicitNavigability=0;AdvancedElementProps=1;AdvancedFeatureProps=1;AdvancedConnectorProps=1;ShowShape=1;"/>
+        <swimlanes value="locked=false;orientation=1;width=0;inbar=false;names=true;color=-1;bold=false;fcol=0;tcol=-1;ofCol=-1;ufCol=-1;hl=0;ufh=0;cls=0;SwimlaneFont=lfh:-10,lfw:0,lfi:0,lfu:0,lfs:0,lfface:Calibri,lfe:0,lfo:0,lfchar:1,lfop:0,lfcp:0,lfq:0,lfpf=0,lfWidth=0;"/>
+        <properties name="Weryfikacja Tożsamości Klienta Online - Przepływ Aktywności" type="Activity" documentation=""/>
+        <project author="XMI Generator" version="1.0" created="2025-08-21 16:32:14" modified="2025-08-21 16:32:14"/>
+        <elements>
+          <element subject="EAID_D90B4EE4_B1DF_47B4_8FD8_277A2462D2D8" seqno="0" geometry="Left=100;Top=50;Right=450;Bottom=1500;" style="LineColor=15461355;FillColor=14993154;LineWidth=1;BorderStyle=0;VPartition=1;"/>
+          <element subject="EAID_A91CBC07_4558_4A7E_80F1_E866694B10BD" seqno="1" geometry="Left=500;Top=50;Right=850;Bottom=1500;" style="LineColor=15461355;FillColor=14993154;LineWidth=1;BorderStyle=0;VPartition=1;"/>
+          <element subject="EAID_DF29F80F_C1B3_4154_B81C_A2C8B0CFDBBD" seqno="2" geometry="Left=900;Top=50;Right=1250;Bottom=1500;" style="LineColor=15461355;FillColor=14993154;LineWidth=1;BorderStyle=0;VPartition=1;"/>
+          <element subject="EAID_04307566_078D_4F0D_8F5A_100E568AB242" seqno="3" geometry="Left=525;Top=100;Right=550;Bottom=125;" style="BorderColor=-1;BorderWidth=-1;BColor=0;FontColor=-1;BorderWidth=0;Shape=Circle;"/>
+          <element subject="EAID_31115E50_265A_4F4D_A72A_0B53B6A9E4E5" seqno="4" geometry="Left=573;Top=100;Right=693;Bottom=140;" style="BorderColor=-1;BorderWidth=-1;BColor=13434828;FontColor=-1;BorderRadius=10;"/>
+          <element subject="EAID_7BAA42EF_ACE7_4965_8D11_5B1A5CF7140D" seqno="5" geometry="Left=573;Top=100;Right=693;Bottom=140;" style="BorderColor=-1;BorderWidth=-1;BColor=13434828;FontColor=-1;BorderRadius=10;"/>
+          <element subject="EAID_BDB68278_E6A9_4756_A270_703808AB4B7F" seqno="6" geometry="Left=573;Top=100;Right=673;Bottom=140;" style="BorderColor=-1;BorderWidth=-1;BColor=13434828;FontColor=-1;BorderRadius=10;"/>
+          <element subject="EAID_F337381E_2E13_422F_8B82_60DA1C8906FE" seqno="7" geometry="Left=1026;Top=100;Right=1146;Bottom=140;" style="BorderColor=-1;BorderWidth=-1;BColor=13434828;FontColor=-1;BorderRadius=10;"/>
+          <element subject="EAID_FC4ED8A2_404E_4B97_85E0_1F26FED4FFDA" seqno="8" geometry="Left=1026;Top=100;Right=1066;Bottom=140;" style="BorderColor=-1;BorderWidth=-1;BColor=16777062;FontColor=-1;Shape=Diamond;"/>
+          <element subject="EAID_D7B46D8B_25C1_4FE7_B3AA_FE37FF0D8D3A" seqno="9" geometry="Left=1026;Top=100;Right=1146;Bottom=140;" style="BorderColor=-1;BorderWidth=-1;BColor=13434828;FontColor=-1;BorderRadius=10;"/>
+          <element subject="EAID_3ED115A3_E06F_4CCA_B441_2AD2476CA885" seqno="10" geometry="Left=1026;Top=100;Right=1066;Bottom=140;" style="BorderColor=-1;BorderWidth=-1;BColor=16777062;FontColor=-1;Shape=Diamond;"/>
+          <element subject="EAID_C2CE03C8_A002_4B73_B9BB_195927CD05E9" seqno="11" geometry="Left=1026;Top=100;Right=1146;Bottom=140;" style="BorderColor=-1;BorderWidth=-1;BColor=13434828;FontColor=-1;BorderRadius=10;"/>
+          <element subject="EAID_D4C9F20A_7C12_4CD5_9C8B_8ADAD051E8CE" seqno="12" geometry="Left=120;Top=100;Right=240;Bottom=140;" style="BorderColor=-1;BorderWidth=-1;BColor=13434828;FontColor=-1;BorderRadius=10;"/>
+          <element subject="EAID_1F1293EA_7EEB_4E1B_B2C6_DA6AAD6F0D14" seqno="13" geometry="Left=120;Top=100;Right=160;Bottom=140;" style="BorderColor=-1;BorderWidth=-1;BColor=16777062;FontColor=-1;Shape=Diamond;"/>
+          <element subject="EAID_EE572EEB_7523_469F_9280_FCB41A74F401" seqno="14" geometry="Left=1026;Top=100;Right=1126;Bottom=140;" style="BorderColor=-1;BorderWidth=-1;BColor=13434828;FontColor=-1;BorderRadius=10;"/>
+          <element subject="EAID_55A78430_3759_49D4_A617_17939A9E3880" seqno="15" geometry="Left=1026;Top=100;Right=1146;Bottom=140;" style="BorderColor=-1;BorderWidth=-1;BColor=13434828;FontColor=-1;BorderRadius=10;"/>
+          <element subject="EAID_1D69BBE8_2D67_44F1_8CB3_35F7CD5DEC24" seqno="16" geometry="Left=1026;Top=100;Right=1146;Bottom=140;" style="BorderColor=-1;BorderWidth=-1;BColor=13434828;FontColor=-1;BorderRadius=10;"/>
+          <element subject="EAID_72ED00FA_D5CB_44B3_B00B_22F65FCCE7BD" seqno="17" geometry="Left=1026;Top=100;Right=1051;Bottom=125;" style="BorderColor=-1;BorderWidth=-1;BColor=0;FontColor=-1;BorderWidth=1;Shape=Circle;"/>
+          <element subject="EAID_48F5EF16_0F71_4D13_A3F2_1CFEED91D715" seqno="18" geometry="Left=1026;Top=100;Right=1126;Bottom=140;" style="BorderColor=-1;BorderWidth=-1;BColor=13434828;FontColor=-1;BorderRadius=10;"/>
+          <element subject="EAID_C93418AA_FF9A_4F31_A5BD_8EC075E1FA72" seqno="19" geometry="Left=1026;Top=100;Right=1126;Bottom=140;" style="BorderColor=-1;BorderWidth=-1;BColor=13434828;FontColor=-1;BorderRadius=10;"/>
+          <element subject="EAID_3CEB7FEB_E633_4F7B_985D_0E3181B3122B" seqno="20" geometry="Left=1026;Top=100;Right=1146;Bottom=140;" style="BorderColor=-1;BorderWidth=-1;BColor=13434828;FontColor=-1;BorderRadius=10;"/>
+          <element subject="EAID_5D580507_ECA6_4A48_A0F7_05D7D985BE96" seqno="21" geometry="Left=573;Top=100;Right=693;Bottom=140;" style="BorderColor=-1;BorderWidth=-1;BColor=13434828;FontColor=-1;BorderRadius=10;"/>
+          <element subject="EAID_A9304D6E_2AA0_4958_A359_FCE83FCC52E7" seqno="22" geometry="Left=573;Top=100;Right=721;Bottom=140;" style="BorderColor=-1;BorderWidth=-1;BColor=13434828;FontColor=-1;BorderRadius=10;"/>
+          <element subject="EAID_3C9F82AA_E88F_4F21_A77D_33EFAD77351A" seqno="23" geometry="Left=1026;Top=100;Right=1146;Bottom=140;" style="BorderColor=-1;BorderWidth=-1;BColor=13434828;FontColor=-1;BorderRadius=10;"/>
+          <element subject="EAID_E50CA686_DE0E_4C98_BADE_FDC077F95B7B" seqno="24" geometry="Left=1026;Top=100;Right=1146;Bottom=140;" style="BorderColor=-1;BorderWidth=-1;BColor=13434828;FontColor=-1;BorderRadius=10;"/>
+          <element subject="EAID_BE75B16A_AE40_4BB8_9D96_F3F2F1E40840" seqno="25" geometry="Left=1026;Top=100;Right=1066;Bottom=140;" style="BorderColor=-1;BorderWidth=-1;BColor=16777062;FontColor=-1;Shape=Diamond;"/>
+          <element subject="EAID_9B328A34_8675_484D_906E_DB26450D520B" seqno="26" geometry="Left=1026;Top=100;Right=1146;Bottom=140;" style="BorderColor=-1;BorderWidth=-1;BColor=13434828;FontColor=-1;BorderRadius=10;"/>
+          <element subject="EAID_98FBD00D_1EE0_4CE9_9D0F_FD61C5A037ED" seqno="27" geometry="Left=120;Top=100;Right=240;Bottom=140;" style="BorderColor=-1;BorderWidth=-1;BColor=13434828;FontColor=-1;BorderRadius=10;"/>
+          <element subject="EAID_F2876727_05FB_4FAC_97B8_6235D322710D" seqno="28" geometry="Left=120;Top=100;Right=160;Bottom=140;" style="BorderColor=-1;BorderWidth=-1;BColor=16777062;FontColor=-1;Shape=Diamond;"/>
+          <element subject="EAID_7BDD6E78_FC98_425C_8C75_E6F839E2188F" seqno="29" geometry="Left=1026;Top=100;Right=1126;Bottom=140;" style="BorderColor=-1;BorderWidth=-1;BColor=13434828;FontColor=-1;BorderRadius=10;"/>
+          <element subject="EAID_986B2223_FA37_4758_B2D6_F2EAE7293A19" seqno="30" geometry="Left=1026;Top=100;Right=1146;Bottom=140;" style="BorderColor=-1;BorderWidth=-1;BColor=13434828;FontColor=-1;BorderRadius=10;"/>
+          <element subject="EAID_85CD3A1A_7ACE_4193_B1E7_02DAE1FCFB74" seqno="31" geometry="Left=1026;Top=100;Right=1146;Bottom=140;" style="BorderColor=-1;BorderWidth=-1;BColor=13434828;FontColor=-1;BorderRadius=10;"/>
+          <element subject="EAID_7A7A593B_0F29_40FC_A39B_1D88FB2A18F3" seqno="32" geometry="Left=1026;Top=100;Right=1126;Bottom=140;" style="BorderColor=-1;BorderWidth=-1;BColor=13434828;FontColor=-1;BorderRadius=10;"/>
+          <element subject="EAID_FA49A6D6_4DA4_4071_BB32_3A5580DE4369" seqno="33" geometry="Left=1026;Top=100;Right=1126;Bottom=140;" style="BorderColor=-1;BorderWidth=-1;BColor=13434828;FontColor=-1;BorderRadius=10;"/>
+          <element subject="EAID_C6900036_7274_4F4C_9C42_6CBFEE1B65E5" seqno="34" geometry="Left=1026;Top=100;Right=1146;Bottom=140;" style="BorderColor=-1;BorderWidth=-1;BColor=13434828;FontColor=-1;BorderRadius=10;"/>
+        </elements>
+        <diagramlinks>
+          <diagramlink connectorID="EAID_10EF2510_16EA_4ED8_902A_DADF193F0DCC" hidden="false">
+            <style value=""/>
+          </diagramlink>
+          <diagramlink connectorID="EAID_F6CCE55A_A092_404D_BC60_579118D78127" hidden="false">
+            <style value=""/>
+          </diagramlink>
+          <diagramlink connectorID="EAID_C8113251_E76B_4C0F_B762_54B7BD5E1943" hidden="false">
+            <style value=""/>
+          </diagramlink>
+          <diagramlink connectorID="EAID_0E58FA35_6697_4C4D_ABC6_FF48585B38EB" hidden="false">
+            <style value=""/>
+          </diagramlink>
+          <diagramlink connectorID="EAID_3A8890A4_4897_4860_A73B_6D6E30A7FE41" hidden="false">
+            <style value=""/>
+          </diagramlink>
+          <diagramlink connectorID="EAID_975CA945_3587_4DD4_ADE1_450456812F41" hidden="false">
+            <style value=""/>
+          </diagramlink>
+          <diagramlink connectorID="EAID_7030B974_7344_4900_92F2_F82FFB50E55D" hidden="false">
+            <style value=""/>
+          </diagramlink>
+          <diagramlink connectorID="EAID_071B711D_9645_4ECD_B370_B87D0D8D172B" hidden="false">
+            <style value=""/>
+          </diagramlink>
+          <diagramlink connectorID="EAID_0A0ACD4E_9D00_42E6_809D_996852D06A9A" hidden="false">
+            <style value=""/>
+          </diagramlink>
+          <diagramlink connectorID="EAID_B129C736_C76E_4CD8_83E3_8CD8CCFDBC13" hidden="false">
+            <style value=""/>
+          </diagramlink>
+          <diagramlink connectorID="EAID_BA7A25D3_C2C4_4530_B1B9_2F52D02AA7EA" hidden="false">
+            <style value=""/>
+          </diagramlink>
+          <diagramlink connectorID="EAID_D547CB11_938B_4A7B_B738_E8C4F9A9B553" hidden="false">
+            <style value=""/>
+          </diagramlink>
+          <diagramlink connectorID="EAID_184F3D3E_9A70_4048_A500_356A9ACFE67F" hidden="false">
+            <style value=""/>
+          </diagramlink>
+          <diagramlink connectorID="EAID_BEB657A3_6F16_4E1D_B156_779B9B92CBA9" hidden="false">
+            <style value=""/>
+          </diagramlink>
+          <diagramlink connectorID="EAID_245C2C81_B0D4_4844_8DF8_DE95A35ADF3A" hidden="false">
+            <style value=""/>
+          </diagramlink>
+          <diagramlink connectorID="EAID_E5C2641A_D1E3_4745_A63D_EDB961448B21" hidden="false">
+            <style value=""/>
+          </diagramlink>
+          <diagramlink connectorID="EAID_3D32D09A_02D5_4EFA_A81F_F728DD95388A" hidden="false">
+            <style value=""/>
+          </diagramlink>
+          <diagramlink connectorID="EAID_90B41ED3_DFD6_40CB_9373_73AEACEA222D" hidden="false">
+            <style value=""/>
+          </diagramlink>
+          <diagramlink connectorID="EAID_2FE640FC_154F_40E9_8599_AE8FF801B60B" hidden="false">
+            <style value=""/>
+          </diagramlink>
+          <diagramlink connectorID="EAID_C8AD703C_8C26_42CB_B3D6_11CF5BD330EF" hidden="false">
+            <style value=""/>
+          </diagramlink>
+          <diagramlink connectorID="EAID_8FD233C5_01A4_4056_AC87_7DCA20E821AE" hidden="false">
+            <style value=""/>
+          </diagramlink>
+          <diagramlink connectorID="EAID_F960A59B_CBB1_405D_AC38_F7BEB2E66977" hidden="false">
+            <style value=""/>
+          </diagramlink>
+          <diagramlink connectorID="EAID_EA4C2989_F0DF_40B7_992D_2EFD67105974" hidden="false">
+            <style value=""/>
+          </diagramlink>
+          <diagramlink connectorID="EAID_152F043B_1451_4161_9447_595DFB4B04DA" hidden="false">
+            <style value=""/>
+          </diagramlink>
+          <diagramlink connectorID="EAID_31F2C3C6_2D67_4562_B1BF_5B9C87E328BB" hidden="false">
+            <style value=""/>
+          </diagramlink>
+          <diagramlink connectorID="EAID_55765A97_7BC5_42EF_8CE4_6643D4E4CF7D" hidden="false">
+            <style value=""/>
+          </diagramlink>
+          <diagramlink connectorID="EAID_9C252453_5309_43B9_A923_8DA69F28B7FF" hidden="false">
+            <style value=""/>
+          </diagramlink>
+          <diagramlink connectorID="EAID_4B812CFF_B0E1_4471_9047_BD2FF609AEE9" hidden="false">
+            <style value=""/>
+          </diagramlink>
+          <diagramlink connectorID="EAID_7A4889F2_2287_48A7_88A7_8356492AAAD7" hidden="false">
+            <style value=""/>
+          </diagramlink>
+          <diagramlink connectorID="EAID_73711D91_4DE2_4BD0_A25A_85742F614B4F" hidden="false">
+            <style value=""/>
+          </diagramlink>
+          <diagramlink connectorID="EAID_F6EED6C7_D86C_4608_A1FD_576568F6BAE8" hidden="false">
+            <style value=""/>
+          </diagramlink>
+          <diagramlink connectorID="EAID_83AA5D0E_2136_42ED_ACFB_18A8C6634F68" hidden="false">
+            <style value=""/>
+          </diagramlink>
+        </diagramlinks>
+      </diagram>
+    </diagrams>
+  </xmi:Extension>
+</xmi:XMI>

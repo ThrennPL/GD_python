@@ -82,13 +82,21 @@ class AIPDFAnalyzer:
     def __init__(self):
         # Konfiguracja z .env
         self.analysis_mode = os.getenv("PDF_ANALYSIS_MODE", "local").lower()
-        self.model = os.getenv("PDF_ANALYSIS_MODEL", os.getenv("API_DEFAULT_MODEL", "gemini"))
+        
+        # Pobierz model provider najpierw
+        self.model_provider = os.getenv("MODEL_PROVIDER", "local").lower()
+        
+        # Ustaw model na podstawie providera
+        if self.model_provider == "mock":
+            self.model = "models/gemini-2.0-flash"  # Mock nie potrzebuje prawdziwego modelu
+        else:
+            self.model = os.getenv("PDF_ANALYSIS_MODEL", os.getenv("API_DEFAULT_MODEL", "models/gemini-2.0-flash"))
+        
         self.prompt_language = os.getenv("PDF_ANALYSIS_PROMPT_LANG", "pl").lower()
         
         # Połączenie z modelem (ta sama konfiguracja co diagramy)
         self.chat_url = os.getenv("CHAT_URL", "")
         self.api_key = os.getenv("API_KEY", "")
-        self.model_provider = os.getenv("MODEL_PROVIDER", "local").lower()
         
         # Podstawowy procesor PDF (tylko jeśli potrzebny)
         self.pdf_processor = None

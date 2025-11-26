@@ -1,0 +1,125 @@
+@startuml
+title Zarządzanie Operacjami Bankowymi - Model Klas
+
+package "Domain Model" {
+    class Bank {
+        +name: string
+        +address: Adres
+        -id: int
+    }
+
+    class Oddział {
+        +code: string
+        +address: Adres
+        +bankId: int
+    }
+
+    class Klient {
+        +firstName: string
+        +lastName: string
+        +pesel: string
+        +address: Adres
+        +phoneNumber: string
+    }
+
+    class Konto {
+        +number: NumerKonta
+        +type: TypKonta
+        +saldo: decimal
+        +clientId: string
+        +branchId: int
+    }
+
+    class Transakcja {
+        +id: int
+        +date: DataCzas
+        +amount: Kwota
+        +title: string
+        +status: StatusTransakcji
+        +accountId: NumerKonta
+        +type: TypTransakcji
+    }
+
+    class DoradcaFinansowy {
+        +firstName: string
+        +lastName: string
+        +branchId: int
+    }
+}
+
+package "Value Objects" {
+    class Adres {
+        +street: string
+        +city: string
+        +zipCode: string
+    }
+
+    class NumerKonta {
+        +number: string
+    }
+
+    class Kwota {
+        +value: decimal
+    }
+
+    class DataCzas {
+        +date: Date
+        +time: Time
+    }
+
+    class DaneSprzedawcy {
+        +name: string
+        +location: string
+    }
+
+    class Lokalizacja {
+        +latitude: double
+        +longitude: double
+    }
+
+    enum TypKonta {
+        Oszczędnościowe
+        Rozliczeniowe
+        Kredytowe
+    }
+
+    enum StatusTransakcji {
+        Zrealizowana
+        WToce
+        Odrzucona
+        Czekająca
+    }
+
+    enum TypTransakcji {
+        Przelew
+        WypłataZBankomatu
+        PłatnośćKartą
+    }
+}
+
+package "Services" {
+    class TransakcjaMenedzer {
+        +executeTransaction(transakcja: Transakcja)
+        +cancelTransaction(transakcjaId: int)
+    }
+
+    class WalidatorKonta {
+        +validateKonto(konto: Konto): boolean
+    }
+}
+
+' Relacje
+Bank "1" -- "*" Oddział : "ma oddziały"
+Klient "1" -- "*" Konto : "posiada konta"
+Konto "1" -- "*" Transakcja : "ma transakcje"
+Konto "1" -- "0..*" Pełnomocnik : "ma pełnomocników"
+Klient "1" -- "0..*" DoradcaFinansowy : "ma doradców"
+Oddział "1" -- "0..*" DoradcaFinansowy : "ma doradców"
+Transakcja "1" -- "1" Przelew : "jest przelewem"
+Transakcja "1" -- "1" WypłataZBankomatu : "jest wypłatą"
+Transakcja "1" -- "1" PłatnośćKartą : "jest płatnością"
+Przelew "1" -- "1" Klient : "do odbiorcy"
+WypłataZBankomatu "1" -- "1" Lokalizacja : "w lokalizacji"
+PłatnośćKartą "1" -- "1" DaneSprzedawcy : "do sprzedawcy"
+
+@enduml
