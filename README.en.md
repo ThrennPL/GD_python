@@ -207,7 +207,7 @@ SVG diagrams can be generated in two ways, depending on the `plantuml_generator_
   * Java (for local PlantUML rendering)
   * `plantuml.jar` (in `config/plantuml.jar`)
   * PyQt5 (desktop version only)
-  * `.env` configuration file (copy in main directory + `config/.env`)
+  * `.env` configuration file in main directory
 
 ---
 
