@@ -220,8 +220,8 @@ class BPMNv2Pipeline:
         print(f"🚀 URUCHAMIANIE COMPLETE PIPELINE BPMN v2")
         print(f"📋 Proces: {process_name}")
         print(f"🏢 Kontekst: {context}")
-        print(f"🔧 DEBUG: Polish text input length: {len(polish_text)}")
-        print(f"🔧 DEBUG: Polish text preview: {polish_text[:200]}...")
+        # DEBUG: Polish text input (usunięty komunikat)
+        # DEBUG: Polish text preview (usunięty komunikat)
         print(f"{'='*60}")
         
         result = {
@@ -269,6 +269,24 @@ class BPMNv2Pipeline:
             
             # Step 5: Validate AI response
             print(f"\n📍 KROK 5: Walidacja JSON względem schema")
+            
+            # Pre-process: Fix Polish complexity values to English
+            if 'metadata' in parsed_json and 'complexity' in parsed_json['metadata']:
+                complexity_map = {
+                    'prosty': 'simple',
+                    'średni': 'medium', 
+                    'złożony': 'complex',
+                    'bardzo złożony': 'very complex',
+                    'simple': 'simple',
+                    'medium': 'medium',
+                    'complex': 'complex',
+                    'very complex': 'very complex'
+                }
+                old_complexity = parsed_json['metadata']['complexity']
+                parsed_json['metadata']['complexity'] = complexity_map.get(old_complexity.lower(), 'medium')
+                if old_complexity != parsed_json['metadata']['complexity']:
+                    print(f"🔄 Fixed complexity: '{old_complexity}' → '{parsed_json['metadata']['complexity']}'")
+            
             json_string = json.dumps(parsed_json, ensure_ascii=False)
             validation_result = self.response_validator.validate_response(json_string)
             is_valid, validated_json, validation_errors = validation_result

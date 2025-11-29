@@ -221,41 +221,88 @@ class PromptGenerator:
     def _get_base_prompt(self) -> str:
         """Podstawowa część promptu"""
         if self.template.context_type == ContextType.BANKING:
-            expert_role = "architekt procesów bankowych z 15-letnim doświadczeniem w systemach core banking"
+            expert_role = "architekt procesów bankowych z 15-letnim doświadczeniem w systemach core banking i certyfikacją BPMN 2.0"
         else:
             expert_role = "analityk procesów biznesowych z 10-letnim doświadczeniem w notacji BPMN 2.0"
         
-        return f"""**Jako {expert_role}, Twoim zadaniem jest przeanalizowanie opisu procesu biznesowego i zwrócenie strukturalnej definicji w formacie JSON zgodnym z BPMN 2.0.**
+        return f"""**Jako {expert_role}, Twoim zadaniem jest przeanalizowanie opisu procesu biznesowego i utworzenie PROCESU BPMN 2.0 zgodnego z oficjalnymi wytycznymi Object Management Group (OMG) dla notacji BPMN 2.0.**
+
+📋 **STANDARD BPMN 2.0 - OBOWIĄZKOWE WYMAGANIA:**
+- **Notation**: Stosuj WYŁĄCZNIE elementy zgodne ze specyfikacją BPMN 2.0
+- **Semantics**: Zachowuj semantykę i reguły przepływu zgodnie z OMG BPMN 2.0
+- **Structure**: Proces MUSI mieć poprawną strukturę: Pool → Lane → Flow Objects → Connecting Objects
+- **Compliance**: Każdy element musi spełniać wymagania zgodności BPMN 2.0
+- **Validation**: Wynikowy proces musi przejść walidację zgodności ze standardem
+
+🎯 **ELEMENTY BPMN 2.0 DO WYKORZYSTANIA:**
+- **Flow Objects**: Start Event, End Event, Activities (Task, Sub-process), Gateways
+- **Connecting Objects**: Sequence Flow, Message Flow, Association
+- **Swimlanes**: Pool (Participant), Lane
+- **Artifacts**: Data Object, Group, Text Annotation
+
+⚠️ **REGUŁY ZGODNOŚCI BPMN 2.0:**
+- Każdy Pool musi reprezentować innego uczestnika procesu
+- Start Event inicjuje przepływ w Pool
+- End Event kończy przepływ w Pool  
+- Sequence Flow łączy elementy WEWNĄTRZ Pool
+- Message Flow łączy elementy MIĘDZY Pool
+- Gateway musi mieć zdefiniowaną logikę rozgałęzienia
+
+🚨🚨🚨 ABSOLUTNY PRIORYTET - ZACHOWANIE CAŁEJ FUNKCJONALNOŚCI BIZNESOWEJ 🚨🚨🚨
+
+❌ KATEGORYCZNIE ZAKAZANE DZIAŁANIA:
+- NIGDY nie upraszczaj procesu do podstawowego Start→End
+- NIGDY nie usuwaj uczestników (participants) z oryginalnego opisu
+- NIGDY nie eliminuj zadań biznesowych (userTask, serviceTask)
+- NIGDY nie zastępuj złożonych procesów prostymi przepływami
+- NIGDY nie redukuj procesu do minimum strukturalnego
+
+✅ OBOWIĄZKOWE ZACHOWANIE:
+- ZAWSZE zachowuj WSZYSTKICH uczestników z oryginalnego opisu
+- ZAWSZE zachowuj wszystkie kluczowe aktywności biznesowe
+- ZAWSZE modeluj rzeczywistą złożoność procesu biznesowego
+- ZAWSZE zachowuj logikę biznesową i punkty decyzyjne
 
 **CELE ANALIZY:**
-1. Zidentyfikuj wszystkich uczestników procesu (participants/pools)
-2. Wyodrębnij sekwencję działań i zadań
-3. Znajdź punkty decyzyjne i bramki (gateways)
-4. Określ przepływy między elementami
-5. Przypisz odpowiednie typy BPMN do każdego elementu"""
+1. Zidentyfikuj wszystkich uczestników procesu (participants/pools) - ZACHOWAJ WSZYSTKICH!
+2. Wyodrębnij sekwencję działań i zadań - ZACHOWAJ WSZYSTKIE!
+3. Znajdź punkty decyzyjne i bramki (gateways) - ZACHOWAJ WSZYSTKIE!
+4. Określ przepływy między elementami - ZACHOWAJ CAŁĄ LOGIKĘ!
+5. Przypisz odpowiednie typy BPMN do każdego elementu - BEZ UPRASZCZANIA!"""
     
     def _get_context_section(self) -> str:
         """Sekcja kontekstu biznesowego"""
         if self.template.context_type == ContextType.BANKING:
             return """
-**KONTEKST BANKOWY:**
-- Uwzględnij wymagania regulacyjne (KYC, AML, PSD2)
-- Rozróżnij zadania użytkownika od automatyzacji systemowej
-- Identyfikuj procesy autoryzacji i weryfikacji
-- Zadbaj o ślady audytowe i compliance
-- Standardowi uczestnicy: Klient, Bank, Systemy zewnętrzne"""
+**KONTEKST BANKOWY + BPMN 2.0:**
+- **Standard**: Proces MUSI być zgodny z notacją BPMN 2.0 dla instytucji finansowych
+- **Pool Structure**: Każdy uczestnik (Klient, Bank, System) jako oddzielny Pool
+- **Regulatory Compliance**: Uwzględnij wymagania regulacyjne (KYC, AML, PSD2)
+- **Task Types**: Rozróżnij User Task (człowiek) od Service Task (system)
+- **Message Flows**: Komunikacja między uczestnikami przez Message Flow
+- **Error Handling**: Boundary Events dla obsługi błędów zgodnie z BPMN 2.0
+- **Business Rules**: Gateway z jasno zdefiniowanymi warunkami biznesowymi
+- **Audit Trail**: Każda aktywność musi być śledzalna zgodnie ze standardem"""
         elif self.template.context_type == ContextType.INSURANCE:
             return """
-**KONTEKST UBEZPIECZENIOWY:**
-- Uwzględnij procesy oceny ryzyka
-- Identyfikuj procesy likwidacji szkód
-- Zadbaj o zgodność z przepisami ubezpieczeniowymi"""
+**KONTEKST UBEZPIECZENIOWY + BPMN 2.0:**
+- **Standard**: Proces MUSI być zgodny z notacją BPMN 2.0
+- **Pool Structure**: Oddzielne Pool dla każdego uczestnika (Klient, Ubezpieczyciel, Ekspert, itp.)
+- **Risk Assessment**: Modeluj procesy oceny ryzyka jako Business Rules (Gateway)
+- **Claims Processing**: Używaj Sub-process dla złożonych procesów likwidacji
+- **Compliance**: Boundary Events dla kontroli regulacyjnych
+- **ZAWSZE zachowuj wszystkich uczestników zgodnie z BPMN 2.0
+- NIGDY nie upraszczaj - zachowuj pełną semantykę BPMN"""
         else:
             return """
-**KONTEKST OGÓLNY:**
-- Stosuj standardowe wzorce BPMN 2.0
-- Rozróżnij zadania ręczne od automatycznych
-- Identyfikuj wszystkie strony procesu"""
+**KONTEKST OGÓLNY + BPMN 2.0:**
+- **Standard**: Proces MUSI być zgodny z oficjalną specyfikacją BPMN 2.0 (OMG)
+- **Flow Objects**: Używaj prawidłowych elementów BPMN 2.0 (Events, Activities, Gateways)
+- **Swimlanes**: Każdy uczestnik jako oddzielny Pool zgodnie ze standardem
+- **Sequence vs Message Flow**: Rozróżnij przepływy wewnętrzne (Sequence) od komunikacji (Message)
+- **Gateway Logic**: Każda bramka musi mieć jasno zdefiniowaną logikę zgodną z BPMN 2.0
+- **ZAWSZE zachowuj wszystkich uczestników jako oddzielne Pool
+- NIGDY nie upraszczaj procesów - zachowuj zgodność ze standardem BPMN 2.0"""
     
     def _get_schema_section(self) -> str:
         """Sekcja z JSON Schema"""
@@ -355,6 +402,21 @@ Twoja odpowiedź MUSI być poprawnym JSON zgodnym z poniższym schema:
     def _get_validation_section(self) -> str:
         """Sekcja z zasadami walidacji"""
         return """
+🚨🚨🚨 NAJWAŻNIEJSZE: ZACHOWANIE WARTOŚCI BIZNESOWEJ! 🚨🚨🚨
+
+❌ **ABSOLUTNIE ZAKAZANE - UTRATA WARTOŚCI BIZNESOWEJ:**
+- NIGDY nie generuj prostego Start→End procesu jeśli opis zawiera więcej działań!
+- NIGDY nie upraszczaj złożonego procesu do 2-3 elementów!
+- NIGDY nie eliminuj uczestników z oryginalnego opisu procesu!
+- NIGDY nie usuwaj zadań biznesowych dla "prostoty"!
+- NIGDY nie zastępuj rzeczywistej złożoności "minimalną strukturą"!
+
+✅ **WYMAGANE - ZACHOWANIE FUNKCJONALNOŚCI:**
+- KAŻDY uczestnik z opisu MUSI być w participants!
+- KAŻDE działanie z opisu MUSI być jako element procesu!
+- KAŻDA interakcja między uczestnikami MUSI być modelowana!
+- ZŁOŻONOŚĆ procesu MUSI odpowiadać opisowi, NIE może być uproszczona!
+
 🚨🚨🚨 UWAGA: PARTICIPANT VALIDATION 🚨🚨🚨
 KAŻDY ELEMENT MUSI MIEĆ PARTICIPANT Z LISTY PARTICIPANTS!
 SPRAWDŹ KAŻDY ELEMENT DWUKROTNIE PRZED ZAPISEM!
@@ -367,13 +429,16 @@ SPRAWDŹ KAŻDY ELEMENT DWUKROTNIE PRZED ZAPISEM!
 - KAŻDY element MUSI używać TYLKO participant ID z listy participants
 - ZAKAZANE participant ID: autoryzacja_platnosci, boundary_timer, payment_gateway, notification_service
 
-✅ **WYMAGANE:**
-1. **ID Elementów:** Wszystkie ID muszą być unikalne i składać się z liter, cyfr i podkreśleń
-2. **Uczestnicy:** Każdy element musi być przypisany do istniejącego participant - SPRAWDŹ DWA RAZY!
-3. **Przepływy:** Każdy flow musi łączyć istniejące elementy (source i target)
-4. **Struktura procesu:** Minimum 1 startEvent, 1 aktywność, 1 endEvent
-5. **Bramki:** Każda bramka musi mieć zdefiniowane warunki dla wszystkich wychodzących ścieżek
-6. **Typy zadań:** Rozróżnij userTask (człowiek) od serviceTask (system)
+✅ **WYMAGANIA ZGODNOŚCI BPMN 2.0:**
+1. **Structure Compliance**: Pool → Participant → Lane → Flow Objects (zgodnie z OMG BPMN 2.0)
+2. **ID Elements**: Wszystkie ID muszą być unikalne i zgodne z konwencją BPMN
+3. **Participants as Pools**: Każdy uczestnik = oddzielny Pool zgodnie ze standardem
+4. **Flow Semantics**: Sequence Flow (wewnątrz Pool) vs Message Flow (między Pool)
+5. **Event Rules**: Start Event w każdym Pool, End Event zakańczają przepływ
+6. **Gateway Logic**: Exclusive/Parallel/Inclusive zgodnie z semantyką BPMN 2.0
+7. **Task Types**: User Task vs Service Task zgodnie z definicją BPMN
+8. **Process Completeness**: Pełny przepływ od Start do End zgodny ze standardem
+9. **Business Logic**: Każdy element musi mieć uzasadnienie biznesowe
 
 🔥 **PARTICIPANT VALIDATION - KRYTYCZNE WYMAGANIE:**
 - KAŻDY element MUSI używać TYLKO participant ID z listy participants
@@ -387,35 +452,67 @@ SPRAWDŹ KAŻDY ELEMENT DWUKROTNIE PRZED ZAPISEM!
 - "payment_gateway" → użyj "system_blik"
 - "notification_service" → użyj "aplikacja_mobilna"
 
-✅ **POPRAWNY PRZYKŁAD:**
+✅ **POPRAWNY PRZYKŁAD - PEŁNEJ KOMPLEKSOWOŚCI:**
 ```json
 {
-  "participants": [{"id": "klient", "name": "Klient"}],
-  "elements": [{"id": "task1", "participant": "klient"}]  ✓ POPRAWNE
+  "participants": [
+    {"id": "klient", "name": "Klient"},
+    {"id": "bank", "name": "Bank"},
+    {"id": "system_autoryzacji", "name": "System Autoryzacji"}
+  ],
+  "elements": [
+    {"id": "start1", "participant": "klient", "type": "startEvent"},
+    {"id": "task1", "participant": "klient", "type": "userTask"},
+    {"id": "task2", "participant": "bank", "type": "serviceTask"},
+    {"id": "gateway1", "participant": "system_autoryzacji", "type": "exclusiveGateway"},
+    {"id": "task3", "participant": "system_autoryzacji", "type": "serviceTask"},
+    {"id": "end1", "participant": "bank", "type": "endEvent"}
+  ]  ✓ POPRAWNE - ZACHOWUJE ZŁOŻONOŚĆ PROCESU
 }
 ```
 
-❌ **BŁĘDNY PRZYKŁAD:**
+❌ **BŁĘDNY PRZYKŁAD - OVERSIMPLIFICATION:**
 ```json
 {
   "participants": [{"id": "klient", "name": "Klient"}], 
-  "elements": [{"id": "task1", "participant": "bank_system"}]  ✗ BŁĄD!
+  "elements": [
+    {"id": "start1", "participant": "klient", "type": "startEvent"},
+    {"id": "end1", "participant": "klient", "type": "endEvent"}
+  ]  ✗ BŁĄD! - UTRATA WARTOŚCI BIZNESOWEJ!
 }
 ```
 
 🚨 **ABSOLUTNE ZAKAZY:**
 - NIGDY nie wymyślaj nowych participant ID
-- NIGDY nie dodawaj uczestników których nie ma w opisie procesu
-- KAŻDY participant w elements MUSI istnieć w participants"""
+- NIGDY nie dodawaj uczestników których nie ma w opisie procesu  
+- NIGDY nie upraszczaj złożonych procesów do Start→End!
+- KAŻDY participant w elements MUSI istnieć w participants
+- ZŁOŻONOŚĆ MUSI odpowiadać rzeczywistości biznesowej!"""
     
     def _get_output_instruction(self) -> str:
         """Instrukcja formatu wyjścia"""
         return """
-**INSTRUKCJA WYJŚCIA:**
+**INSTRUKCJA WYJŚCIA ZGODNEGO Z BPMN 2.0:**
 
-Zwróć WYŁĄCZNIE poprawny JSON zgodny z podanym schema. 
+🎯 **WYMAGANY REZULTAT:**
+- Zwróć proces BPMN 2.0 w formacie JSON zgodny ze specyfikacją OMG
+- Proces MUSI spełniać wszystkie wymagania notacji BPMN 2.0
+- JSON musi być kompletny, poprawny składniowo i gotowy do konwersji na BPMN XML
+- KAŻDY element musi być zgodny z semantyką BPMN 2.0
+
+📋 **FORMAT ODPOWIEDZI:**
+Zwróć WYŁĄCZNIE poprawny JSON zgodny z podanym schema BPMN 2.0.
 Nie dodawaj żadnych komentarzy, objaśnień ani dodatkowego tekstu.
-JSON musi być kompletny i gotowy do parsowania."""
+JSON musi być kompletny i gotowy do walidacji zgodności BPMN 2.0.
+
+🔍 **KONTROLA JAKOŚCI:**
+Przed zwróceniem odpowiedzi sprawdź czy:
+- ✅ Wszystkie Pool reprezentują rzeczywistych uczestników
+- ✅ Start/End Events są poprawnie rozmieszczone  
+- ✅ Sequence Flow łączy elementy wewnątrz Pool
+- ✅ Message Flow łączy elementy między Pool
+- ✅ Gateway mają zdefiniowaną logikę biznesową
+- ✅ Proces zachowuje pełną funkcjonalność biznesową z opisu"""
 
 
 class ResponseValidator:
