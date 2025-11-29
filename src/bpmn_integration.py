@@ -22,13 +22,17 @@ try:
     from bpmn_v2.complete_pipeline import BPMNv2Pipeline
     from bpmn_v2.iterative_pipeline import IterativeImprovementPipeline
     from bpmn_v2.mcp_server_simple import EnhancedBPMNQualityChecker
+    from bpmn_v2.integration_manager import BPMNIntegrationManager, quick_fix_bpmn
     BPMN_MODULES_AVAILABLE = True
+    ADVANCED_AUTO_FIX_AVAILABLE = True
     print("✅ BPMN v2 modules imported successfully")
+    print("✅ Advanced Auto-Fixer available")
 except ImportError as e:
     print(f"❌ Warning: BPMN v2 modules not available: {e}")
     import traceback
     print(f"❌ Full import error:\n{traceback.format_exc()}")
     BPMN_MODULES_AVAILABLE = False
+    ADVANCED_AUTO_FIX_AVAILABLE = False
     
     # Define dummy classes for graceful degradation only if import failed
     class AIConfig:
@@ -266,6 +270,70 @@ class BPMNIntegration:
                 
         except Exception as e:
             return False, bpmn_xml, {"error": f"Improvement error: {str(e)}"}
+    
+    def improve_bpmn_advanced(self, bpmn_xml: str, method: str = "best") -> Tuple[bool, str, Dict]:
+        """
+        Ulepsza BPMN używając zaawansowanego auto-fixera
+        
+        Args:
+            bpmn_xml: Aktualny XML BPMN
+            method: Metoda napraw ("xml_only", "json_only", "best", "both")
+            
+        Returns:
+            Tuple[success, improved_bpmn_xml, improvement_details]
+        """
+        if not self.is_available():
+            return False, bpmn_xml, {"error": "BPMN Integration not available"}
+        
+        if not ADVANCED_AUTO_FIX_AVAILABLE:
+            # Fallback to regular improvement
+            return self.improve_bpmn(bpmn_xml)
+        
+        try:
+            # Use advanced auto-fixer
+            success, fixed_bpmn, summary = quick_fix_bpmn(bpmn_xml, method)
+            
+            if success:
+                return True, fixed_bpmn, {
+                    "original_quality": summary.get('original_quality', 0),
+                    "final_quality": summary.get('final_quality', 0),
+                    "improvement": summary.get('improvement', 0),
+                    "fixes_count": summary.get('fixes_count', 0),
+                    "method": summary.get('method', method),
+                    "recommendations": summary.get('recommendations', []),
+                    "success_rate": 1.0
+                }
+            else:
+                error_msg = summary.get('error', 'Unknown error')
+                # Try fallback to regular improvement
+                return self.improve_bpmn(bpmn_xml)
+                
+        except Exception as e:
+            # Fallback to regular improvement on any error
+            print(f"Advanced auto-fix failed, falling back: {e}")
+            return self.improve_bpmn(bpmn_xml)
+    
+    def get_advanced_fix_status(self) -> Dict[str, Any]:
+        """
+        Zwraca status zaawansowanego systemu auto-fix
+        
+        Returns:
+            Dict z informacjami o dostępności i komponentach
+        """
+        if not ADVANCED_AUTO_FIX_AVAILABLE:
+            return {
+                "available": False,
+                "reason": "Advanced auto-fixer not imported"
+            }
+        
+        try:
+            from bpmn_v2.integration_manager import get_integration_status
+            return get_integration_status()
+        except Exception as e:
+            return {
+                "available": False,
+                "reason": f"Error getting status: {str(e)}"
+            }
 
 
 def create_bpmn_integration(api_key: str, model_provider: str, chat_url: Optional[str] = None,
@@ -337,9 +405,16 @@ def display_bpmn_result(success: bool, bpmn_xml: str, metadata: Dict):
             from bpmn_renderer import render_bpmn_preview
             render_bpmn_preview(bpmn_xml, show_xml=True)
         except ImportError as e:
-            st.warning(f"Renderer BPMN niedostępny - wyświetlam tylko XML (błąd: {e})")
+            print(f"⚠️ Renderer BPMN niedostępny - {e}")
+            # Fallback: show simple XML code
             with st.expander("🔍 Podgląd BPMN XML", expanded=True):
                 st.code(bpmn_xml, language="xml")
+                st.download_button(
+                    label="📥 Pobierz BPMN XML",
+                    data=bpmn_xml,
+                    file_name="process.bpmn",
+                    mime="application/xml"
+                )
             
     else:
         st.error(f"❌ Błąd generowania BPMN: {bpmn_xml}")
@@ -361,6 +436,156 @@ def display_bpmn_validation(is_valid: bool, quality_score: float, details: Dict)
         with st.expander("💡 Sugestie poprawek"):
             for suggestion in details["suggestions"]:
                 st.info(suggestion)
+
+
+def display_bpmn_advanced_fix(success: bool, improved_xml: str, fix_details: Dict):
+    """
+    Wyświetla wyniki zaawansowanych napraw BPMN
+    
+    Args:
+        success: Czy naprawy zostały zastosowane pomyślnie
+        improved_xml: Poprawiony XML BPMN
+        fix_details: Szczegóły zastosowanych napraw
+    """
+    if success:
+        st.success("✅ Zaawansowane auto-naprawy zastosowane pomyślnie!")
+        
+        # Show improvement metrics
+        with st.expander("📈 Szczegóły poprawek", expanded=True):
+            col1, col2, col3, col4 = st.columns(4)
+            
+            with col1:
+                original_quality = fix_details.get('original_quality', 0)
+                st.metric("Jakość początkowa", f"{original_quality:.1f}")
+            
+            with col2:
+                final_quality = fix_details.get('final_quality', 0)
+                st.metric("Jakość końcowa", f"{final_quality:.1f}")
+            
+            with col3:
+                improvement = fix_details.get('improvement', 0)
+                delta_color = "normal" if improvement >= 0 else "inverse"
+                st.metric("Poprawa", f"+{improvement:.1f}", delta=f"+{improvement:.1f}", delta_color=delta_color)
+            
+            with col4:
+                fixes_count = fix_details.get('fixes_count', 0)
+                st.metric("Ilość napraw", fixes_count)
+        
+        # Show method used and recommendations
+        method = fix_details.get('method', 'unknown')
+        st.info(f"🔧 Metoda: **{method}**")
+        
+        recommendations = fix_details.get('recommendations', [])
+        if recommendations:
+            with st.expander("💡 Rekomendacje"):
+                for i, rec in enumerate(recommendations, 1):
+                    st.write(f"{i}. {rec}")
+        
+        # Update session state with improved XML
+        st.session_state.latest_xml = improved_xml
+        
+        # Show before/after comparison if requested
+        if st.button("🔄 Porównaj przed/po", key="compare_before_after"):
+            st.session_state.show_bpmn_comparison = True
+        
+    else:
+        error_msg = fix_details.get('error', 'Nieznany błąd')
+        st.error(f"❌ Zaawansowane naprawy nie powiodły się: {error_msg}")
+        
+        # Show fallback info if available
+        if 'fallback_used' in fix_details:
+            st.warning("⚠️ Użyto metody zapasowej")
+
+
+def display_advanced_fix_status(status: Dict[str, Any]):
+    """
+    Wyświetla status zaawansowanego systemu auto-fix
+    
+    Args:
+        status: Status z get_advanced_fix_status()
+    """
+    if status.get('available', False):
+        st.success("✅ Zaawansowane auto-naprawy dostępne")
+        
+        # Show component status if available
+        if 'json_engine' in status:
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                json_status = "✅" if status['json_engine'] else "❌"
+                st.write(f"{json_status} JSON Engine")
+            with col2:
+                xml_status = "✅" if status['xml_fixer'] else "❌"
+                st.write(f"{xml_status} XML Fixer")
+            with col3:
+                validator_status = "✅" if status['validator'] else "❌"
+                st.write(f"{validator_status} Validator")
+    else:
+        reason = status.get('reason', 'Unknown')
+        st.warning(f"⚠️ Zaawansowane auto-naprawy niedostępne: {reason}")
+
+
+def handle_bpmn_improvement_ui(bpmn_integration: BPMNIntegration):
+    """
+    Obsługuje UI do poprawiania BPMN w Streamlit
+    
+    Args:
+        bpmn_integration: Instancja BPMNIntegration
+    """
+    if not hasattr(st.session_state, 'latest_xml') or not st.session_state.latest_xml:
+        st.info("📄 Brak diagramu BPMN do poprawienia")
+        return
+    
+    st.subheader("🔧 Poprawy BPMN")
+    
+    # Show advanced fix status
+    with st.expander("🔍 Status zaawansowanych napraw"):
+        advanced_status = bpmn_integration.get_advanced_fix_status()
+        display_advanced_fix_status(advanced_status)
+    
+    # Improvement options
+    col1, col2, col3 = st.columns(3)
+    
+    with col1:
+        if st.button("🔧 Standardowe naprawy", key="standard_fix"):
+            with st.spinner("Stosowanie standardowych napraw..."):
+                success, improved_xml, details = bpmn_integration.improve_bpmn(
+                    st.session_state.latest_xml
+                )
+                display_bpmn_advanced_fix(success, improved_xml, details)
+    
+    with col2:
+        if st.button("🎆 Zaawansowane auto-naprawy", key="advanced_fix"):
+            with st.spinner("Stosowanie zaawansowanych napraw..."):
+                success, improved_xml, details = bpmn_integration.improve_bpmn_advanced(
+                    st.session_state.latest_xml,
+                    method="best"
+                )
+                display_bpmn_advanced_fix(success, improved_xml, details)
+    
+    with col3:
+        # Method selection for advanced fixes
+        fix_method = st.selectbox(
+            "Metoda napraw",
+            ["best", "xml_only", "json_only", "both"],
+            help="best: automatycznie wybiera najlepszą metodę"
+        )
+        
+        if st.button("🎯 Naprawy z metodą", key="method_fix"):
+            with st.spinner(f"Stosowanie napraw metodą: {fix_method}..."):
+                success, improved_xml, details = bpmn_integration.improve_bpmn_advanced(
+                    st.session_state.latest_xml,
+                    method=fix_method
+                )
+                display_bpmn_advanced_fix(success, improved_xml, details)
+    
+    # Quick validation
+    st.divider()
+    if st.button("🔎 Waliduj aktualny BPMN", key="validate_current"):
+        with st.spinner("Walidacja BPMN..."):
+            is_valid, quality_score, validation_details = bpmn_integration.validate_bpmn(
+                st.session_state.latest_xml
+            )
+            display_bpmn_validation(is_valid, quality_score, validation_details)
 
 
 if __name__ == "__main__":

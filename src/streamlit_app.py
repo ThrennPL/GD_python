@@ -701,8 +701,8 @@ with col1:
                 
                 if template_type == "BPMN" and bpmn_integration and bpmn_integration.is_available():
                     safe_log_info("Starting BPMN generation...")
-                    print(f"🔥 STREAMLIT DEBUG: Original process_description length: {len(process_description)}")
-                    print(f"🔥 STREAMLIT DEBUG: Original process_description preview: {process_description[:200]}...")
+                    # DEBUG kommunikat usunięty dla czystości logów
+                    # DEBUG komunik previewu usunięty dla czystości logów
                     success, bpmn_result, metadata = bpmn_integration.generate_bpmn_process(
                         user_input=process_description,  # Use raw process_description, not processed prompt!
                         process_type=bpmn_process_type,

@@ -1,2 +1,6 @@
 *.env
 .env
+*.log
+*.json
+*.bpmn
+*.txt
