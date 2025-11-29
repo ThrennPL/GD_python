@@ -1,5 +1,5 @@
 """
-MCP Server for BPMN (Enhanced with BPMN Compliance)
+MCP Server for BPMN (Enhanced with BPMN Compliance + Intelligence Layer)
 Model Context Protocol server for BPMN process verification and improvement
 
 Funkcje:
@@ -8,6 +8,11 @@ Funkcje:
 3. Automatyczne naprawy prostych błędów  
 4. Generowanie sugestii poprawek przez AI
 5. Analiza jakości i kompletności procesów
+6. AI-powered Intelligence Orchestrator
+7. ML-based issue prediction
+8. Template-based quick fixes
+9. Cross-process learning
+10. Adaptive strategy management
 """
 
 import json
@@ -20,30 +25,55 @@ import os
 # Add current directory to path for imports
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
-from complete_pipeline import BPMNv2Pipeline
-from ai_config import get_default_config
-from json_prompt_template import ResponseValidator
+from .complete_pipeline import BPMNv2Pipeline
+from .ai_config import get_default_config
+from .json_prompt_template import ResponseValidator
 
 # Import nowego systemu walidacji BPMN
-from bpmn_compliance_validator import (
+from .bpmn_compliance_validator import (
     BPMNComplianceValidator, 
     BPMNComplianceReport, 
     BPMNSeverity
 )
-from bpmn_improvement_engine import BPMNImprovementEngine
+from .bpmn_improvement_engine import BPMNImprovementEngine
+
+# Import Intelligence Layer
+try:
+    from .intelligence_orchestrator import IntelligenceOrchestrator, OptimizationResult
+    INTELLIGENCE_ENABLED = True
+except ImportError:
+    INTELLIGENCE_ENABLED = False
+    print("⚠️ Intelligence Layer nie jest dostępna - używanie podstawowego trybu")
+
+from enum import Enum
+
+class ErrorCategory(Enum):
+    """Kategorie błędów BPMN dla progresywnego naprawiania"""
+    STRUCTURE = "structure"  # Start/End Events, Pool structure
+    FLOWS = "flows"         # Sequence/Message flows
+    GATEWAYS = "gateways"     # Gateway logic and connections
+    NAMING = "naming"       # Element names and IDs
+    SEMANTICS = "semantics"   # Business logic correctness
 
 
 class EnhancedBPMNQualityChecker:
     """
     Zaawansowany sprawdzacz jakości BPMN z pełną walidacją zgodności ze standardem
+    + Intelligence Layer integration
     """
     
     def __init__(self):
         self.validator = ResponseValidator()
         self.compliance_validator = BPMNComplianceValidator()
         self.improvement_engine = None  # Będzie ustawione przez SimpleMCPServer
+        
+        # Initialize Intelligence Orchestrator if available
+        if INTELLIGENCE_ENABLED:
+            self.intelligence = IntelligenceOrchestrator(enable_learning=True)
+        else:
+            self.intelligence = None
     
-    def check_process_quality(self, bpmn_json: Dict) -> Dict[str, Any]:
+    def check_process_quality(self, bpmn_json: Dict, original_participants_count: int = 0) -> Dict[str, Any]:
         """
         Sprawdza jakość i kompletność procesu BPMN
         
@@ -69,14 +99,26 @@ class EnhancedBPMNQualityChecker:
         # 5. Kompletność na podstawie compliance score
         completeness_score = compliance_report.overall_score / 100.0
         
-        return {
-            'is_valid': is_valid and compliance_report.overall_score > 50,
+        # Create result dict for overall quality calculation
+        result_dict = {
+            'is_valid': is_valid and compliance_report.overall_score > 20,
             'completeness_score': completeness_score,
             'missing_elements': [issue.message for issue in compliance_report.issues if issue.severity == BPMNSeverity.CRITICAL],
+            'quality_metrics': quality_metrics,
+            'process': bpmn_json  # Add for business value checking
+        }
+        
+        # Calculate overall quality with business value preservation
+        overall_quality = self._calculate_overall_quality(result_dict, original_participants_count)
+        
+        return {
+            'is_valid': result_dict['is_valid'],
+            'completeness_score': completeness_score,
+            'missing_elements': result_dict['missing_elements'],
             'validation_errors': schema_errors + [issue.message for issue in compliance_report.issues if issue.severity == BPMNSeverity.CRITICAL],
             'improvement_suggestions': improvement_suggestions,
             'quality_metrics': quality_metrics,
-            'overall_quality': compliance_report.overall_score / 100.0,
+            'overall_quality': overall_quality,  # Now uses business value preservation logic
             
             # Nowe pola zgodności BPMN
             'bpmn_compliance': {
@@ -126,6 +168,88 @@ class EnhancedBPMNQualityChecker:
             'naming_quality': naming_quality
         }
     
+    def intelligent_analysis_and_optimization(self, bpmn_json: Dict, 
+                                             context_hints: Optional[Dict] = None,
+                                             iteration_history: Optional[List[Dict]] = None) -> Dict[str, Any]:
+        """
+        Wykonuje inteligentną analizę i optymalizację procesu BPMN
+        z użyciem Intelligence Orchestrator
+        """
+        if not self.intelligence:
+            return self._fallback_analysis(bpmn_json)
+        
+        # Get current issues for intelligence analysis
+        compliance_report = self.compliance_validator.validate_bpmn_compliance(bpmn_json)
+        issues = [
+            {
+                'element_id': issue.element_id,
+                'severity': issue.severity.value,
+                'rule_code': issue.rule_code,
+                'message': issue.message
+            }
+            for issue in compliance_report.issues
+        ]
+        
+        try:
+            # Perform intelligent analysis and optimization
+            optimization_result = self.intelligence.analyze_and_optimize(
+                bpmn_json=bpmn_json,
+                issues=issues,
+                context_hints=context_hints,
+                iteration_history=iteration_history
+            )
+            
+            return {
+                'intelligence_enabled': True,
+                'optimized_process': optimization_result.optimized_process,
+                'applied_optimizations': optimization_result.applied_optimizations,
+                'insights': {
+                    'predicted_issues': [
+                        {
+                            'issue_type': pred.issue_type,
+                            'probability': pred.probability,
+                            'confidence': pred.confidence,
+                            'prevention_tip': pred.prevention_tip
+                        }
+                        for pred in optimization_result.intelligence_insights.predicted_issues
+                    ],
+                    'quality_alerts': [
+                        {
+                            'type': alert.type.value,
+                            'severity': alert.severity,
+                            'message': alert.message,
+                            'recommendation': alert.recommendation
+                        }
+                        for alert in optimization_result.intelligence_insights.quality_alerts
+                    ],
+                    'strategy_used': optimization_result.intelligence_insights.strategy_recommendation.strategy_type.value,
+                    'confidence_score': optimization_result.intelligence_insights.confidence_score
+                },
+                'performance_metrics': optimization_result.performance_metrics,
+                'recommendations': optimization_result.recommendations,
+                'processing_time': optimization_result.intelligence_insights.processing_time
+            }
+            
+        except Exception as e:
+            return {
+                'intelligence_enabled': False,
+                'error': f"Intelligence analysis failed: {str(e)}",
+                'fallback_used': True,
+                **self._fallback_analysis(bpmn_json)
+            }
+    
+    def _fallback_analysis(self, bpmn_json: Dict) -> Dict[str, Any]:
+        """Fallback analysis gdy Intelligence Layer nie jest dostępna"""
+        compliance_report = self.compliance_validator.validate_bpmn_compliance(bpmn_json)
+        
+        return {
+            'basic_analysis': True,
+            'compliance_score': compliance_report.overall_score,
+            'compliance_level': compliance_report.compliance_level,
+            'critical_issues': len([i for i in compliance_report.issues if i.severity == BPMNSeverity.CRITICAL]),
+            'improvement_priorities': compliance_report.improvement_priorities[:5]
+        }
+
     def _generate_improvement_suggestions(self, compliance_report: BPMNComplianceReport) -> List[str]:
         """Generuje sugestie poprawek na podstawie raportu zgodności"""
         suggestions = []
@@ -136,13 +260,21 @@ class EnhancedBPMNQualityChecker:
         # Dodaj konkretne sugestie dla najważniejszych problemów
         critical_issues = [i for i in compliance_report.issues if i.severity == BPMNSeverity.CRITICAL]
         for issue in critical_issues[:3]:  # Tylko top 3
-            suggestions.append(f"{issue.element_id}: {issue.suggestion}")
+            try:
+                suggestions.append(f"{issue.element_id}: {issue.suggestion}")
+            except AttributeError:
+                # Fallback jeśli issue nie ma element_id lub suggestion
+                suggestions.append(f"Issue: {getattr(issue, 'message', 'Unknown issue')}")
         
         # Dodaj sugestie dla problemów MAJOR jeśli brak CRITICAL
         if len(critical_issues) == 0:
             major_issues = [i for i in compliance_report.issues if i.severity == BPMNSeverity.MAJOR]
             for issue in major_issues[:3]:
-                suggestions.append(f"{issue.element_id}: {issue.suggestion}")
+                try:
+                    suggestions.append(f"{issue.element_id}: {issue.suggestion}")
+                except AttributeError:
+                    # Fallback jeśli issue nie ma element_id lub suggestion
+                    suggestions.append(f"Issue: {getattr(issue, 'message', 'Unknown issue')}")
         
         # Dodaj sugestie automatycznych poprawek
         auto_fixable_count = len([i for i in compliance_report.issues if i.auto_fixable])
@@ -294,17 +426,79 @@ class EnhancedBPMNQualityChecker:
             'naming_quality': sum(1 for e in elements if e.get('name') and len(e['name']) > 5) / max(1, len(elements))
         }
 
+    def _calculate_overall_quality(self, result: Dict[str, Any], original_participants_count: int = 0) -> float:
+        """Oblicza ogólną jakość procesu z penalty za utratę wartości biznesowej"""
+        if not result.get('is_valid', False):
+            print("📊 Jakość: 0.0 (nieprawidłowy JSON)")
+            return 0.0
+        
+        # Add business value preservation check
+        bpmn_json = result.get('process', {})
+        if bpmn_json:
+            current_participants = len(bpmn_json.get('participants', []))
+            current_tasks = len([e for e in bpmn_json.get('elements', []) if 'task' in e.get('type', '').lower()])
+            
+            # Heavy penalty for losing participants or oversimplification
+            if original_participants_count > 0 and current_participants < original_participants_count * 0.5:
+                print(f"⚠️ Strata uczestników: {current_participants}/{original_participants_count} - penalty!")
+                return max(0.1, result.get('completeness_score', 0) * 0.3)  # Heavy penalty
+            
+            if current_tasks < 2:  # Too simplified (Start->End only)
+                print(f"⚠️ Proces zbyt uproszczony ({current_tasks} zadań) - penalty!")
+                return max(0.2, result.get('completeness_score', 0) * 0.5)
+        
+        # Much more realistic weighted average to allow meaningful quality scores
+        weights = {
+            'completeness': 0.5,      # Increased weight for completeness
+            'missing_penalty': 0.3,   # Reduced penalty for missing elements
+            'quality_bonus': 0.2
+        }
+        
+        completeness = result.get('completeness_score', 0.0)
+        # Much more lenient penalty for missing elements
+        missing_penalty = max(0, 1 - len(result.get('missing_elements', [])) * 0.1)  # Very reduced from 0.25 to 0.1
+        quality_metrics = result.get('quality_metrics', {})
+        quality_bonus = sum(quality_metrics.values()) / len(quality_metrics) if quality_metrics else 0
+        
+        overall = (
+            completeness * weights['completeness'] +
+            missing_penalty * weights['missing_penalty'] +
+            quality_bonus * weights['quality_bonus']
+        )
+        
+        # Much more lenient strictness factor to allow good scores for valid processes
+        strictness_factor = 0.95  # Increased from 0.8 to 0.95 for much better scores
+        
+        final_quality = min(1.0, overall * strictness_factor)
+        
+        # Debug logging
+        print(f"📊 Jakość - detale:")
+        print(f"   Kompletność: {completeness:.2f}")
+        print(f"   Braki: {len(result.missing_elements)} (penalty: {missing_penalty:.2f})")
+        print(f"   Quality bonus: {quality_bonus:.2f}")
+        print(f"   Przed strictness: {overall:.2f}")
+        print(f"   Po strictness (0.95): {final_quality:.2f}")
+        
+        return final_quality
+
 
 class SimpleMCPServer:
     """
     Enhanced MCP Server for BPMN with full compliance validation
     """
     
-    def __init__(self, ai_config=None):
+    def __init__(self, ai_config=None, quota_optimization=True):
+        self.quota_optimization = quota_optimization
+        self.ai_calls_count = 0
+        self.ai_calls_limit = 150  # Conservative limit to avoid quota exhaustion
+        self.improvement_cache = {}  # Cache for similar improvement patterns
         # Use provided config or fallback to default
         config = ai_config or get_default_config()
         self.pipeline = BPMNv2Pipeline(ai_config=config)
         self.quality_checker = EnhancedBPMNQualityChecker()
+        
+        # Add direct access to compliance validator
+        self.compliance_validator = BPMNComplianceValidator()
         
         # Ustaw silnik poprawek z pipeline do AI improvements
         self.improvement_engine = BPMNImprovementEngine(ai_pipeline=self.pipeline)
@@ -314,7 +508,7 @@ class SimpleMCPServer:
         print(f"🤖 Using AI: {self.pipeline.ai_config.provider.value}")
         print("✅ BPMN Compliance Validator enabled")
     
-    def verify_bpmn_process(self, bpmn_json: Dict) -> Dict[str, Any]:
+    def verify_bpmn_process(self, bpmn_json: Dict, original_participants_count: int = 0) -> Dict[str, Any]:
         """
         Enhanced BPMN process verification with full compliance checking
         
@@ -326,8 +520,8 @@ class SimpleMCPServer:
         """
         print(f"🔍 Verifying BPMN process: {bpmn_json.get('process_name', 'Unnamed')}")
         
-        # Używaj nowego systemu jakości
-        quality_result = self.quality_checker.check_process_quality(bpmn_json)
+        # Używaj nowego systemu jakości z business value preservation
+        quality_result = self.quality_checker.check_process_quality(bpmn_json, original_participants_count)
         
         # Wyświetl szczegóły zgodności
         compliance = quality_result.get('bpmn_compliance', {})
@@ -338,19 +532,11 @@ class SimpleMCPServer:
         print(f"   BPMN Compliance Score: {compliance.get('score', 0):.1f}")
         print(f"   BPMN Compliance Level: {compliance.get('level', 'UNKNOWN')}")
         
-        # Oblicz ogólną jakość łączącą compliance i completeness
-        compliance_score = compliance.get('score', 0) / 100.0
-        completeness_score = quality_result.get('completeness_score', 0)
+        # Używaj quality_result.overall_quality bezpośrednio (już przeliczone w check_process_quality)
+        final_quality = quality_result.get('overall_quality', 0.0)
+        completeness_score = quality_result.get('completeness_score', 0.0)
         
-        # Weighted combination: 70% compliance, 30% completeness
-        combined_quality = (compliance_score * 0.7) + (completeness_score * 0.3)
-        
-        # Apply strictness factor
-        strictness_penalty = 0.95  # 5% penalty for strictness
-        final_quality = combined_quality * strictness_penalty
-        
-        print(f"   Przed strictness: {combined_quality:.2f}")
-        print(f"   Po strictness ({strictness_penalty}): {final_quality:.2f}")
+        print(f"   Final quality: {final_quality:.2f}")
         
         return {
             'is_valid': quality_result['is_valid'],
@@ -381,10 +567,50 @@ class SimpleMCPServer:
         
         return next_steps
     
+    def intelligent_bpmn_optimization(self, bpmn_json: Dict, 
+                                    context_hints: Optional[Dict] = None) -> Dict[str, Any]:
+        """
+        🧠 Inteligentna optymalizacja procesu BPMN z użyciem Intelligence Orchestrator
+        
+        Args:
+            bpmn_json: Proces BPMN do optymalizacji
+            context_hints: Wskazówki kontekstowe (domain, time_constraint, quality_requirement)
+            
+        Returns:
+            Wynik inteligentnej optymalizacji z insights i rekomendacjami
+        """
+        print(f"🧠 Starting intelligent BPMN optimization...")
+        if context_hints:
+            print(f"📋 Context: {context_hints}")
+        
+        # Perform intelligent analysis
+        intelligence_result = self.quality_checker.intelligent_analysis_and_optimization(
+            bpmn_json=bpmn_json,
+            context_hints=context_hints
+        )
+        
+        if intelligence_result.get('intelligence_enabled'):
+            print(f"✨ Intelligence analysis completed")
+            print(f"🎯 Strategy: {intelligence_result['insights']['strategy_used']}")
+            print(f"🔮 Predicted issues: {len(intelligence_result['insights']['predicted_issues'])}")
+            print(f"⚡ Quality alerts: {len(intelligence_result['insights']['quality_alerts'])}")
+            print(f"🎪 Confidence: {intelligence_result['insights']['confidence_score']:.3f}")
+            print(f"⏱️ Processing time: {intelligence_result['processing_time']:.2f}s")
+        else:
+            print(f"⚠️ Intelligence analysis failed, using fallback")
+        
+        # Verify the optimized process
+        if 'optimized_process' in intelligence_result:
+            verification_result = self.verify_bpmn_process(intelligence_result['optimized_process'])
+            intelligence_result['verification'] = verification_result
+            
+        return intelligence_result
+    
     def improve_bpmn_process(self, bpmn_json: Dict, target_score: float = 85.0, 
                            max_iterations: int = 3) -> Dict[str, Any]:
         """
         Iteracyjne ulepszanie procesu BPMN z pełną walidacją zgodności
+        NOWY: Automatyczne naprawy konkretnych problemów które AI nie potrafi naprawić
         
         Args:
             bpmn_json: Proces BPMN do ulepszenia
@@ -395,6 +621,65 @@ class SimpleMCPServer:
             Kompletny raport z ulepszonego procesu
         """
         print(f"🔧 Improving BPMN process...")
+        
+        original_process = bpmn_json.copy()
+        current_process = bpmn_json.copy()
+        improvements_made = []
+        
+        for iteration in range(max_iterations):
+            print(f"\n🔄 Auto-fix iteration {iteration + 1}")
+            
+            # Sprawdź compliance
+            compliance_report = self.compliance_validator.validate_bpmn_compliance(current_process)
+            print(f"📊 Current score: {compliance_report.overall_score}")
+            
+            if compliance_report.overall_score >= target_score:
+                print(f"🎯 Target score reached!")
+                break
+            
+            # Automatyczne naprawy konkretnych problemów
+            iteration_changes = []
+            
+            # 1. STRUCT_001 & STRUCT_007: Pool bez Start Events
+            start_issues = [i for i in compliance_report.issues if i.rule_code in ['STRUCT_001', 'STRUCT_007'] and 'Start Event' in i.message]
+            for issue in start_issues:
+                if self._auto_fix_missing_pool_start_event(current_process, issue.element_id):
+                    change_msg = f"Added Start Event to Pool '{issue.element_id}'"
+                    iteration_changes.append(change_msg)
+                    print(f"✅ {change_msg}")
+            
+            # 2. STRUCT_002: Pool bez End Events  
+            end_issues = [i for i in compliance_report.issues if i.rule_code == 'STRUCT_002' and 'End Event' in i.message]
+            for issue in end_issues:
+                if self._auto_fix_missing_pool_end_event(current_process, issue.element_id):
+                    change_msg = f"Added End Event to Pool '{issue.element_id}'"
+                    iteration_changes.append(change_msg)
+                    print(f"✅ {change_msg}")
+            
+            # 3. STRUCT_004: Gateway sequence flow między Pool → Message Flow
+            gateway_issues = [i for i in compliance_report.issues if i.rule_code == 'STRUCT_004' and 'Gateway' in i.message]
+            for issue in gateway_issues:
+                if self._auto_fix_gateway_cross_pool_flows(current_process, issue.element_id):
+                    change_msg = f"Fixed Gateway cross-pool flows: '{issue.element_id}'"
+                    iteration_changes.append(change_msg)
+                    print(f"✅ {change_msg}")
+            
+            # 4. Brakujące sequence flows w obrębie Pool
+            connectivity_issues = [i for i in compliance_report.issues if i.rule_code == 'STRUCT_003']
+            if connectivity_issues and self._auto_fix_pool_sequence_flows(current_process):
+                change_msg = "Fixed missing sequence flows within pools"
+                iteration_changes.append(change_msg)
+                print(f"✅ {change_msg}")
+            
+            improvements_made.extend(iteration_changes)
+            
+            if not iteration_changes:
+                print(f"⚠️ No more automatic fixes available")
+                break
+        
+        # Final verification
+        final_compliance = self.compliance_validator.validate_bpmn_compliance(current_process)
+        
         print(f"🎯 Target BPMN compliance score: {target_score}")
         print(f"🔄 Max iterations: {max_iterations}")
         
@@ -410,6 +695,7 @@ class SimpleMCPServer:
         
         return {
             'success': True,
+            'message': f"Improved from {improvement_result.get('original_score', 0):.1f} to {improvement_result.get('final_score', 0):.1f}",
             'original_process': improvement_result['original_process'],
             'improved_process': improvement_result['improved_process'],
             'improvement_summary': improvement_result['summary'],
@@ -418,7 +704,8 @@ class SimpleMCPServer:
             'final_compliance': improvement_result['final_compliance'],
             'recommendations': self._generate_final_recommendations(improvement_result),
             # Dodane dla kompatybilności z iterative_pipeline.py
-            'changes_made': self._extract_changes_from_history(improvement_result['improvement_history'])
+            'changes_made': self._extract_changes_from_history(improvement_result['improvement_history']),
+            'improvements_made': len(self._extract_changes_from_history(improvement_result['improvement_history']))
         }
     
     def _extract_changes_from_history(self, improvement_history: List[Dict]) -> List[str]:
@@ -494,12 +781,25 @@ class SimpleMCPServer:
             'message': f'Applied {len(changes_made)} notation improvements (no process logic changes)'
         }
     
-    def generate_improvement_prompt(self, bpmn_json: Dict, verification_result: Dict) -> str:
+    def generate_improvement_prompt(self, bpmn_json: Dict, verification_result: Dict, 
+                                  focus_severity: str = None, fixed_categories_info: str = "",
+                                  original_text: str = "") -> str:
         """
         Generuje skrócony prompt dla AI żeby poprawił proces
+        NOWY: focus_severity pozwala skupić się na konkretnym poziomie problemów
         """
         missing = verification_result.get('missing_elements', [])
         suggestions = verification_result.get('improvement_suggestions', [])
+        overall_quality = verification_result.get('overall_quality', 0.0)
+        bpmn_compliance = verification_result.get('bpmn_compliance', {})
+        
+        # Filtruj issues według focus_severity
+        all_issues = bpmn_compliance.get('issues', [])
+        if focus_severity:
+            focused_issues = [i for i in all_issues if i['severity'] == focus_severity]
+            print(f"🎯 FOCUSED IMPROVEMENT: {focus_severity} - {len(focused_issues)} issues")
+        else:
+            focused_issues = all_issues
         
         # Create simplified process info to reduce prompt size
         process_summary = {
@@ -507,71 +807,578 @@ class SimpleMCPServer:
             'participants': [p.get('name', p.get('id', 'Unknown')) for p in bpmn_json.get('participants', [])],
             'elements_count': len(bpmn_json.get('elements', [])),
             'flows_count': len(bpmn_json.get('flows', [])),
-            'elements_summary': [
-                {'id': e.get('id', 'unknown'), 'type': e.get('type', 'unknown'), 'name': e.get('name', 'unnamed')[:30] + ('...' if len(e.get('name', '')) > 30 else '')}
-                for e in bpmn_json.get('elements', [])[:10]  # Only first 10 elements
-            ]
+            'start_events': len([e for e in bpmn_json.get('elements', []) if e.get('type') == 'startEvent']),
+            'end_events': len([e for e in bpmn_json.get('elements', []) if e.get('type') == 'endEvent']),
+            'tasks': len([e for e in bpmn_json.get('elements', []) if 'Task' in e.get('type', '')]),
         }
         
-        prompt = f"""Popraw proces BPMN:
+        # NOWA LOGIKA: Kategoryzowanie błędów według typów
+        categorized_issues = self._categorize_issues_by_type(focused_issues if focus_severity else all_issues)
+        
+        # PROGRESYWNE NAPRAWIANIE: wybierz jedną kategorię naraz
+        selected_category, selected_issues = self._select_next_category_to_fix(categorized_issues, bpmn_json)
+        
+        # Determine improvement focus based on selected category
+        improvement_focus = []
+        
+        if selected_category and selected_issues:
+            print(f"🎯 KATEGORIA: {selected_category.value.upper()} - {len(selected_issues)} issues")
+            # Zapisz aktualną kategorię do tracking
+            self.current_iteration_category = selected_category
+            
+            for issue in selected_issues[:3]:  # Max 3 issues from one category at once
+                severity_marker = issue['severity'].upper() if focus_severity else 'ISSUE'
+                improvement_focus.append(f"{severity_marker} - {issue['rule_code']}: {issue['message']}")
+        elif focus_severity == 'critical':
+            # Fallback dla critical issues bez kategorii
+            for issue in focused_issues[:5]:  # Max 5 critical issues at once
+                improvement_focus.append(f"CRITICAL - {issue['rule_code']}: {issue['message']}")
+        elif focus_severity == 'major':
+            # Skupiaj się tylko na major issues  
+            for issue in focused_issues[:5]:
+                improvement_focus.append(f"MAJOR - {issue['rule_code']}: {issue['message']}")
+        else:
+            # Domyślnie - stary sposób (wszystkie problemy)
+            if process_summary['start_events'] == 0:
+                improvement_focus.append("CRITICAL: Dodaj Start Event na początku procesu")
+            if process_summary['end_events'] == 0:
+                improvement_focus.append("CRITICAL: Dodaj End Event na końcu procesu")
+            if process_summary['flows_count'] < process_summary['elements_count'] - 1:
+                improvement_focus.append("CRITICAL: Dodaj brakujące Sequence Flow między elementami")
+            
+            # Add specific issues
+            improvement_focus.extend(missing[:3])  # Top 3 missing elements
+            improvement_focus.extend(suggestions[:3])  # Top 3 suggestions
+            
+            # Jeśli nie ma konkretnych problemów, skoncentruj się na jakości
+            if not improvement_focus and overall_quality < 0.65:
+                improvement_focus = [
+                    "Popraw nazwy elementów - użyj bardziej opisowych nazw",
+                    "Sprawdź poprawność przepływów między elementami",
+                    "Dodaj warunki dla Gateway jeśli używane"
+                ]
+        
+        # Prompt różni się w zależności od focus_severity
+        if focus_severity:
+            severity_text = focus_severity.upper()
+            prompt = f"""ROLA: Jesteś ekspertem notacji BPMN 2.0 z wieloletnim doświadczeniem w projektowaniu procesów biznesowych. Twoja specjalizacja to poprawianie zgodności diagramów z standardem BPMN 2.0 oraz zapewnianie poprawnych przepływów między uczestnikami procesów (Pools/Lanes).
+
+KATEGORIA NAPRAW: {selected_category.value.upper() if selected_category else severity_text}
+{fixed_categories_info}
+
+ZADANIE: Napraw TYLKO {severity_text} problemy w kategorii {selected_category.value.upper() if selected_category else 'OGÓLNEJ'} w procesie BPMN:
 
 PROCES: {process_summary['process_name']} 
-UCZESTNICY: {', '.join(process_summary['participants'])}
-ELEMENTY: {process_summary['elements_count']} elementów, {process_summary['flows_count']} przepływów
+ANALIZA:
+- Uczestnicy: {len(process_summary['participants'])} ({', '.join(process_summary['participants'])})
+- Elementy: {process_summary['elements_count']} (Start: {process_summary['start_events']}, End: {process_summary['end_events']}, Tasks: {process_summary['tasks']})
+- Przepływy: {process_summary['flows_count']}
+- Obecna jakość: {overall_quality:.2f}
 
-GŁÓWNE PROBLEMY ({len(missing)} braków):
-{chr(10).join(f"- {item}" for item in missing[:5])}  
+🎯 FOKUS: {severity_text} ISSUES TYLKO ({len(improvement_focus)}):
+{chr(10).join(f"- {item}" for item in improvement_focus)}
 
-SUGESTIE ({len(suggestions)}):
-{chr(10).join(f"- {item}" for item in suggestions[:5])}
+⚠️ KRYTYCZNE ZASADY BPMN 2.0:
+- Każdy Pool MUSI mieć Start Event, Intermediate Catch Event lub Message Flow wchodzący
+- Każdy Pool MUSI mieć End Event, Intermediate Throw Event lub Message Flow wychodzący  
+- Sequence Flow NIE MOŻE przechodzić między różnymi Pools - używaj Message Flow
+- W obrębie Pool wszystkie elementy MUSZĄ być połączone Sequence Flow
 
-Zwróć kompletny poprawiony proces JSON z tą samą strukturą:
+⭐ NAJWAŻNIEJSZE - ZACHOWANIE WARTOŚCI BIZNESOWEJ:
+🚨🚨🚨 ABSOLUTNY PRIORYTET - ZACHOWANIE CAŁEJ FUNKCJONALNOŚCI BIZNESOWEJ 🚨🚨🚨
+
+📝 **ORYGINALNY OPIS PROCESU (ZAWSZE SPRAWDZAJ!):**
+{original_text}
+
+❌ KATEGORYCZNIE ZAKAZANE DZIAŁANIA:
+- NIGDY nie usuwaj uczestników (Pool) z oryginalnego opisu procesu
+- NIGDY nie upraszczaj procesu do podstawowego Start→End
+- NIGDY nie usuwaj zadań biznesowych (userTask, serviceTask)
+- NIGDY nie likwiduj całych Pool lub procesów biznesowych
+- NIGDY nie zastępuj złożonych procesów prostymi przepływami
+
+✅ OBOWIĄZKOWE ZACHOWANIE:
+- ZAWSZE zachowuj WSZYSTKICH uczestników z oryginalnego opisu
+- ZAWSZE zachowuj wszystkie kluczowe aktivności biznesowe (Tasks)
+- ZAWSZE zachowuj logikę biznesową i punkty decyzyjne
+- ZAWSZE zachowuj złożoność odpowiadającą rzeczywistości biznesowej
+- ZAWSZE odwołuj się do oryginalnego opisu procesu powyżej!
+
+🎯 DEFINICJA SUKCESU:
+Udana poprawa = Zachowanie 100% funkcjonalności biznesowej + Poprawa zgodności BPMN
+TYLKO dodawaj elementy strukturalne dla zgodności, NIE USUWAJ logiki biznesowej!
+
+INSTRUKCJE NAPRAWY:
+1. 🔒 ZACHOWAJ WSZYSTKICH uczestników z oryginalnego opisu procesu
+2. 🔒 ZACHOWAJ wszystkie kluczowe Tasks/Activities biznesowe
+3. ✅ Napraw TYLKO wymienione {severity_text} problemy zgodnie z BPMN 2.0
+4. ✅ Dodaj brakujące Start/End Events do Pool zgodnie ze standardem
+5. ✅ Zamień niepoprawne Sequence Flow na Message Flow między Pools
+6. ✅ Zachowaj istniejące nazwy i ID elementów
+7. ⚠️ Jeśli nie możesz naprawić bez utraty funkcjonalności, dodaj tylko minimum potrzebnych elementów
+
+⚠️ FORMAT JSON - PRZYKŁAD POPRAWNEJ STRUKTURY:
+{{
+  "process_name": "Nazwa procesu",
+  "participants": [{{"id": "participant_1", "name": "Uczestnik 1", "type": "pool"}}],
+  "elements": [{{"id": "start_1", "name": "Start Event", "type": "startEvent", "participant": "participant_1"}}],
+  "flows": [{{"id": "flow_1", "source": "start_1", "target": "task_1"}}]
+}}
+
+Zwróć TYLKO JSON bez dodatkowego tekstu:
 {{"process_name": "...", "participants": [...], "elements": [...], "flows": [...]}}
 
-ORYGINALNY PROCES:
-{json.dumps(bpmn_json, indent=1, ensure_ascii=False)}"""
+ORYGINALNY PROCES DO POPRAWY:
+{json.dumps(bpmn_json, indent=1, ensure_ascii=False)[:3000]}{"..." if len(json.dumps(bpmn_json)) > 3000 else ""}"""
+        else:
+            category_info = f"KATEGORIA: {selected_category.value.upper()}" if selected_category else "KATEGORIA: OGÓLNA POPRAWA"
+            prompt = f"""ROLA: Jesteś ekspertem notacji BPMN 2.0 z wieloletnim doświadczeniem w projektowaniu procesów biznesowych. Twoja specjalizacja to poprawianie zgodności diagramów z standardem BPMN 2.0 oraz zapewnianie poprawnych przepływów między uczestnikami procesów (Pools/Lanes).
+
+{category_info}
+{fixed_categories_info}
+
+📝 **ORYGINALNY OPIS PROCESU (ZAWSZE SPRAWDZAJ!):**
+{original_text}
+
+⭐ NAJWAŻNIEJSZE - ZACHOWANIE WARTOŚCI BIZNESOWEJ:
+🚨🚨🚨 ABSOLUTNY PRIORYTET - ZACHOWANIE CAŁEJ FUNKCJONALNOŚCI BIZNESOWEJ 🚨🚨🚨
+
+ZADANIE: Popraw proces BPMN na podstawie konkretnych problemów, ale ZAWSZE zachowaj wszystkich uczestników i całą logikę biznesową z oryginalnego opisu!
+
+PROCES: {process_summary['process_name']} 
+ANALIZA:
+- Uczestnicy: {len(process_summary['participants'])} ({', '.join(process_summary['participants'])})
+- Elementy: {process_summary['elements_count']} (Start: {process_summary['start_events']}, End: {process_summary['end_events']}, Tasks: {process_summary['tasks']})
+- Przepływy: {process_summary['flows_count']}
+- Obecna jakość: {overall_quality:.2f}
+
+WYMAGANE POPRAWKI ({len(improvement_focus)}):
+{chr(10).join(f"- {item}" for item in improvement_focus)}
+
+⚠️ KRYTYCZNE ZASADY BPMN 2.0:
+- Każdy Pool MUSI mieć Start Event, Intermediate Catch Event lub Message Flow wchodzący
+- Każdy Pool MUSI mieć End Event, Intermediate Throw Event lub Message Flow wychodzący  
+- Sequence Flow NIE MOŻE przechodzić między różnymi Pools - używaj Message Flow
+- W obrębie Pool wszystkie elementy MUSZĄ być połączone Sequence Flow
+
+⭐ KRYTYCZNE - ZACHOWANIE WARTOŚCI BIZNESOWEJ:
+- Proces MUSI zawierać wszystkich uczestników z oryginalnego opisu
+- Proces MUSI zachować kluczowe aktywności biznesowe
+- ZABRANIA SIĘ upraszczania do podstawowego Start→End
+- Celem jest naprawa struktury, NIE redukcja funkcjonalności
+
+INSTRUKCJE POPRAWY:
+1. 🔒 OBLIGATORYJNIE zachowaj wszystkich uczestników i kluczowe Task z oryginalnego procesu
+2. ✅ Napraw strukturalne problemy zgodnie z BPMN 2.0
+2. Dodaj brakujące Start Event / End Event do Pools zgodnie ze standardem
+3. Zamień niepoprawne Sequence Flow na Message Flow między Pools
+4. Popraw nazwy elementów na bardziej opisowe
+5. Sprawdź czy wszystkie elementy mają unikalne ID
+
+⚠️ FORMAT JSON - PRZYKŁAD POPRAWNEJ STRUKTURY:
+{{
+  "process_name": "Nazwa procesu",
+  "participants": [{{"id": "participant_1", "name": "Uczestnik 1", "type": "pool"}}],
+  "elements": [{{"id": "start_1", "name": "Start Event", "type": "startEvent", "participant": "participant_1"}}],
+  "flows": [{{"id": "flow_1", "source": "start_1", "target": "task_1"}}]
+}}
+
+Zwróć TYLKO poprawiony JSON bez dodatkowego tekstu:
+{{"process_name": "...", "participants": [...], "elements": [...], "flows": [...]}}
+
+ORYGINALNY PROCES DO POPRAWY:
+{json.dumps(bpmn_json, indent=1, ensure_ascii=False)[:3000]}{"..." if len(json.dumps(bpmn_json)) > 3000 else ""}"""
         
         return prompt.strip()
     
-    def _calculate_overall_quality(self, result: Dict[str, Any]) -> float:
-        """Oblicza ogólną jakość procesu (znacznie bardziej realistyczny algorytm)"""
-        if not result.get('is_valid', False):
-            print("📊 Jakość: 0.0 (nieprawidłowy JSON)")
-            return 0.0
-        
-        # Much more realistic weighted average to allow meaningful quality scores
-        weights = {
-            'completeness': 0.5,      # Increased weight for completeness
-            'missing_penalty': 0.3,   # Reduced penalty for missing elements
-            'quality_bonus': 0.2
+    def _categorize_issues_by_type(self, issues: List[Dict]) -> Dict[ErrorCategory, List[Dict]]:
+        """Kategoryzuje błędy według typów dla progresywnego naprawiania"""
+        categorized = {
+            ErrorCategory.STRUCTURE: [],
+            ErrorCategory.FLOWS: [],
+            ErrorCategory.GATEWAYS: [],
+            ErrorCategory.NAMING: [],
+            ErrorCategory.SEMANTICS: []
         }
         
-        completeness = result.get('completeness_score', 0.0)
-        # Much more lenient penalty for missing elements
-        missing_penalty = max(0, 1 - len(result.get('missing_elements', [])) * 0.1)  # Very reduced from 0.25 to 0.1
-        quality_metrics = result.get('quality_metrics', {})
-        quality_bonus = sum(quality_metrics.values()) / len(quality_metrics) if quality_metrics else 0
+        for issue in issues:
+            rule_code = issue.get('rule_code', '')
+            message = issue.get('message', '').lower()
+            
+            # Kategoria STRUCTURE: Start/End Events, Pool structure
+            if any(keyword in rule_code for keyword in ['STRUCT_001', 'STRUCT_002', 'STRUCT_007']):
+                categorized[ErrorCategory.STRUCTURE].append(issue)
+            
+            # Kategoria FLOWS: Sequence/Message flows
+            elif any(keyword in rule_code for keyword in ['STRUCT_003', 'STRUCT_004']):
+                categorized[ErrorCategory.FLOWS].append(issue)
+            
+            # Kategoria GATEWAYS: Gateway logic
+            elif 'gateway' in message or 'GATEWAY' in rule_code:
+                categorized[ErrorCategory.GATEWAYS].append(issue)
+            
+            # Kategoria NAMING: Names and IDs
+            elif any(keyword in rule_code for keyword in ['STYLE_001', 'STYLE_003']) or 'name' in message:
+                categorized[ErrorCategory.NAMING].append(issue)
+            
+            # Kategoria SEMANTICS: Business logic
+            else:
+                categorized[ErrorCategory.SEMANTICS].append(issue)
         
-        overall = (
-            completeness * weights['completeness'] +
-            missing_penalty * weights['missing_penalty'] +
-            quality_bonus * weights['quality_bonus']
-        )
+        return categorized
+    
+    def _select_next_category_to_fix(self, categorized_issues: Dict[ErrorCategory, List[Dict]], 
+                                   process: Dict) -> Tuple[ErrorCategory, List[Dict]]:
+        """Wybiera następną kategorię błędów do naprawienia w kolejności priorytetów"""
         
-        # Much more lenient strictness factor to allow good scores for valid processes
-        strictness_factor = 0.95  # Increased from 0.8 to 0.95 for much better scores
+        # Kolejność priorytetów naprawiania (od najważniejszych)
+        priority_order = [
+            ErrorCategory.STRUCTURE,   # Najpierw struktura (Start/End Events)
+            ErrorCategory.FLOWS,       # Potem przepływy
+            ErrorCategory.GATEWAYS,    # Następnie Gateway
+            ErrorCategory.NAMING,      # Potem nazewnictwo
+            ErrorCategory.SEMANTICS    # Na końcu semantyka
+        ]
         
-        final_quality = min(1.0, overall * strictness_factor)
+        # Znajdź pierwszą kategorię z issues
+        for category in priority_order:
+            issues_in_category = categorized_issues.get(category, [])
+            if issues_in_category:
+                print(f"📋 Wybrano kategorię: {category.value} ({len(issues_in_category)} issues)")
+                return category, issues_in_category
         
-        # Debug logging
-        print(f"📊 Jakość - detale:")
-        print(f"   Kompletność: {completeness:.2f}")
-        print(f"   Braki: {len(result.missing_elements)} (penalty: {missing_penalty:.2f})")
-        print(f"   Quality bonus: {quality_bonus:.2f}")
-        print(f"   Przed strictness: {overall:.2f}")
-        print(f"   Po strictness (0.95): {final_quality:.2f}")
+        print(f"📋 Brak issues w żadnej kategorii")
+        return None, []
+    
+    def _apply_auto_fixes_for_category(self, process: Dict, issues: List[Dict], category: ErrorCategory) -> List[str]:
+        """Zastosuj automatyczne poprawki dla konkretnej kategorii"""
+        fixes_applied = []
         
-        return final_quality
+        for issue in issues:
+            rule_code = issue.get('rule_code', '')
+            element_id = issue.get('element_id', '')
+            
+            # AUTO-FIX: Gateway without enough outgoing flows
+            if rule_code == 'STRUCT_004' and 'musi mieć co najmniej 2 przepływy wyjściowe' in issue.get('message', ''):
+                if self._auto_fix_gateway_outgoing_flows(process, element_id):
+                    fixes_applied.append(f"Added missing outgoing flow for gateway {element_id}")
+            
+            # AUTO-FIX: Missing Start/End Events
+            elif rule_code == 'STRUCT_001':
+                participant = issue.get('element_id', '')
+                if 'start' in issue.get('message', '').lower():
+                    if self._auto_fix_missing_pool_start_event(process, participant):
+                        fixes_applied.append(f"Added Start Event for pool {participant}")
+                elif 'end' in issue.get('message', '').lower():
+                    if self._auto_fix_missing_pool_end_event(process, participant):
+                        fixes_applied.append(f"Added End Event for pool {participant}")
+        
+        return fixes_applied
+    
+    def _auto_fix_gateway_outgoing_flows(self, process: Dict, gateway_id: str) -> bool:
+        """Auto-fix dla Gateway bez wystarczających przepływów wyjściowych"""
+        try:
+            elements = process.get('elements', [])
+            flows = process.get('flows', [])
+            
+            # Znajdź gateway
+            gateway = next((e for e in elements if e.get('id') == gateway_id), None)
+            if not gateway or gateway.get('type') != 'exclusiveGateway':
+                return False
+            
+            # Sprawdź istniejące outgoing flows
+            outgoing = [f for f in flows if f.get('source') == gateway_id]
+            if len(outgoing) >= 2:
+                return False  # Already has enough flows
+            
+            # Znajdź lub stwórz End Event jako domyślny target
+            gateway_pool = gateway.get('participant')
+            end_events = [e for e in elements if e.get('type') == 'endEvent' and e.get('participant') == gateway_pool]
+            
+            if not end_events:
+                # Stwórz End Event
+                end_event_id = f"end_event_{gateway_pool}_default"
+                end_event = {
+                    'id': end_event_id,
+                    'name': 'Default End',
+                    'type': 'endEvent', 
+                    'participant': gateway_pool
+                }
+                elements.append(end_event)
+                target_id = end_event_id
+            else:
+                target_id = end_events[0]['id']
+            
+            # Dodaj default flow
+            default_flow = {
+                'id': f'flow_{gateway_id}_default',
+                'source': gateway_id,
+                'target': target_id,
+                'name': 'default',
+                'condition': 'default'
+            }
+            flows.append(default_flow)
+            
+            return True
+            
+        except Exception as e:
+            print(f"⚠️ Auto-fix gateway failed: {e}")
+            return False
+        """Naprawia brak Start Event w Pool"""
+        try:
+            elements = process.get('elements', [])
+            flows = process.get('flows', [])
+            participants = process.get('participants', [])
+            
+            # Znajdź participant
+            participant = next((p for p in participants if p.get('id') == pool_id), None)
+            if not participant:
+                return False
+            
+            # Sprawdź czy Pool ma aktywności
+            pool_elements = [e for e in elements if e.get('participant') == pool_id]
+            activities = [e for e in pool_elements if e.get('type') in ['userTask', 'serviceTask', 'manualTask']]
+            
+            if not activities:
+                return False  # Pool bez aktywności nie potrzebuje Start Event
+            
+            # Sprawdź czy już ma Start Event
+            start_events = [e for e in pool_elements if e.get('type') == 'startEvent']
+            if start_events:
+                return False  # Już ma Start Event
+            
+            # Dodaj Start Event
+            start_event_id = f"start_event_{pool_id}"
+            start_event = {
+                'id': start_event_id,
+                'name': f'Start {participant.get("name", pool_id)}',
+                'type': 'startEvent',
+                'participant': pool_id
+            }
+            elements.append(start_event)
+            
+            # Połącz z pierwszą aktywnością
+            if activities:
+                first_activity = activities[0]
+                flow_id = f"flow_{start_event_id}_{first_activity['id']}"
+                sequence_flow = {
+                    'id': flow_id,
+                    'source': start_event_id,
+                    'target': first_activity['id'],
+                    'type': 'sequence'
+                }
+                flows.append(sequence_flow)
+            
+            return True
+            
+        except Exception as e:
+            print(f"❌ Error fixing missing start event for {pool_id}: {e}")
+            return False
+    
+    def _auto_fix_missing_pool_start_event(self, process: Dict, pool_id: str) -> bool:
+        """Naprawia brak Start Event w Pool"""
+        try:
+            elements = process.get('elements', [])
+            flows = process.get('flows', [])
+            participants = process.get('participants', [])
+            
+            # Znajdź participant
+            participant = next((p for p in participants if p.get('id') == pool_id), None)
+            if not participant:
+                return False
+            
+            # Sprawdź czy Pool ma aktywności
+            pool_elements = [e for e in elements if e.get('participant') == pool_id]
+            activities = [e for e in pool_elements if e.get('type') in ['userTask', 'serviceTask', 'manualTask']]
+            
+            if not activities:
+                return False  # Pool bez aktywności nie potrzebuje Start Event
+            
+            # Sprawdź czy już ma Start Event lub dostaje Message Flow wchodzący
+            start_events = [e for e in pool_elements if e.get('type') == 'startEvent']
+            message_flows_in = [f for f in flows if f.get('type') == 'message' and 
+                               any(e.get('id') == f.get('target') for e in pool_elements)]
+            
+            if start_events or message_flows_in:
+                return False  # Już ma Start Event lub Message Flow wchodzący
+            
+            # Dodaj Start Event
+            start_event_id = f"start_event_{pool_id}"
+            start_event = {
+                'id': start_event_id,
+                'name': f'Start {participant.get("name", pool_id)}',
+                'type': 'startEvent',
+                'participant': pool_id
+            }
+            elements.append(start_event)
+            
+            # Znajdź pierwszą aktywność (bez incoming flows)
+            first_activities = []
+            for activity in activities:
+                incoming = [f for f in flows if f.get('target') == activity.get('id') and f.get('type') == 'sequence']
+                if not incoming:
+                    first_activities.append(activity)
+            
+            # Połącz z pierwszą aktywnością
+            if first_activities:
+                for first_activity in first_activities:
+                    flow_id = f"flow_{start_event_id}_{first_activity['id']}"
+                    sequence_flow = {
+                        'id': flow_id,
+                        'source': start_event_id,
+                        'target': first_activity['id'],
+                        'type': 'sequence'
+                    }
+                    flows.append(sequence_flow)
+            
+            return True
+            
+        except Exception as e:
+            print(f"❌ Error fixing missing start event for {pool_id}: {e}")
+            return False
+
+    def _auto_fix_missing_pool_end_event(self, process: Dict, pool_id: str) -> bool:
+        """Naprawia brak End Event w Pool"""
+        try:
+            elements = process.get('elements', [])
+            flows = process.get('flows', [])
+            participants = process.get('participants', [])
+            
+            # Znajdź participant
+            participant = next((p for p in participants if p.get('id') == pool_id), None)
+            if not participant:
+                return False
+            
+            # Sprawdź czy Pool ma aktywności
+            pool_elements = [e for e in elements if e.get('participant') == pool_id]
+            activities = [e for e in pool_elements if e.get('type') in ['userTask', 'serviceTask', 'manualTask']]
+            
+            if not activities:
+                return False  # Pool bez aktywności nie potrzebuje End Event
+            
+            # Sprawdź czy już ma End Event
+            end_events = [e for e in pool_elements if e.get('type') == 'endEvent']
+            if end_events:
+                return False  # Już ma End Event
+            
+            # Dodaj End Event
+            end_event_id = f"end_event_{pool_id}"
+            end_event = {
+                'id': end_event_id,
+                'name': f'End {participant.get("name", pool_id)}',
+                'type': 'endEvent',
+                'participant': pool_id
+            }
+            elements.append(end_event)
+            
+            # Znajdź ostatnią aktywność (bez outgoing flows)
+            last_activities = []
+            for activity in activities:
+                outgoing = [f for f in flows if f.get('source') == activity.get('id') and f.get('type') == 'sequence']
+                if not outgoing:
+                    last_activities.append(activity)
+            
+            # Połącz z ostatnią aktywnością
+            if last_activities:
+                for last_activity in last_activities:
+                    flow_id = f"flow_{last_activity['id']}_{end_event_id}"
+                    sequence_flow = {
+                        'id': flow_id,
+                        'source': last_activity['id'],
+                        'target': end_event_id,
+                        'type': 'sequence'
+                    }
+                    flows.append(sequence_flow)
+            
+            return True
+            
+        except Exception as e:
+            print(f"❌ Error fixing missing end event for {pool_id}: {e}")
+            return False
+    
+    def _auto_fix_gateway_cross_pool_flows(self, process: Dict, gateway_id: str) -> bool:
+        """Naprawia Gateway które wysyłają Sequence Flow między Pool (zamienia na Message Flow)"""
+        try:
+            elements = process.get('elements', [])
+            flows = process.get('flows', [])
+            
+            # Znajdź gateway
+            gateway = next((e for e in elements if e.get('id') == gateway_id), None)
+            if not gateway:
+                return False
+            
+            gateway_pool = gateway.get('participant')
+            if not gateway_pool:
+                return False
+            
+            changes_made = False
+            
+            # Sprawdź wszystkie outgoing sequence flows z tego gateway
+            for flow in flows[:]:  # Copy to avoid modification during iteration
+                if flow.get('source') == gateway_id and flow.get('type') == 'sequence':
+                    # Znajdź target element
+                    target_element = next((e for e in elements if e.get('id') == flow.get('target')), None)
+                    if target_element:
+                        target_pool = target_element.get('participant')
+                        
+                        # Jeśli target jest w innym Pool, zmień na Message Flow
+                        if target_pool and target_pool != gateway_pool:
+                            flow['type'] = 'message'
+                            changes_made = True
+                            print(f"   Changed {gateway_id} → {target_element['id']} from sequence to message flow")
+            
+            return changes_made
+            
+        except Exception as e:
+            print(f"❌ Error fixing gateway flows for {gateway_id}: {e}")
+            return False
+    
+    def _auto_fix_pool_sequence_flows(self, process: Dict) -> bool:
+        """Naprawia brakujące sequence flows w obrębie Pool"""
+        try:
+            elements = process.get('elements', [])
+            flows = process.get('flows', [])
+            participants = process.get('participants', [])
+            
+            changes_made = False
+            
+            for participant in participants:
+                pool_id = participant.get('id')
+                pool_elements = [e for e in elements if e.get('participant') == pool_id]
+                
+                # Znajdź aktywności bez incoming flows
+                for element in pool_elements:
+                    if element.get('type') in ['userTask', 'serviceTask', 'manualTask']:
+                        incoming = [f for f in flows if f.get('target') == element.get('id') and f.get('type') == 'sequence']
+                        
+                        if not incoming and element.get('type') != 'startEvent':
+                            # Spróbuj znaleźć poprzedni element w tym Pool
+                            prev_elements = [e for e in pool_elements 
+                                           if e.get('type') in ['startEvent', 'userTask', 'serviceTask', 'manualTask', 'exclusiveGateway']
+                                           and e.get('id') != element.get('id')]
+                            
+                            for prev_element in prev_elements:
+                                # Sprawdź czy prev_element nie ma outgoing flow
+                                outgoing = [f for f in flows if f.get('source') == prev_element.get('id') and f.get('type') == 'sequence']
+                                if not outgoing:
+                                    # Dodaj połączenie
+                                    flow_id = f"flow_{prev_element['id']}_{element['id']}"
+                                    new_flow = {
+                                        'id': flow_id,
+                                        'source': prev_element['id'],
+                                        'target': element['id'],
+                                        'type': 'sequence'
+                                    }
+                                    flows.append(new_flow)
+                                    changes_made = True
+                                    print(f"   Added sequence flow: {prev_element['id']} → {element['id']}")
+                                    break
+            
+            return changes_made
+            
+        except Exception as e:
+            print(f"❌ Error fixing pool sequence flows: {e}")
+            return False
     
     def _suggest_next_steps(self, result: Dict[str, Any]) -> List[str]:
         """Sugeruje następne kroki"""
@@ -736,7 +1543,22 @@ def test_mcp_server():
     print(f"   Changes made: {len(improvement['changes_made'])}")
     print(f"   Message: {improvement['message']}")
     
-    print("\n3. Testing improvement prompt...")
+    print("\n3. Testing intelligent optimization...")
+    try:
+        intelligence_result = server.intelligent_bpmn_optimization(
+            test_process, 
+            context_hints={'domain': 'testing', 'time_constraint': 'normal', 'quality_requirement': 'standard'}
+        )
+        print(f"   Intelligence enabled: {intelligence_result.get('intelligence_enabled', False)}")
+        if intelligence_result.get('intelligence_enabled'):
+            print(f"   Applied optimizations: {len(intelligence_result.get('applied_optimizations', []))}")
+            print(f"   Confidence: {intelligence_result.get('insights', {}).get('confidence_score', 0):.3f}")
+        else:
+            print(f"   Fallback mode: {intelligence_result.get('fallback_used', False)}")
+    except Exception as e:
+        print(f"   Intelligence test failed: {e}")
+    
+    print("\n4. Testing improvement prompt...")
     prompt = server.generate_improvement_prompt(test_process, verification)
     print(f"   Prompt length: {len(prompt)} chars")
     

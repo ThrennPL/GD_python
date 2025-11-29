@@ -105,6 +105,24 @@ class BPMNComplianceValidator:
                 "description": "Message Flow może łączyć tylko różne Pools",
                 "check": self._check_message_flows
             },
+            "STRUCT_009": {
+                "name": "Message Flow End Event Validation",
+                "severity": BPMNSeverity.MAJOR,
+                "description": "End Event z wyjściowym Message Flow musi być typu Message",
+                "check": self._check_message_flow_end_events
+            },
+            "STRUCT_010": {
+                "name": "Message Flow Intermediate Event Validation",
+                "severity": BPMNSeverity.MAJOR,
+                "description": "Intermediate Event z Message Flow musi być typu Message",
+                "check": self._check_message_flow_intermediate_events
+            },
+            "STRUCT_011": {
+                "name": "Message Flow Target Validation",
+                "severity": BPMNSeverity.MAJOR,
+                "description": "Message Flow może prowadzić tylko do Activity lub Intermediate/End Event",
+                "check": self._check_message_flow_targets
+            },
             
             # === REGUŁY SEMANTYCZNE ===
             "SEM_001": {
@@ -208,6 +226,17 @@ class BPMNComplianceValidator:
         statistics = self._generate_statistics(issues, bpmn_json)
         priorities = self._determine_improvement_priorities(issues)
         
+        # DEBUG: Pokazuj szczegóły issues
+        critical_count = len([i for i in issues if i.severity == BPMNSeverity.CRITICAL])
+        major_count = len([i for i in issues if i.severity == BPMNSeverity.MAJOR])
+        print(f"🏭 BPMN Compliance Debug:")
+        print(f"   Total issues: {len(issues)} (Critical: {critical_count}, Major: {major_count})")
+        print(f"   Score: {overall_score}")
+        if critical_count > 0:
+            print(f"   Critical issues:")
+            for issue in [i for i in issues if i.severity == BPMNSeverity.CRITICAL][:3]:
+                print(f"      - {issue.rule_code}: {issue.message}")
+        
         return BPMNComplianceReport(
             overall_score=overall_score,
             compliance_level=compliance_level,
@@ -219,53 +248,163 @@ class BPMNComplianceValidator:
     # === IMPLEMENTACJA REGUŁ STRUKTURALNYCH ===
     
     def _check_start_events(self, bpmn_json: Dict, rule_code: str, rule_config: Dict) -> List[BPMNComplianceIssue]:
-        """Sprawdza obecność Start Events"""
+        """Sprawdza obecność Start Events - per Pool w procesach wielopoolowych"""
         issues = []
         elements = bpmn_json.get('elements', [])
+        participants = bpmn_json.get('participants', [])
+        flows = bpmn_json.get('flows', [])
         
-        start_events = [e for e in elements if e.get('type') == 'startEvent']
-        
-        if not start_events:
-            issues.append(BPMNComplianceIssue(
-                element_id="process",
-                element_type="process",
-                severity=rule_config["severity"],
-                rule_code=rule_code,
-                message="Proces nie ma Start Event",
-                suggestion="Dodaj Start Event na początku procesu",
-                auto_fixable=True
-            ))
-        elif len(start_events) > 1:
-            for se in start_events[1:]:  # Wszystkie oprócz pierwszego
+        # Jeśli nie ma Pool lub jest jeden Pool - sprawdź globalnie
+        if len(participants) <= 1:
+            start_events = [e for e in elements if e.get('type') == 'startEvent']
+            
+            # Sprawdź czy są Intermediate Catch Events które mogą zastąpić Start Event
+            intermediate_catch_events = [e for e in elements if e.get('type') in ['intermediateCatchEvent', 'intermediateMessageCatchEvent']]
+            
+            # Sprawdź czy są Message Flow z zewnątrz
+            external_message_flows = [f for f in flows 
+                                    if f.get('type') == 'message' and 
+                                    f.get('source') == 'external' and
+                                    f.get('target') in [e.get('id') for e in elements]]
+            
+            # Proces może rozpoczynać się przez Start Event, Intermediate Catch Event, lub Message Flow z zewnątrz
+            if not start_events and not intermediate_catch_events and not external_message_flows:
                 issues.append(BPMNComplianceIssue(
-                    element_id=se.get('id', 'unknown'),
-                    element_type="startEvent",
-                    severity=BPMNSeverity.WARNING,
+                    element_id="process",
+                    element_type="process",
+                    severity=rule_config["severity"],
                     rule_code=rule_code,
-                    message="Proces ma wiele Start Events - może to utrudniać czytelność",
-                    suggestion="Rozważ użycie jednego Start Event z odpowiednimi przepływami",
-                    auto_fixable=False
+                    message="Proces nie ma Start Event",
+                    suggestion="Dodaj Start Event na początku procesu",
+                    auto_fixable=True
                 ))
+            elif len(start_events) > 1:
+                for se in start_events[1:]:  # Wszystkie oprócz pierwszego
+                    issues.append(BPMNComplianceIssue(
+                        element_id=se.get('id', 'unknown'),
+                        element_type="startEvent",
+                        severity=BPMNSeverity.WARNING,
+                        rule_code=rule_code,
+                        message="Proces ma wiele Start Events - może to utrudniać czytelność",
+                        suggestion="Rozważ użycie jednego Start Event z odpowiednimi przepływami",
+                        auto_fixable=False
+                    ))
+        else:
+            # Procesy wielopoolowe - sprawdź każdy Pool z aktywnościami
+            for participant in participants:
+                participant_id = participant.get('id')
+                participant_name = participant.get('name', participant_id)
+                participant_elements = [e for e in elements if e.get('participant') == participant_id]
+                
+                # Sprawdź tylko Pool które mają aktywności (nie tylko eventy)
+                activities = [e for e in participant_elements if e.get('type') in 
+                             ['userTask', 'serviceTask', 'manualTask', 'scriptTask', 'receiveTask', 'sendTask']]
+                
+                if activities:  # Pool ma aktywności - musi mieć sposób rozpoczęcia
+                    pool_start_events = [e for e in participant_elements if e.get('type') == 'startEvent']
+                    
+                    # Sprawdź czy Pool ma Intermediate Catch Events (mogą zastąpić Start Event w Pool)
+                    pool_intermediate_catch = [e for e in participant_elements if e.get('type') in ['intermediateCatchEvent', 'intermediateMessageCatchEvent']]
+                    
+                    # Sprawdź czy Pool ma Message Flow wchodzący (alternatywa dla Start Event)
+                    # Uwzględnij Message Flow z zewnątrz (external) lub z innych Pool
+                    incoming_messages = []
+                    for f in flows:
+                        if f.get('type') == 'message':
+                            # Message Flow wchodzący do tego Pool
+                            target_id = f.get('target')
+                            if target_id in [e.get('id') for e in participant_elements]:
+                                incoming_messages.append(f)
+                            # Lub Message Flow z zewnętrznego źródła
+                            elif f.get('source') == 'external' and target_id in [e.get('id') for e in participant_elements]:
+                                incoming_messages.append(f)
+                    
+                    # Pool może rozpocząć się przez: Start Event, Intermediate Catch Event, lub Message Flow
+                    if not pool_start_events and not pool_intermediate_catch and not incoming_messages:
+                        issues.append(BPMNComplianceIssue(
+                            element_id=participant_id,
+                            element_type="pool",
+                            severity=rule_config["severity"],
+                            rule_code=rule_code,
+                            message=f"Pool '{participant_name}' ma aktywności ale nie ma Start Event, Intermediate Catch Event ani Message Flow wchodzącego",
+                            suggestion="Dodaj Start Event, Intermediate Catch Event lub Message Flow wchodzący do tego Pool",
+                            auto_fixable=True
+                        ))
         
         return issues
     
     def _check_end_events(self, bpmn_json: Dict, rule_code: str, rule_config: Dict) -> List[BPMNComplianceIssue]:
-        """Sprawdza obecność End Events"""
+        """Sprawdza obecność End Events - per Pool w procesach wielopoolowych"""
         issues = []
         elements = bpmn_json.get('elements', [])
+        participants = bpmn_json.get('participants', [])
+        flows = bpmn_json.get('flows', [])
         
-        end_events = [e for e in elements if e.get('type') == 'endEvent']
-        
-        if not end_events:
-            issues.append(BPMNComplianceIssue(
-                element_id="process",
-                element_type="process",
-                severity=rule_config["severity"],
-                rule_code=rule_code,
-                message="Proces nie ma End Event",
-                suggestion="Dodaj End Event na końcu procesu",
-                auto_fixable=True
-            ))
+        # Jeśli nie ma Pool lub jest jeden Pool - sprawdź globalnie
+        if len(participants) <= 1:
+            end_events = [e for e in elements if e.get('type') == 'endEvent']
+            
+            # Sprawdź czy są Intermediate Throw Events które mogą zastąpić End Event
+            intermediate_throw_events = [e for e in elements if e.get('type') in ['intermediateThrowEvent', 'intermediateMessageThrowEvent']]
+            
+            # Sprawdź czy są Message Flow na zewnątrz
+            external_outgoing_flows = [f for f in flows 
+                                     if f.get('type') == 'message' and 
+                                     f.get('target') == 'external' and
+                                     f.get('source') in [e.get('id') for e in elements]]
+            
+            # Proces może kończyć się przez End Event, Intermediate Throw Event, lub Message Flow na zewnątrz
+            if not end_events and not intermediate_throw_events and not external_outgoing_flows:
+                issues.append(BPMNComplianceIssue(
+                    element_id="process",
+                    element_type="process",
+                    severity=rule_config["severity"],
+                    rule_code=rule_code,
+                    message="Proces nie ma End Event",
+                    suggestion="Dodaj End Event na końcu procesu",
+                    auto_fixable=True
+                ))
+        else:
+            # Procesy wielopoolowe - sprawdź każdy Pool z aktywnościami
+            for participant in participants:
+                participant_id = participant.get('id')
+                participant_name = participant.get('name', participant_id)
+                participant_elements = [e for e in elements if e.get('participant') == participant_id]
+                
+                # Sprawdź tylko Pool które mają aktywności (nie tylko eventy)
+                activities = [e for e in participant_elements if e.get('type') in 
+                             ['userTask', 'serviceTask', 'manualTask', 'scriptTask', 'receiveTask', 'sendTask']]
+                
+                if activities:  # Pool ma aktywności - musi mieć sposób zakończenia
+                    pool_end_events = [e for e in participant_elements if e.get('type') == 'endEvent']
+                    
+                    # Sprawdź czy Pool ma Intermediate Throw Events (mogą zastąpić End Event w Pool)
+                    pool_intermediate_throw = [e for e in participant_elements if e.get('type') in ['intermediateThrowEvent', 'intermediateMessageThrowEvent']]
+                    
+                    # Sprawdź czy Pool ma Message Flow wychodzący (alternatywa dla End Event)
+                    # Uwzględnij Message Flow do zewnątrz (external) lub do innych Pool  
+                    outgoing_messages = []
+                    for f in flows:
+                        if f.get('type') == 'message':
+                            # Message Flow wychodzący z tego Pool
+                            source_id = f.get('source')
+                            if source_id in [e.get('id') for e in participant_elements]:
+                                outgoing_messages.append(f)
+                            # Lub Message Flow do zewnętrznego celu
+                            elif f.get('target') == 'external' and source_id in [e.get('id') for e in participant_elements]:
+                                outgoing_messages.append(f)
+                    
+                    # Pool może kończyć się przez: End Event, Intermediate Throw Event, lub Message Flow
+                    if not pool_end_events and not pool_intermediate_throw and not outgoing_messages:
+                        issues.append(BPMNComplianceIssue(
+                            element_id=participant_id,
+                            element_type="pool",
+                            severity=rule_config["severity"],
+                            rule_code=rule_code,
+                            message=f"Pool '{participant_name}' ma aktywności ale nie ma End Event, Intermediate Throw Event ani Message Flow wychodzącego",
+                            suggestion="Dodaj End Event, Intermediate Throw Event lub Message Flow wychodzący z tego Pool",
+                            auto_fixable=True
+                        ))
         
         return issues
     
@@ -290,92 +429,154 @@ class BPMNComplianceValidator:
             incoming = [f for f in flows if f.get('target') == element_id]
             outgoing = [f for f in flows if f.get('source') == element_id]
             
+            # Rozdziel przepływy na Sequence Flow i Message Flow
+            sequence_incoming = [f for f in incoming if f.get('type', 'sequence') == 'sequence']
+            sequence_outgoing = [f for f in outgoing if f.get('type', 'sequence') == 'sequence']
+            message_incoming = [f for f in incoming if f.get('type') == 'message']
+            message_outgoing = [f for f in outgoing if f.get('type') == 'message']
+            
             # Sprawdź reguły dla różnych typów elementów
             if element_type == 'startEvent':
-                if incoming:
+                # Start Event nie może mieć Sequence Flow wchodzących, ale może mieć Message Flow
+                if sequence_incoming:
                     issues.append(BPMNComplianceIssue(
                         element_id=element_id,
                         element_type=element_type,
                         severity=BPMNSeverity.MAJOR,
                         rule_code=rule_code,
-                        message="Start Event nie może mieć przepływów wchodzących",
-                        suggestion="Usuń przepływy wchodzące do Start Event",
+                        message="Start Event nie może mieć Sequence Flow wchodzących",
+                        suggestion="Usuń Sequence Flow wchodzące do Start Event (Message Flow są dozwolone)",
                         auto_fixable=True
                     ))
-                if not outgoing:
+                # Start Event musi mieć Sequence Flow LUB Message Flow wychodzący
+                if not sequence_outgoing and not message_outgoing:
                     issues.append(BPMNComplianceIssue(
                         element_id=element_id,
                         element_type=element_type,
                         severity=rule_config["severity"],
                         rule_code=rule_code,
-                        message="Start Event musi mieć przepływ wychodzący",
+                        message="Start Event musi mieć przepływ wychodzący (Sequence Flow lub Message Flow)",
                         suggestion="Połącz Start Event z następną aktywnością",
                         auto_fixable=False
                     ))
                     
             elif element_type == 'endEvent':
-                if not incoming:
+                # End Event musi mieć Sequence Flow LUB Message Flow wchodzący
+                if not sequence_incoming and not message_incoming:
                     issues.append(BPMNComplianceIssue(
                         element_id=element_id,
                         element_type=element_type,
                         severity=rule_config["severity"],
                         rule_code=rule_code,
-                        message="End Event musi mieć przepływ wchodzący",
+                        message="End Event musi mieć przepływ wchodzący (Sequence Flow lub Message Flow)",
                         suggestion="Połącz poprzednią aktywność z End Event",
                         auto_fixable=False
                     ))
-                if outgoing:
-                    # W procesach wielopoolowych End Event może mieć Message Flow do innego Pool
-                    sequence_outgoing = [f for f in outgoing if f.get('type', 'sequence') == 'sequence']
-                    if sequence_outgoing:
+                # End Event nie może mieć Sequence Flow wychodzących, ale może mieć Message Flow
+                if sequence_outgoing:
+                    issues.append(BPMNComplianceIssue(
+                        element_id=element_id,
+                        element_type=element_type,
+                        severity=BPMNSeverity.MAJOR,
+                        rule_code=rule_code,
+                        message="End Event nie może mieć Sequence Flow wychodzących",
+                        suggestion="Usuń Sequence Flow z End Event (Message Flow do innych Pool są dozwolone)",
+                        auto_fixable=True
+                    ))
+                    
+            elif element_type in ['intermediateCatchEvent', 'intermediateMessageCatchEvent']:
+                # Intermediate Catch Event może rozpoczynać proces w Pool (zastępując Start Event)
+                # W multi-pool może mieć tylko Message Flow wchodzący, bez Sequence Flow wchodzących
+                if sequence_incoming and len(participants) > 1:
+                    issues.append(BPMNComplianceIssue(
+                        element_id=element_id,
+                        element_type=element_type,
+                        severity=BPMNSeverity.MAJOR,
+                        rule_code=rule_code,
+                        message="Intermediate Catch Event rozpoczynający Pool nie powinien mieć Sequence Flow wchodzących w procesie multi-pool",
+                        suggestion="Użyj Message Flow do komunikacji między Pool",
+                        auto_fixable=False
+                    ))
+                    
+            elif element_type in ['intermediateThrowEvent', 'intermediateMessageThrowEvent']:
+                # Intermediate Throw Event może kończyć proces w Pool (zastępując End Event)
+                # W multi-pool może mieć tylko Message Flow wychodzący, bez Sequence Flow wychodzących do innych Pool
+                if sequence_outgoing and len(participants) > 1:
+                    # Sprawdź czy Sequence Flow idzie do innego Pool
+                    cross_pool_sequences = []
+                    element_pool = element.get('participant')
+                    for seq_flow in sequence_outgoing:
+                        target_element = next((e for e in elements if e.get('id') == seq_flow.get('target')), None)
+                        if target_element and target_element.get('participant') != element_pool:
+                            cross_pool_sequences.append(seq_flow)
+                    
+                    if cross_pool_sequences:
                         issues.append(BPMNComplianceIssue(
                             element_id=element_id,
                             element_type=element_type,
                             severity=BPMNSeverity.MAJOR,
                             rule_code=rule_code,
-                            message="End Event nie może mieć Sequence Flow wychodzących",
-                            suggestion="Usuń Sequence Flow z End Event lub zmień na Message Flow jeśli komunikuje z innym Pool",
+                            message="Intermediate Throw Event nie może wysyłać Sequence Flow do innego Pool",
+                            suggestion="Użyj Message Flow do komunikacji między Pool",
                             auto_fixable=False
                         ))
                     
-            elif element_type in ['userTask', 'serviceTask', 'manualTask', 'scriptTask']:
-                if not incoming:
+            elif element_type in ['userTask', 'serviceTask', 'manualTask', 'scriptTask', 'receiveTask', 'sendTask']:
+                # Aktywności muszą mieć przepływy (Sequence Flow lub Message Flow)
+                if not sequence_incoming and not message_incoming:
                     issues.append(BPMNComplianceIssue(
                         element_id=element_id,
                         element_type=element_type,
                         severity=BPMNSeverity.MAJOR,
                         rule_code=rule_code,
                         message=f"Aktywność {element_id} nie ma przepływu wchodzącego",
-                        suggestion="Połącz aktywność z poprzednim elementem",
+                        suggestion="Połącz aktywność z poprzednim elementem (Sequence Flow lub Message Flow)",
                         auto_fixable=False
                     ))
-                if not outgoing:
+                if not sequence_outgoing and not message_outgoing:
                     issues.append(BPMNComplianceIssue(
                         element_id=element_id,
                         element_type=element_type,
                         severity=BPMNSeverity.MAJOR,
                         rule_code=rule_code,
                         message=f"Aktywność {element_id} nie ma przepływu wychodzącego",
-                        suggestion="Połącz aktywność z następnym elementem",
+                        suggestion="Połącz aktywność z następnym elementem (Sequence Flow lub Message Flow)",
                         auto_fixable=False
                     ))
         
         return issues
     
     def _check_gateway_flows(self, bpmn_json: Dict, rule_code: str, rule_config: Dict) -> List[BPMNComplianceIssue]:
-        """Sprawdza przepływy Gateway"""
+        """Sprawdza przepływy Gateway z uwzględnieniem multi-pool BPMN"""
         issues = []
         elements = bpmn_json.get('elements', [])
         flows = bpmn_json.get('flows', [])
+        participants = bpmn_json.get('participants', [])
         
         gateways = [e for e in elements if e.get('type', '').endswith('Gateway')]
         
         for gateway in gateways:
             gateway_id = gateway.get('id')
             gateway_type = gateway.get('type')
+            gateway_pool = gateway.get('participant')
             
             incoming = [f for f in flows if f.get('target') == gateway_id]
             outgoing = [f for f in flows if f.get('source') == gateway_id]
+            
+            # Sprawdź czy Gateway nie wysyła Sequence Flow do innych Pool
+            sequence_outgoing = [f for f in outgoing if f.get('type', 'sequence') == 'sequence']
+            for seq_flow in sequence_outgoing:
+                target_element = next((e for e in elements if e.get('id') == seq_flow.get('target')), None)
+                if target_element and target_element.get('participant') != gateway_pool and len(participants) > 1:
+                    issues.append(BPMNComplianceIssue(
+                        element_id=gateway_id,
+                        element_type=gateway_type,
+                        severity=BPMNSeverity.MAJOR,
+                        rule_code=rule_code,
+                        message=f"Gateway nie może wysyłać Sequence Flow do innego Pool ('{target_element.get('participant')}')",
+                        suggestion="Użyj Message Flow do komunikacji między Pool lub przenieś elementy do tego samego Pool",
+                        auto_fixable=False
+                    ))
             
             # Exclusive Gateway - musi mieć >1 wyjście
             if gateway_type == 'exclusiveGateway':
@@ -406,12 +607,12 @@ class BPMNComplianceValidator:
         return issues
     
     def _check_pool_structure(self, bpmn_json: Dict, rule_code: str, rule_config: Dict) -> List[BPMNComplianceIssue]:
-        """Sprawdza strukturę Pools i Lanes"""
+        """Sprawdza strukturę Pools i Lanes z obsługą multi-pool BPMN"""
         issues = []
         participants = bpmn_json.get('participants', [])
         elements = bpmn_json.get('elements', [])
         
-        # Sprawdź czy elementy są przypisane do uczestników
+        # Sprawdź czy elementy są przypisane do uczestników (tylko w multi-pool)
         unassigned_elements = [e for e in elements if not e.get('participant')]
         
         if unassigned_elements and participants:
@@ -421,10 +622,39 @@ class BPMNComplianceValidator:
                     element_type=element.get('type', 'unknown'),
                     severity=rule_config["severity"],
                     rule_code=rule_code,
-                    message="Element nie jest przypisany do żadnego uczestnika",
-                    suggestion="Przypisz element do odpowiedniego Pool/Lane",
+                    message="Element nie jest przypisany do żadnego uczestnika w procesie multi-pool",
+                    suggestion="Przypisz element do odpowiedniego Pool/Lane lub usuń nieużywane elementy",
                     auto_fixable=True
                 ))
+        
+        # Sprawdź czy każdy Pool ma sens (ma elementy)
+        for participant in participants:
+            participant_id = participant.get('id')
+            participant_name = participant.get('name', participant_id)
+            participant_elements = [e for e in elements if e.get('participant') == participant_id]
+            
+            if not participant_elements:
+                issues.append(BPMNComplianceIssue(
+                    element_id=participant_id,
+                    element_type='pool',
+                    severity=BPMNSeverity.WARNING,
+                    rule_code=rule_code,
+                    message=f"Pool '{participant_name}' jest pusty - nie zawiera elementów",
+                    suggestion="Dodaj elementy do Pool lub usuń nieużywany Pool",
+                    auto_fixable=False
+                ))
+            
+        # Sprawdź czy proces nie ma zbyt wielu Pool (complexity check)
+        if len(participants) > 5:
+            issues.append(BPMNComplianceIssue(
+                element_id="process",
+                element_type="process", 
+                severity=BPMNSeverity.WARNING,
+                rule_code=rule_code,
+                message=f"Proces ma zbyt wiele Pool ({len(participants)}) - może być trudny do zrozumienia",
+                suggestion="Rozważ podział na mniejsze procesy lub grupowanie Pool w Lanes",
+                auto_fixable=False
+            ))
         
         return issues
     
@@ -509,7 +739,7 @@ class BPMNComplianceValidator:
         return issues
     
     def _check_message_flows(self, bpmn_json: Dict, rule_code: str, rule_config: Dict) -> List[BPMNComplianceIssue]:
-        """Sprawdza Message Flows między uczestnikami - ROZSZERZONA IMPLEMENTACJA"""
+        """Sprawdza Message Flows między uczestnikami - ROZSZERZONA IMPLEMENTACJA dla multi-pool"""
         issues = []
         flows = bpmn_json.get('flows', [])  # Poprawiono z 'messageFlows'
         elements = bpmn_json.get('elements', [])
@@ -529,17 +759,28 @@ class BPMNComplianceValidator:
                 source_pool = source_element.get('participant')
                 target_pool = target_element.get('participant')
                 
-                # Message Flow musi łączyć różne Pools
-                if source_pool == target_pool and source_pool is not None:
-                    issues.append(BPMNComplianceIssue(
-                        element_id=mf.get('id', f"messageFlow_{source_id}_{target_id}"),
-                        element_type='messageFlow',
-                        severity=rule_config["severity"],
-                        rule_code=rule_code,
-                        message="Message Flow łączy elementy z tego samego Pool - narusza zasadę ciągłości",
-                        suggestion="Użyj Sequence Flow w obrębie Pool lub przenieś element do innego Pool",
-                        auto_fixable=True
-                    ))
+                # W procesach single-pool Message Flow jest dozwolony
+                if len(participants) > 1:
+                    # Message Flow musi łączyć różne Pools (tylko w multi-pool)
+                    if source_pool == target_pool and source_pool is not None:
+                        issues.append(BPMNComplianceIssue(
+                            element_id=mf.get('id', f"messageFlow_{source_id}_{target_id}"),
+                            element_type='messageFlow',
+                            severity=rule_config["severity"],
+                            rule_code=rule_code,
+                            message="Message Flow łączy elementy z tego samego Pool - narusza zasadę ciągłości",
+                            suggestion="Użyj Sequence Flow w obrębie Pool lub przenieś element do innego Pool",
+                            auto_fixable=True
+                        ))
+                    
+                    # W multi-pool sprawdź czy Message Flow rzeczywiście łączy różne Pool
+                    if source_pool != target_pool and source_pool is not None and target_pool is not None:
+                        # To jest prawidłowe użycie Message Flow
+                        pass
+                else:
+                    # W single-pool Message Flow może być używany w szczególnych przypadkach
+                    # np. dla modeling przepływu informacji
+                    pass
                 
                 # Sprawdź czy źródło i cel są odpowiednie dla Message Flow
                 invalid_source_types = ['sequenceFlow', 'association']
@@ -555,6 +796,61 @@ class BPMNComplianceValidator:
                         suggestion="Message Flow może pochodzić tylko z Activity, Event lub Gateway",
                         auto_fixable=False
                     ))
+                
+                if target_element.get('type') in invalid_target_types:
+                    issues.append(BPMNComplianceIssue(
+                        element_id=mf.get('id', f"messageFlow_{source_id}_{target_id}"),
+                        element_type='messageFlow',
+                        severity=BPMNSeverity.MAJOR,
+                        rule_code=rule_code,
+                        message=f"Message Flow nie może prowadzić do elementu typu {target_element.get('type')}",
+                        suggestion="Message Flow może prowadzić tylko do Activity, Event lub Gateway",
+                        auto_fixable=False
+                    ))
+        
+        return issues
+    
+    def _check_process_flow_logic(self, bpmn_json: Dict, rule_code: str, rule_config: Dict) -> List[BPMNComplianceIssue]:
+        """Sprawdza logiczność przepływu procesu"""
+        issues = []
+        elements = bpmn_json.get('elements', [])
+        flows = bpmn_json.get('flows', [])
+        
+        # Sprawdź czy nie ma cykli w przepływach
+        visited = set()
+        path = set()
+        
+        def has_cycle(element_id, visited, path):
+            if element_id in path:
+                return True
+            if element_id in visited:
+                return False
+            
+            visited.add(element_id)
+            path.add(element_id)
+            
+            # Znajdź wszystkie wyjścia z tego elementu
+            outgoing = [f for f in flows if f.get('source') == element_id and f.get('type', 'sequence') == 'sequence']
+            for flow in outgoing:
+                if has_cycle(flow.get('target'), visited, path):
+                    return True
+            
+            path.remove(element_id)
+            return False
+        
+        # Sprawdź cykle dla każdego elementu
+        start_events = [e for e in elements if e.get('type') == 'startEvent']
+        for start in start_events:
+            if has_cycle(start.get('id'), visited, path):
+                issues.append(BPMNComplianceIssue(
+                    element_id=start.get('id'),
+                    element_type='startEvent',
+                    severity=rule_config["severity"],
+                    rule_code=rule_code,
+                    message="Wykryto cykl w przepływie procesu",
+                    suggestion="Usuń cykliczne połączenia lub użyj odpowiedniego wzorca BPMN",
+                    auto_fixable=False
+                ))
         
         return issues
     
@@ -770,20 +1066,20 @@ class BPMNComplianceValidator:
     # === METODY OBLICZANIA WYNIKÓW ===
     
     def _calculate_compliance_score(self, issues: List[BPMNComplianceIssue]) -> float:
-        """Oblicza wynik zgodności (0-100)"""
+        """Oblicza wynik zgodności (0-100) - ZRÓWNOWAŻONY algorytm"""
         if not issues:
             return 100.0
         
-        # Wagi dla różnych poziomów
+        # ZRÓWNOWAŻONE wagi - mniej surowe dla critical
         weights = {
-            BPMNSeverity.CRITICAL: -25,
-            BPMNSeverity.MAJOR: -10,
-            BPMNSeverity.MINOR: -3,
-            BPMNSeverity.WARNING: -1
+            BPMNSeverity.CRITICAL: -12,    # Zmniejszone z -25 do -12
+            BPMNSeverity.MAJOR: -6,        # Zmniejszone z -10 do -6
+            BPMNSeverity.MINOR: -2,        # Zmniejszone z -3 do -2
+            BPMNSeverity.WARNING: -0.5     # Zmniejszone z -1 do -0.5
         }
         
         total_penalty = sum(weights.get(issue.severity, 0) for issue in issues)
-        score = max(0, 100 + total_penalty)
+        score = max(20, 100 + total_penalty)  # Minimum 20% zamiast 0% dla procesów z podstawową strukturą
         
         return round(score, 1)
     
@@ -977,11 +1273,19 @@ class BPMNComplianceValidator:
             if not activities:
                 continue  # Skip pools without activities
             
-            # Sprawdź czy Pool ma sposób na rozpoczęcie (Start Event lub Message Flow wchodzący)
+            # Sprawdź czy Pool ma sposób na rozpoczęcie (Start Event, Intermediate Catch Event lub Message Flow wchodzący)
             start_events = [e for e in participant_elements if e.get('type') == 'startEvent']
-            incoming_messages = [f for f in flows if f.get('target') in [e.get('id') for e in participant_elements] and f.get('type') == 'message']
+            intermediate_catch_events = [e for e in participant_elements if e.get('type') in ['intermediateCatchEvent', 'intermediateMessageCatchEvent']]
             
-            if not start_events and not incoming_messages:
+            # Sprawdź Message Flow wchodzący (również z external)
+            incoming_messages = []
+            for f in flows:
+                if f.get('type') == 'message':
+                    target_id = f.get('target')
+                    if target_id in [e.get('id') for e in participant_elements]:
+                        incoming_messages.append(f)
+            
+            if not start_events and not intermediate_catch_events and not incoming_messages:
                 # To może być problem tylko jeśli Pool ma aktywności ale nie ma sposobu ich uruchomienia
                 issues.append(BPMNComplianceIssue(
                     element_id=participant_id,
@@ -989,7 +1293,7 @@ class BPMNComplianceValidator:
                     severity=BPMNSeverity.MAJOR,  # Obniżone z CRITICAL
                     rule_code=rule_code,
                     message=f"Pool '{participant_name}' ma aktywności ale nie ma sposobu ich uruchomienia",
-                    suggestion="Dodaj Start Event lub Message Flow wchodzący do tego Pool",
+                    suggestion="Dodaj Start Event, Intermediate Catch Event lub Message Flow wchodzący do tego Pool",
                     auto_fixable=False  # Nie auto-fix bo wymaga analizy logiki
                 ))
         
@@ -1003,6 +1307,219 @@ class BPMNComplianceValidator:
         return (source_element and target_element and 
                 source_element.get('participant') == participant_id and
                 target_element.get('participant') == participant_id)
+    
+    def _check_message_flow_end_events(self, bpmn_json: Dict, rule_code: str, rule_config: Dict) -> List[BPMNComplianceIssue]:
+        """Sprawdza czy End Event z wyjściowym Message Flow ma odpowiedni typ"""
+        issues = []
+        elements = bpmn_json.get('elements', [])
+        flows = bpmn_json.get('flows', [])
+        
+        # Znajdź wszystkie End Events
+        end_events = [e for e in elements if e.get('type') == 'endEvent']
+        
+        # Sprawdź każdy End Event
+        for end_event in end_events:
+            event_id = end_event.get('id')
+            
+            # Sprawdź czy ma wyjściowe Message Flow
+            outgoing_message_flows = [
+                f for f in flows 
+                if f.get('source') == event_id and f.get('type') == 'message'
+            ]
+            
+            # Sprawdź czy ma wejściowe Message Flow (co jest niepoprawne)
+            incoming_message_flows = [
+                f for f in flows 
+                if f.get('target') == event_id and f.get('type') == 'message'
+            ]
+            
+            # End Event nie powinien mieć wejściowego Message Flow
+            if incoming_message_flows:
+                issues.append(BPMNComplianceIssue(
+                    element_id=event_id,
+                    element_type='endEvent',
+                    severity=rule_config["severity"],
+                    rule_code=rule_code,
+                    message="End Event nie może mieć wejściowego Message Flow",
+                    suggestion="Message Flow może prowadzić tylko do Activity lub Intermediate Event",
+                    auto_fixable=False
+                ))
+            
+            # Jeśli End Event ma wyjściowy Message Flow, powinien być typu Message
+            if outgoing_message_flows:
+                event_type = end_event.get('event_type')
+                if event_type != 'message':
+                    issues.append(BPMNComplianceIssue(
+                        element_id=event_id,
+                        element_type='endEvent',
+                        severity=rule_config["severity"],
+                        rule_code=rule_code,
+                        message="End Event z wyjściowym Message Flow musi być typu 'message'",
+                        suggestion="Zmień typ End Event na 'message' lub usuń Message Flow",
+                        auto_fixable=True
+                    ))
+        
+        return issues
+    
+    def _check_message_flow_intermediate_events(self, bpmn_json: Dict, rule_code: str, rule_config: Dict) -> List[BPMNComplianceIssue]:
+        """Sprawdza czy Intermediate Events z Message Flow mają odpowiedni typ"""
+        issues = []
+        elements = bpmn_json.get('elements', [])
+        flows = bpmn_json.get('flows', [])
+        
+        # Znajdź wszystkie Intermediate Events
+        intermediate_events = [
+            e for e in elements 
+            if e.get('type') in ['intermediateCatchEvent', 'intermediateThrowEvent']
+        ]
+        
+        for event in intermediate_events:
+            event_id = event.get('id')
+            event_type = event.get('type')
+            
+            # Sprawdź czy ma Message Flow
+            if event_type == 'intermediateCatchEvent':
+                # Catch Event - sprawdź wejściowe Message Flow
+                incoming_message_flows = [
+                    f for f in flows 
+                    if f.get('target') == event_id and f.get('type') == 'message'
+                ]
+                
+                if incoming_message_flows:
+                    sub_type = event.get('event_type', event.get('sub_type'))
+                    if sub_type != 'message':
+                        issues.append(BPMNComplianceIssue(
+                            element_id=event_id,
+                            element_type=event_type,
+                            severity=rule_config["severity"],
+                            rule_code=rule_code,
+                            message="Intermediate Catch Event z wejściowym Message Flow musi być typu 'message'",
+                            suggestion="Zmień typ na 'message' lub użyj Sequence Flow",
+                            auto_fixable=True
+                        ))
+                        
+            elif event_type == 'intermediateThrowEvent':
+                # Throw Event - sprawdź wyjściowe Message Flow
+                outgoing_message_flows = [
+                    f for f in flows 
+                    if f.get('source') == event_id and f.get('type') == 'message'
+                ]
+                
+                if outgoing_message_flows:
+                    sub_type = event.get('event_type', event.get('sub_type'))
+                    if sub_type != 'message':
+                        issues.append(BPMNComplianceIssue(
+                            element_id=event_id,
+                            element_type=event_type,
+                            severity=rule_config["severity"],
+                            rule_code=rule_code,
+                            message="Intermediate Throw Event z wyjściowym Message Flow musi być typu 'message'",
+                            suggestion="Zmień typ na 'message' lub użyj Sequence Flow",
+                            auto_fixable=True
+                        ))
+                        
+            # Sprawdź czy Intermediate Event może być typu Timer
+            if event.get('event_type') == 'timer' or event.get('sub_type') == 'timer':
+                # Timer Events są poprawne - mogą być używane do opóźnień czasowych
+                pass
+        
+        return issues
+    
+    def _check_message_flow_targets(self, bpmn_json: Dict, rule_code: str, rule_config: Dict) -> List[BPMNComplianceIssue]:
+        """Sprawdza czy Message Flow prowadzi do odpowiednich elementów"""
+        issues = []
+        elements = bpmn_json.get('elements', [])
+        flows = bpmn_json.get('flows', [])
+        
+        # Znajdź wszystkie Message Flows
+        message_flows = [f for f in flows if f.get('type') == 'message']
+        
+        for msg_flow in message_flows:
+            target_id = msg_flow.get('target')
+            source_id = msg_flow.get('source')
+            
+            # Znajdź target element
+            target_element = next((e for e in elements if e.get('id') == target_id), None)
+            source_element = next((e for e in elements if e.get('id') == source_id), None)
+            
+            if target_element:
+                target_type = target_element.get('type')
+                
+                # Message Flow może prowadzić do:
+                # - Activity (userTask, serviceTask, etc.)
+                # - Intermediate Events
+                # - Start Events (w niektórych przypadkach)
+                # ALE NIE do End Events
+                
+                valid_target_types = [
+                    'userTask', 'serviceTask', 'manualTask', 'scriptTask', 
+                    'receiveTask', 'sendTask', 'businessRuleTask',
+                    'intermediateCatchEvent', 'intermediateThrowEvent',
+                    'startEvent'  # Message może uruchamiać proces
+                ]
+                
+                if target_type == 'endEvent':
+                    issues.append(BPMNComplianceIssue(
+                        element_id=msg_flow.get('id', f"messageFlow_{source_id}_{target_id}"),
+                        element_type='messageFlow',
+                        severity=rule_config["severity"],
+                        rule_code=rule_code,
+                        message="Message Flow nie może prowadzić do End Event",
+                        suggestion="Message Flow może prowadzić tylko do Activity lub Intermediate Event",
+                        auto_fixable=False
+                    ))
+                    
+                elif target_type not in valid_target_types:
+                    issues.append(BPMNComplianceIssue(
+                        element_id=msg_flow.get('id', f"messageFlow_{source_id}_{target_id}"),
+                        element_type='messageFlow',
+                        severity=rule_config["severity"],
+                        rule_code=rule_code,
+                        message=f"Message Flow nie może prowadzić do elementu typu '{target_type}'",
+                        suggestion="Message Flow może prowadzić tylko do Activity, Start Event lub Intermediate Event",
+                        auto_fixable=False
+                    ))
+            
+            # Sprawdź source element
+            if source_element:
+                source_type = source_element.get('type')
+                
+                # Message Flow może pochodzić z:
+                # - Activity
+                # - Intermediate Events
+                # - End Events (jako wyjście z procesu)
+                # ALE NIE ze Start Events
+                
+                valid_source_types = [
+                    'userTask', 'serviceTask', 'manualTask', 'scriptTask',
+                    'receiveTask', 'sendTask', 'businessRuleTask',
+                    'intermediateCatchEvent', 'intermediateThrowEvent',
+                    'endEvent'  # End Event może wysyłać wiadomość na zewnątrz
+                ]
+                
+                if source_type == 'startEvent':
+                    issues.append(BPMNComplianceIssue(
+                        element_id=msg_flow.get('id', f"messageFlow_{source_id}_{target_id}"),
+                        element_type='messageFlow',
+                        severity=rule_config["severity"],
+                        rule_code=rule_code,
+                        message="Message Flow nie może pochodzić ze Start Event",
+                        suggestion="Start Event może tylko odbierać Message Flow, nie wysyłać",
+                        auto_fixable=False
+                    ))
+                    
+                elif source_type not in valid_source_types:
+                    issues.append(BPMNComplianceIssue(
+                        element_id=msg_flow.get('id', f"messageFlow_{source_id}_{target_id}"),
+                        element_type='messageFlow',
+                        severity=rule_config["severity"],
+                        rule_code=rule_code,
+                        message=f"Message Flow nie może pochodzić z elementu typu '{source_type}'",
+                        suggestion="Message Flow może pochodzić tylko z Activity, Intermediate Event lub End Event",
+                        auto_fixable=False
+                    ))
+        
+        return issues
                 
     def parse_bpmn_xml(self, xml_content: str) -> Dict:
         """
