@@ -13,9 +13,9 @@ try:
     # Load from parent directory .env
     env_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), '.env')
     load_dotenv(env_path)
-    print(f"🔧 Loaded env from: {env_path}")
+    print(f"[CONFIG] Loaded env from: {env_path}")
 except ImportError:
-    print("⚠️ python-dotenv not installed, using system env variables only")
+    print("[WARNING] python-dotenv not installed, using system env variables only")
 
 from ai_integration import AIProvider, AIConfig
 
@@ -113,7 +113,7 @@ def get_default_config() -> AIConfig:
     Zwraca domyślną konfigurację BPMN na podstawie parametrów env
     """
     config = create_bpmn_config()
-    print(f"🤖 Using {config.provider.value} provider from env (MODEL_PROVIDER)")
+    print(f"[AI] Using {config.provider.value} provider from env (MODEL_PROVIDER)")
     print(f"🔗 Base URL: {config.base_url}")
     print(f"📱 Model: {config.model}")
     return config

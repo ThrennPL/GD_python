@@ -807,3 +807,377 @@
 2025-11-26 16:07:53 [INFO] BPMN Integration initialized successfully
 2025-11-26 16:07:57 [INFO] BPMN Integration initialized successfully
 2025-11-26 16:07:57 [INFO] BPMN Integration initialized successfully
+2025-11-27 17:06:44 [INFO] BPMN Integration initialized successfully
+2025-11-27 17:06:44 [INFO] AIPDFAnalyzer initialized: mode=ai, model=models/gemini-2.0-flash, provider=gemini
+2025-11-27 17:06:44 [INFO] Google File API dostępne
+2025-11-27 17:06:44 [INFO] PDF support: True
+2025-11-27 17:06:45 [INFO] Loaded Gemini models: 40 models found.
+2025-11-27 17:07:01 [INFO] BPMN Integration initialized successfully
+2025-11-27 17:07:05 [INFO] BPMN Integration initialized successfully
+2025-11-27 17:07:06 [INFO] BPMN Integration initialized successfully
+2025-11-27 17:07:06 [INFO] BPMN Integration initialized successfully
+2025-11-27 17:07:06 [INFO] BPMN Integration initialized successfully
+2025-11-27 17:07:07 [INFO] BPMN Integration initialized successfully
+2025-11-27 17:07:07 [INFO] BPMN Integration initialized successfully
+2025-11-27 17:07:08 [INFO] BPMN Integration initialized successfully
+2025-11-27 17:07:08 [INFO] Template type: BPMN, BPMN integration available: True
+2025-11-27 17:07:08 [INFO] Starting BPMN generation...
+2025-11-27 17:07:09 [INFO] BPMN generation result: success=False
+2025-11-27 17:15:05 [INFO] BPMN Integration initialized successfully
+2025-11-27 17:15:05 [INFO] AIPDFAnalyzer initialized: mode=ai, model=models/gemini-2.0-flash, provider=gemini
+2025-11-27 17:15:05 [INFO] Google File API dostępne
+2025-11-27 17:15:05 [INFO] PDF support: True
+2025-11-27 17:15:05 [INFO] Loaded Gemini models: 40 models found.
+2025-11-27 17:15:13 [INFO] BPMN Integration initialized successfully
+2025-11-27 17:15:17 [INFO] BPMN Integration initialized successfully
+2025-11-27 17:15:17 [INFO] BPMN Integration initialized successfully
+2025-11-27 17:15:17 [INFO] BPMN Integration initialized successfully
+2025-11-27 17:15:17 [INFO] BPMN Integration initialized successfully
+2025-11-27 17:15:18 [INFO] BPMN Integration initialized successfully
+2025-11-27 17:15:18 [INFO] BPMN Integration initialized successfully
+2025-11-27 17:15:19 [INFO] BPMN Integration initialized successfully
+2025-11-27 17:15:19 [INFO] Template type: BPMN, BPMN integration available: True
+2025-11-27 17:15:19 [INFO] Starting BPMN generation...
+2025-11-27 17:16:38 [INFO] BPMN generation result: success=True
+2025-11-27 17:26:06 [INFO] BPMN Integration initialized successfully
+2025-11-27 17:55:09 [INFO] BPMN Integration initialized successfully
+2025-11-27 17:55:09 [INFO] AIPDFAnalyzer initialized: mode=ai, model=models/gemini-2.0-flash, provider=gemini
+2025-11-27 17:55:09 [INFO] Google File API dostępne
+2025-11-27 17:55:09 [INFO] PDF support: True
+2025-11-27 17:55:10 [INFO] Loaded Gemini models: 40 models found.
+2025-11-27 17:55:21 [INFO] BPMN Integration initialized successfully
+2025-11-27 17:55:21 [INFO] BPMN Integration initialized successfully
+2025-11-27 17:55:21 [INFO] BPMN Integration initialized successfully
+2025-11-27 17:55:21 [INFO] BPMN Integration initialized successfully
+2025-11-27 17:55:26 [INFO] BPMN Integration initialized successfully
+2025-11-27 17:55:26 [INFO] Template type: BPMN, BPMN integration available: True
+2025-11-27 17:55:26 [INFO] Starting BPMN generation...
+2025-11-27 17:58:22 [INFO] BPMN generation result: success=True
+2025-11-27 18:15:37 [INFO] BPMN Integration initialized successfully
+2025-11-27 18:15:37 [INFO] AIPDFAnalyzer initialized: mode=ai, model=models/gemini-2.0-flash, provider=gemini
+2025-11-27 18:15:37 [INFO] Google File API dostępne
+2025-11-27 18:15:37 [INFO] PDF support: True
+2025-11-27 18:15:37 [INFO] Loaded Gemini models: 40 models found.
+2025-11-27 18:15:39 [INFO] BPMN Integration initialized successfully
+2025-11-27 18:15:44 [INFO] BPMN Integration initialized successfully
+2025-11-27 18:15:44 [INFO] BPMN Integration initialized successfully
+2025-11-27 18:15:44 [INFO] Template type: BPMN, BPMN integration available: True
+2025-11-27 18:15:44 [INFO] Starting BPMN generation...
+2025-11-27 18:19:22 [INFO] BPMN generation result: success=True
+2025-11-27 19:11:26 [INFO] BPMN Integration initialized successfully
+2025-11-27 19:11:26 [INFO] AIPDFAnalyzer initialized: mode=ai, model=models/gemini-2.0-flash, provider=gemini
+2025-11-27 19:11:26 [INFO] Google File API dostępne
+2025-11-27 19:11:26 [INFO] PDF support: True
+2025-11-27 19:11:26 [INFO] Loaded Gemini models: 40 models found.
+2025-11-27 19:11:41 [INFO] BPMN Integration initialized successfully
+2025-11-27 19:11:41 [INFO] BPMN Integration initialized successfully
+2025-11-27 19:11:42 [INFO] BPMN Integration initialized successfully
+2025-11-27 19:11:42 [INFO] Template type: BPMN, BPMN integration available: True
+2025-11-27 19:11:42 [INFO] Starting BPMN generation...
+2025-11-27 19:13:28 [INFO] BPMN generation result: success=True
+2025-11-27 19:30:19 [INFO] BPMN Integration initialized successfully
+2025-11-27 19:30:19 [INFO] AIPDFAnalyzer initialized: mode=ai, model=models/gemini-2.0-flash, provider=gemini
+2025-11-27 19:30:19 [INFO] Google File API dostępne
+2025-11-27 19:30:19 [INFO] PDF support: True
+2025-11-27 19:30:20 [INFO] Loaded Gemini models: 40 models found.
+2025-11-27 19:30:22 [INFO] BPMN Integration initialized successfully
+2025-11-27 19:30:24 [INFO] BPMN Integration initialized successfully
+2025-11-27 19:30:24 [INFO] BPMN Integration initialized successfully
+2025-11-27 19:30:24 [INFO] Template type: BPMN, BPMN integration available: True
+2025-11-27 19:30:24 [INFO] Starting BPMN generation...
+2025-11-27 19:31:47 [INFO] BPMN generation result: success=True
+2025-11-27 19:34:37 [INFO] BPMN Integration initialized successfully
+2025-11-27 19:35:44 [INFO] BPMN Integration initialized successfully
+2025-11-27 19:35:57 [INFO] BPMN Integration initialized successfully
+2025-11-27 19:36:26 [INFO] BPMN Integration initialized successfully
+2025-11-27 19:36:35 [INFO] BPMN Integration initialized successfully
+2025-11-27 19:36:38 [INFO] BPMN Integration initialized successfully
+2025-11-27 19:43:04 [INFO] BPMN Integration initialized successfully
+2025-11-27 19:43:04 [INFO] AIPDFAnalyzer initialized: mode=ai, model=models/gemini-2.0-flash, provider=gemini
+2025-11-27 19:43:04 [INFO] Google File API dostępne
+2025-11-27 19:43:04 [INFO] PDF support: True
+2025-11-27 19:43:04 [INFO] Loaded Gemini models: 40 models found.
+2025-11-27 19:43:46 [INFO] BPMN Integration initialized successfully
+2025-11-27 19:43:52 [INFO] BPMN Integration initialized successfully
+2025-11-27 19:43:53 [INFO] BPMN Integration initialized successfully
+2025-11-27 19:43:53 [INFO] Template type: BPMN, BPMN integration available: True
+2025-11-27 19:43:53 [INFO] Starting BPMN generation...
+2025-11-27 19:45:35 [INFO] BPMN generation result: success=True
+2025-11-27 19:48:50 [INFO] BPMN Integration initialized successfully
+2025-11-27 19:48:50 [INFO] AIPDFAnalyzer initialized: mode=ai, model=models/gemini-2.0-flash, provider=gemini
+2025-11-27 19:48:50 [INFO] Google File API dostępne
+2025-11-27 19:48:50 [INFO] PDF support: True
+2025-11-27 19:48:50 [INFO] Loaded Gemini models: 40 models found.
+2025-11-27 19:49:04 [INFO] BPMN Integration initialized successfully
+2025-11-27 19:49:10 [INFO] BPMN Integration initialized successfully
+2025-11-27 19:49:10 [INFO] BPMN Integration initialized successfully
+2025-11-27 19:49:10 [INFO] Template type: BPMN, BPMN integration available: True
+2025-11-27 19:49:10 [INFO] Starting BPMN generation...
+2025-11-27 19:50:57 [INFO] BPMN generation result: success=True
+2025-11-27 19:54:53 [INFO] BPMN Integration initialized successfully
+2025-11-27 19:54:53 [INFO] AIPDFAnalyzer initialized: mode=ai, model=models/gemini-2.0-flash, provider=gemini
+2025-11-27 19:54:53 [INFO] Google File API dostępne
+2025-11-27 19:54:53 [INFO] PDF support: True
+2025-11-27 19:54:54 [INFO] Loaded Gemini models: 40 models found.
+2025-11-27 19:55:02 [INFO] BPMN Integration initialized successfully
+2025-11-27 19:55:08 [INFO] BPMN Integration initialized successfully
+2025-11-27 19:55:09 [INFO] BPMN Integration initialized successfully
+2025-11-27 19:55:09 [INFO] AIPDFAnalyzer initialized: mode=ai, model=models/gemini-2.0-flash, provider=gemini
+2025-11-27 19:55:09 [INFO] Google File API dostępne
+2025-11-27 19:55:09 [INFO] PDF support: True
+2025-11-27 19:55:14 [INFO] BPMN Integration initialized successfully
+2025-11-27 19:55:24 [INFO] BPMN Integration initialized successfully
+2025-11-27 19:55:24 [INFO] BPMN Integration initialized successfully
+2025-11-27 19:55:24 [INFO] Template type: BPMN, BPMN integration available: True
+2025-11-27 19:55:24 [INFO] Starting BPMN generation...
+2025-11-27 19:57:03 [INFO] BPMN generation result: success=True
+2025-11-27 19:57:14 [INFO] BPMN Integration initialized successfully
+2025-11-27 19:57:14 [INFO] AIPDFAnalyzer initialized: mode=ai, model=models/gemini-2.0-flash, provider=gemini
+2025-11-27 19:57:14 [INFO] Google File API dostępne
+2025-11-27 19:57:14 [INFO] PDF support: True
+2025-11-27 19:57:14 [INFO] Loaded Gemini models: 40 models found.
+2025-11-27 19:57:56 [INFO] BPMN Integration initialized successfully
+2025-11-27 19:57:59 [INFO] BPMN Integration initialized successfully
+2025-11-27 19:57:59 [INFO] BPMN Integration initialized successfully
+2025-11-27 19:57:59 [INFO] Template type: BPMN, BPMN integration available: True
+2025-11-27 19:57:59 [INFO] Starting BPMN generation...
+2025-11-27 20:00:18 [INFO] BPMN generation result: success=True
+2025-11-27 20:02:35 [INFO] BPMN Integration initialized successfully
+2025-11-27 20:02:35 [INFO] AIPDFAnalyzer initialized: mode=ai, model=models/gemini-2.0-flash, provider=gemini
+2025-11-27 20:02:35 [INFO] Google File API dostępne
+2025-11-27 20:02:35 [INFO] PDF support: True
+2025-11-27 20:02:36 [INFO] Loaded Gemini models: 40 models found.
+2025-11-27 20:02:39 [INFO] BPMN Integration initialized successfully
+2025-11-27 20:02:42 [INFO] BPMN Integration initialized successfully
+2025-11-27 20:02:42 [INFO] BPMN Integration initialized successfully
+2025-11-27 20:02:42 [INFO] Template type: BPMN, BPMN integration available: True
+2025-11-27 20:02:42 [INFO] Starting BPMN generation...
+2025-11-27 20:03:07 [INFO] BPMN generation result: success=True
+2025-11-27 20:03:26 [INFO] BPMN Integration initialized successfully
+2025-11-27 20:03:31 [INFO] BPMN Integration initialized successfully
+2025-11-27 20:03:37 [INFO] BPMN Integration initialized successfully
+2025-11-27 20:10:15 [INFO] BPMN Integration initialized successfully
+2025-11-27 20:10:15 [INFO] AIPDFAnalyzer initialized: mode=ai, model=models/gemini-2.0-flash, provider=gemini
+2025-11-27 20:10:15 [INFO] Google File API dostępne
+2025-11-27 20:10:15 [INFO] PDF support: True
+2025-11-27 20:10:15 [INFO] Loaded Gemini models: 40 models found.
+2025-11-27 20:10:20 [INFO] BPMN Integration initialized successfully
+2025-11-27 20:10:24 [INFO] BPMN Integration initialized successfully
+2025-11-27 20:10:24 [INFO] BPMN Integration initialized successfully
+2025-11-27 20:10:24 [INFO] Template type: BPMN, BPMN integration available: True
+2025-11-27 20:10:24 [INFO] Starting BPMN generation...
+2025-11-27 20:10:47 [INFO] BPMN generation result: success=True
+2025-11-27 20:12:16 [INFO] BPMN Integration initialized successfully
+2025-11-27 20:12:16 [INFO] AIPDFAnalyzer initialized: mode=ai, model=models/gemini-2.0-flash, provider=gemini
+2025-11-27 20:12:16 [INFO] Google File API dostępne
+2025-11-27 20:12:16 [INFO] PDF support: True
+2025-11-27 20:12:16 [INFO] Loaded Gemini models: 40 models found.
+2025-11-27 20:12:22 [INFO] BPMN Integration initialized successfully
+2025-11-27 20:12:26 [INFO] BPMN Integration initialized successfully
+2025-11-27 20:12:26 [INFO] BPMN Integration initialized successfully
+2025-11-27 20:12:26 [INFO] Template type: BPMN, BPMN integration available: True
+2025-11-27 20:12:26 [INFO] Starting BPMN generation...
+2025-11-27 20:14:37 [INFO] BPMN generation result: success=True
+2025-11-27 20:17:05 [INFO] BPMN Integration initialized successfully
+2025-11-27 20:17:05 [INFO] AIPDFAnalyzer initialized: mode=ai, model=models/gemini-2.0-flash, provider=gemini
+2025-11-27 20:17:05 [INFO] Google File API dostępne
+2025-11-27 20:17:05 [INFO] PDF support: True
+2025-11-27 20:17:05 [INFO] Loaded Gemini models: 40 models found.
+2025-11-27 20:17:08 [INFO] BPMN Integration initialized successfully
+2025-11-27 20:17:11 [INFO] BPMN Integration initialized successfully
+2025-11-27 20:17:11 [INFO] BPMN Integration initialized successfully
+2025-11-27 20:17:11 [INFO] Template type: BPMN, BPMN integration available: True
+2025-11-27 20:17:11 [INFO] Starting BPMN generation...
+2025-11-27 20:17:46 [INFO] BPMN generation result: success=True
+2025-11-27 20:18:26 [INFO] BPMN Integration initialized successfully
+2025-11-27 20:18:26 [INFO] AIPDFAnalyzer initialized: mode=ai, model=models/gemini-2.0-flash, provider=gemini
+2025-11-27 20:18:26 [INFO] Google File API dostępne
+2025-11-27 20:18:26 [INFO] PDF support: True
+2025-11-27 20:19:14 [INFO] BPMN Integration initialized successfully
+2025-11-27 20:19:14 [INFO] AIPDFAnalyzer initialized: mode=ai, model=models/gemini-2.0-flash, provider=gemini
+2025-11-27 20:19:14 [INFO] Google File API dostępne
+2025-11-27 20:19:14 [INFO] PDF support: True
+2025-11-27 20:19:15 [INFO] Loaded Gemini models: 40 models found.
+2025-11-27 20:19:19 [INFO] BPMN Integration initialized successfully
+2025-11-27 20:19:23 [INFO] BPMN Integration initialized successfully
+2025-11-27 20:19:23 [INFO] BPMN Integration initialized successfully
+2025-11-27 20:19:23 [INFO] Template type: BPMN, BPMN integration available: True
+2025-11-27 20:19:23 [INFO] Starting BPMN generation...
+2025-11-27 20:20:01 [INFO] BPMN generation result: success=True
+2025-11-27 20:24:40 [INFO] BPMN Integration initialized successfully
+2025-11-27 20:24:40 [INFO] AIPDFAnalyzer initialized: mode=ai, model=models/gemini-2.0-flash, provider=gemini
+2025-11-27 20:24:40 [INFO] Google File API dostępne
+2025-11-27 20:24:40 [INFO] PDF support: True
+2025-11-27 20:24:40 [INFO] Loaded Gemini models: 40 models found.
+2025-11-27 20:24:43 [INFO] BPMN Integration initialized successfully
+2025-11-27 20:24:46 [INFO] BPMN Integration initialized successfully
+2025-11-27 20:24:46 [INFO] BPMN Integration initialized successfully
+2025-11-27 20:24:46 [INFO] Template type: BPMN, BPMN integration available: True
+2025-11-27 20:24:46 [INFO] Starting BPMN generation...
+2025-11-27 20:25:14 [INFO] BPMN Integration initialized successfully
+2025-11-27 20:25:14 [INFO] AIPDFAnalyzer initialized: mode=ai, model=models/gemini-2.0-flash, provider=gemini
+2025-11-27 20:25:14 [INFO] Google File API dostępne
+2025-11-27 20:25:14 [INFO] PDF support: True
+2025-11-27 20:25:25 [INFO] BPMN generation result: success=True
+2025-11-27 20:31:42 [INFO] BPMN Integration initialized successfully
+2025-11-27 20:31:42 [INFO] AIPDFAnalyzer initialized: mode=ai, model=models/gemini-2.0-flash, provider=gemini
+2025-11-27 20:31:42 [INFO] Google File API dostępne
+2025-11-27 20:31:42 [INFO] PDF support: True
+2025-11-27 20:31:43 [INFO] Loaded Gemini models: 40 models found.
+2025-11-27 20:31:46 [INFO] BPMN Integration initialized successfully
+2025-11-27 20:31:55 [INFO] BPMN Integration initialized successfully
+2025-11-27 20:31:55 [INFO] BPMN Integration initialized successfully
+2025-11-27 20:31:55 [INFO] Template type: BPMN, BPMN integration available: True
+2025-11-27 20:31:55 [INFO] Starting BPMN generation...
+2025-11-27 20:34:27 [INFO] BPMN generation result: success=True
+2025-11-27 20:36:23 [INFO] BPMN Integration initialized successfully
+2025-11-27 21:15:41 [INFO] BPMN Integration initialized successfully
+2025-11-27 21:15:41 [INFO] AIPDFAnalyzer initialized: mode=ai, model=models/gemini-2.0-flash, provider=gemini
+2025-11-27 21:15:41 [INFO] Google File API dostępne
+2025-11-27 21:15:41 [INFO] PDF support: True
+2025-11-27 21:15:42 [INFO] Loaded Gemini models: 40 models found.
+2025-11-27 21:15:52 [INFO] BPMN Integration initialized successfully
+2025-11-27 21:15:54 [INFO] BPMN Integration initialized successfully
+2025-11-27 21:15:54 [INFO] BPMN Integration initialized successfully
+2025-11-27 21:15:54 [INFO] Template type: BPMN, BPMN integration available: True
+2025-11-27 21:15:54 [INFO] Starting BPMN generation...
+2025-11-27 21:18:00 [INFO] BPMN generation result: success=True
+2025-11-27 21:28:35 [INFO] BPMN Integration initialized successfully
+2025-11-27 21:28:35 [INFO] AIPDFAnalyzer initialized: mode=ai, model=models/gemini-2.0-flash, provider=gemini
+2025-11-27 21:28:35 [INFO] Google File API dostępne
+2025-11-27 21:28:35 [INFO] PDF support: True
+2025-11-27 21:28:36 [INFO] Loaded Gemini models: 40 models found.
+2025-11-27 21:28:49 [INFO] BPMN Integration initialized successfully
+2025-11-27 21:28:49 [INFO] AIPDFAnalyzer initialized: mode=ai, model=models/gemini-2.0-flash, provider=gemini
+2025-11-27 21:28:49 [INFO] Google File API dostępne
+2025-11-27 21:28:49 [INFO] PDF support: True
+2025-11-27 21:30:00 [INFO] BPMN Integration initialized successfully
+2025-11-27 21:30:03 [INFO] BPMN Integration initialized successfully
+2025-11-27 21:30:03 [INFO] BPMN Integration initialized successfully
+2025-11-27 21:30:03 [INFO] Template type: BPMN, BPMN integration available: True
+2025-11-27 21:30:03 [INFO] Starting BPMN generation...
+2025-11-27 21:30:52 [INFO] BPMN generation result: success=True
+2025-11-27 21:31:16 [INFO] BPMN Integration initialized successfully
+2025-11-29 22:05:14 [INFO] BPMN Integration initialized successfully
+2025-11-29 22:05:14 [INFO] AIPDFAnalyzer initialized: mode=ai, model=models/gemini-2.0-flash, provider=gemini
+2025-11-29 22:05:14 [INFO] Google File API dostępne
+2025-11-29 22:05:14 [INFO] PDF support: True
+2025-11-29 22:05:15 [INFO] Loaded Gemini models: 40 models found.
+2025-11-29 22:05:21 [INFO] BPMN Integration initialized successfully
+2025-11-29 22:05:23 [INFO] BPMN Integration initialized successfully
+2025-11-29 22:05:23 [INFO] BPMN Integration initialized successfully
+2025-11-29 22:05:23 [INFO] Template type: BPMN, BPMN integration available: True
+2025-11-29 22:05:23 [INFO] Starting BPMN generation...
+2025-11-29 22:06:05 [INFO] BPMN generation result: success=True
+2025-11-29 22:10:03 [INFO] BPMN Integration initialized successfully
+2025-11-29 22:10:03 [INFO] AIPDFAnalyzer initialized: mode=ai, model=models/gemini-2.0-flash, provider=gemini
+2025-11-29 22:10:03 [INFO] Google File API dostępne
+2025-11-29 22:10:03 [INFO] PDF support: True
+2025-11-29 22:10:03 [INFO] Loaded Gemini models: 40 models found.
+2025-11-29 22:10:06 [INFO] BPMN Integration initialized successfully
+2025-11-29 22:10:09 [INFO] BPMN Integration initialized successfully
+2025-11-29 22:10:09 [INFO] BPMN Integration initialized successfully
+2025-11-29 22:10:09 [INFO] Template type: BPMN, BPMN integration available: True
+2025-11-29 22:10:09 [INFO] Starting BPMN generation...
+2025-11-29 22:10:48 [INFO] BPMN generation result: success=True
+2025-11-29 22:16:39 [INFO] BPMN Integration initialized successfully
+2025-11-29 22:16:39 [INFO] AIPDFAnalyzer initialized: mode=ai, model=models/gemini-2.0-flash, provider=gemini
+2025-11-29 22:16:39 [INFO] Google File API dostępne
+2025-11-29 22:16:39 [INFO] PDF support: True
+2025-11-29 22:16:40 [INFO] Loaded Gemini models: 40 models found.
+2025-11-29 22:16:41 [INFO] BPMN Integration initialized successfully
+2025-11-29 22:16:45 [INFO] BPMN Integration initialized successfully
+2025-11-29 22:16:45 [INFO] BPMN Integration initialized successfully
+2025-11-29 22:16:45 [INFO] Template type: BPMN, BPMN integration available: True
+2025-11-29 22:16:45 [INFO] Starting BPMN generation...
+2025-11-29 22:17:43 [INFO] BPMN generation result: success=True
+2025-11-29 22:21:09 [INFO] BPMN Integration initialized successfully
+2025-11-29 22:21:09 [INFO] AIPDFAnalyzer initialized: mode=ai, model=models/gemini-2.0-flash, provider=gemini
+2025-11-29 22:21:09 [INFO] Google File API dostępne
+2025-11-29 22:21:09 [INFO] PDF support: True
+2025-11-29 22:21:09 [INFO] Loaded Gemini models: 40 models found.
+2025-11-29 22:21:11 [INFO] BPMN Integration initialized successfully
+2025-11-29 22:21:13 [INFO] BPMN Integration initialized successfully
+2025-11-29 22:21:13 [INFO] BPMN Integration initialized successfully
+2025-11-29 22:21:13 [INFO] Template type: BPMN, BPMN integration available: True
+2025-11-29 22:21:13 [INFO] Starting BPMN generation...
+2025-11-29 22:22:11 [INFO] BPMN generation result: success=True
+2025-11-29 22:30:25 [INFO] BPMN Integration initialized successfully
+2025-11-29 22:30:25 [INFO] AIPDFAnalyzer initialized: mode=ai, model=models/gemini-2.0-flash, provider=gemini
+2025-11-29 22:30:25 [INFO] Google File API dostępne
+2025-11-29 22:30:25 [INFO] PDF support: True
+2025-11-29 22:30:26 [INFO] Loaded Gemini models: 40 models found.
+2025-11-29 22:30:28 [INFO] BPMN Integration initialized successfully
+2025-11-29 22:30:31 [INFO] BPMN Integration initialized successfully
+2025-11-29 22:30:31 [INFO] BPMN Integration initialized successfully
+2025-11-29 22:30:31 [INFO] Template type: BPMN, BPMN integration available: True
+2025-11-29 22:30:31 [INFO] Starting BPMN generation...
+2025-11-29 22:30:51 [INFO] BPMN Integration initialized successfully
+2025-11-29 22:30:51 [INFO] AIPDFAnalyzer initialized: mode=ai, model=models/gemini-2.0-flash, provider=gemini
+2025-11-29 22:30:51 [INFO] Google File API dostępne
+2025-11-29 22:30:51 [INFO] PDF support: True
+2025-11-29 22:31:42 [INFO] BPMN generation result: success=True
+2025-11-29 22:35:05 [INFO] BPMN Integration initialized successfully
+2025-11-29 22:35:05 [INFO] AIPDFAnalyzer initialized: mode=ai, model=models/gemini-2.0-flash, provider=gemini
+2025-11-29 22:35:05 [INFO] Google File API dostępne
+2025-11-29 22:35:05 [INFO] PDF support: True
+2025-11-29 22:35:06 [INFO] Loaded Gemini models: 40 models found.
+2025-11-29 22:35:07 [INFO] BPMN Integration initialized successfully
+2025-11-29 22:35:21 [INFO] BPMN Integration initialized successfully
+2025-11-29 22:35:21 [INFO] BPMN Integration initialized successfully
+2025-11-29 22:35:21 [INFO] Template type: BPMN, BPMN integration available: True
+2025-11-29 22:35:21 [INFO] Starting BPMN generation...
+2025-11-29 22:35:22 [INFO] BPMN Integration initialized successfully
+2025-11-29 22:35:22 [INFO] AIPDFAnalyzer initialized: mode=ai, model=models/gemini-2.0-flash, provider=gemini
+2025-11-29 22:35:22 [INFO] Google File API dostępne
+2025-11-29 22:35:22 [INFO] PDF support: True
+2025-11-29 22:37:25 [INFO] BPMN generation result: success=True
+2025-11-29 22:38:31 [INFO] BPMN Integration initialized successfully
+2025-11-29 22:38:31 [INFO] AIPDFAnalyzer initialized: mode=ai, model=models/gemini-2.0-flash, provider=gemini
+2025-11-29 22:38:31 [INFO] Google File API dostępne
+2025-11-29 22:38:31 [INFO] PDF support: True
+2025-11-29 22:50:22 [INFO] BPMN Integration initialized successfully
+2025-11-29 22:50:22 [INFO] AIPDFAnalyzer initialized: mode=ai, model=models/gemini-2.0-flash, provider=gemini
+2025-11-29 22:50:22 [INFO] Google File API dostępne
+2025-11-29 22:50:22 [INFO] PDF support: True
+2025-11-29 22:50:23 [INFO] Loaded Gemini models: 40 models found.
+2025-11-29 22:50:25 [INFO] BPMN Integration initialized successfully
+2025-11-29 22:50:28 [INFO] BPMN Integration initialized successfully
+2025-11-29 22:50:28 [INFO] BPMN Integration initialized successfully
+2025-11-29 22:50:28 [INFO] Template type: BPMN, BPMN integration available: True
+2025-11-29 22:50:28 [INFO] Starting BPMN generation...
+2025-11-29 22:50:57 [INFO] BPMN generation result: success=True
+2025-11-29 23:03:43 [INFO] BPMN Integration initialized successfully
+2025-11-29 23:03:43 [INFO] AIPDFAnalyzer initialized: mode=ai, model=models/gemini-2.0-flash, provider=gemini
+2025-11-29 23:03:43 [INFO] Google File API dostępne
+2025-11-29 23:03:43 [INFO] PDF support: True
+2025-11-29 23:03:43 [INFO] Loaded Gemini models: 40 models found.
+2025-11-29 23:03:45 [INFO] BPMN Integration initialized successfully
+2025-11-29 23:03:53 [INFO] BPMN Integration initialized successfully
+2025-11-29 23:03:58 [INFO] BPMN Integration initialized successfully
+2025-11-29 23:03:58 [INFO] BPMN Integration initialized successfully
+2025-11-29 23:03:58 [INFO] Template type: BPMN, BPMN integration available: True
+2025-11-29 23:03:58 [INFO] Starting BPMN generation...
+2025-11-29 23:04:30 [INFO] BPMN generation result: success=True
+2025-11-29 23:05:50 [INFO] BPMN Integration initialized successfully
+2025-11-29 23:05:50 [INFO] BPMN Integration initialized successfully
+2025-11-29 23:05:50 [INFO] Template type: BPMN, BPMN integration available: True
+2025-11-29 23:05:50 [INFO] Starting BPMN generation...
+2025-11-29 23:06:17 [INFO] BPMN generation result: success=True
+2025-11-29 23:33:09 [INFO] BPMN Integration initialized successfully
+2025-11-29 23:33:09 [INFO] AIPDFAnalyzer initialized: mode=ai, model=models/gemini-2.0-flash, provider=gemini
+2025-11-29 23:33:09 [INFO] Google File API dostępne
+2025-11-29 23:33:09 [INFO] PDF support: True
+2025-11-29 23:33:09 [INFO] Loaded Gemini models: 40 models found.
+2025-11-29 23:52:24 [INFO] BPMN Integration initialized successfully
+2025-11-29 23:52:24 [INFO] AIPDFAnalyzer initialized: mode=ai, model=models/gemini-2.0-flash, provider=gemini
+2025-11-29 23:52:24 [INFO] Google File API dostępne
+2025-11-29 23:52:24 [INFO] PDF support: True
+2025-11-29 23:52:24 [INFO] Loaded Gemini models: 40 models found.
+2025-11-29 23:52:26 [INFO] BPMN Integration initialized successfully
+2025-11-29 23:52:28 [INFO] BPMN Integration initialized successfully
+2025-11-29 23:52:29 [INFO] BPMN Integration initialized successfully
+2025-11-29 23:52:29 [INFO] Template type: BPMN, BPMN integration available: True
+2025-11-29 23:52:29 [INFO] Starting BPMN generation...
+2025-11-29 23:53:01 [INFO] BPMN generation result: success=True
+2025-11-29 23:53:12 [INFO] BPMN Integration initialized successfully
