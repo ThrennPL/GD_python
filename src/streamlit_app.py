@@ -68,7 +68,7 @@ try:
         print(f"BPMN integration not available: {e}")
     from utils.plantuml.plantuml_class_parser import PlantUMLClassParser
     from utils.xmi.xmi_class_generator import XMIClassGenerator
-    from utils.plantuml.plantuml_activity_parser import PlantUMLActivityParser
+    from utils.plantuml.improved_plantuml_activity_parser import ImprovedPlantUMLActivityParser as PlantUMLActivityParser
     from utils.xmi.xmi_activity_generator import XMIActivityGenerator 
     from utils.plantuml.plantuml_component_parser import PlantUMLComponentParser
     from utils.xmi.xmi_component_generator import XMIComponentGenerator

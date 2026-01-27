@@ -14,7 +14,7 @@ sys.path.append(parent_dir)
 MODULES_LOADED = True
 
 try:
-    from logger_utils import log_debug, log_info, log_error, log_exception, log_warning, setup_logger
+    from utils.logger_utils import log_debug, log_info, log_error, log_exception, log_warning, setup_logger
 except ImportError as import_err:
     MODULES_LOADED = False
     print(f"Import error: {import_err}")

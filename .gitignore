@@ -4,3 +4,6 @@
 *.json
 *.bpmn
 *.txt
+*.xmi
+*.jsonl
+model_metrics.jsonl
