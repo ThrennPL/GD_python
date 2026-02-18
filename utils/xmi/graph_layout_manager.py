@@ -302,9 +302,12 @@ class GraphLayoutManager:
         self.margin_y = 100           # ← było 80, zwiększone o 20px
         self.layer_spacing = 100      # zmniejszone o połowę, by zagęścić warstwy pionowo
         self.node_spacing = 150   
+        self.intra_lane_spacing = 80  # dodatkowy margines w obrębie jednego toru
+        self.swimlane_gap = 100       # odstęp pomiędzy torami (≈ szerokość aktywności)
         
         # Wyniki
         self.element_positions = {}
+        self._lane_layouts: Dict[str, int] = {}
     
     def analyze_diagram_structure(self, parsed_data):
         """🎯 GŁÓWNA METODA: Własny algorytm Sugiyamy krok po kroku"""
@@ -592,6 +595,9 @@ class GraphLayoutManager:
             
             if self.debug and moves > 0:
                 log_debug(f"   🏁 Przesunięto {moves} węzłów END na ostatnią warstwę")
+
+        # ✅ KROK 2E.5: SKOMPRESUJ PUSTE WARSTWY
+        self._compress_layers()
         
         # ✅ KROK 2F: FINALNE STATYSTYKI
         total_assigned = sum(len(layer) for layer in self.layers)
@@ -627,6 +633,35 @@ class GraphLayoutManager:
                 log_warning(f"⚠️ UWAGA: {len(missing_nodes)} węzłów nie zostało przypisanych do warstw!")
         
     # ===== ➕ KROK 2.5: WĘZŁY WIRTUALNE =====
+
+    def _compress_layers(self):
+        """Usuń puste warstwy i zbij indeksy, by uniknąć sztucznego rozciągania osi Y."""
+
+        if not self.layers:
+            self.layers = [[]]
+            return
+
+        new_layers = []
+        removed = 0
+
+        for idx, layer in enumerate(self.layers):
+            if not layer:
+                removed += 1
+                continue
+
+            new_index = len(new_layers)
+            for node in layer:
+                node.layer = new_index
+            new_layers.append(layer)
+
+        if not new_layers:
+            self.layers = [[]]
+            return
+
+        if removed and self.debug:
+            log_debug(f"   📏 Skompresowano warstwy: -{removed} pustych")
+
+        self.layers = new_layers
     
     def _insert_virtual_nodes(self):
         """Dodaj wirtualne węzły dla krawędzi przechodzących przez wiele warstw"""
@@ -776,31 +811,45 @@ class GraphLayoutManager:
 
         # Dostosuj szerokość do liczby kolumn (swimlanes lub węzły w warstwie)
         if self.swimlanes:
-            lane_padding = 40  # wewnętrzny margines w torze
-            min_lane_width = 260
-            required_lane_width = min_lane_width
+            lane_padding = 40
+            min_lane_width = 240
+            lane_layouts: Dict[str, int] = {}
 
-            for swimlane in self.swimlanes.values():
+            for name, swimlane in self.swimlanes.items():
                 lane_nodes = [node for node in swimlane.nodes if not node.is_virtual and isinstance(node.layer, int) and node.layer >= 0]
                 if not lane_nodes:
+                    lane_layouts[name] = min_lane_width
                     continue
 
-                max_node_width = max(node.width for node in lane_nodes)
-                layer_counts = defaultdict(int)
+                per_layer_widths: Dict[int, int] = defaultdict(int)
+                per_layer_counts: Dict[int, int] = defaultdict(int)
                 for node in lane_nodes:
-                    layer_counts[node.layer] += 1
+                    per_layer_widths[node.layer] += node.width
+                    per_layer_counts[node.layer] += 1
 
-                max_same_layer = max(layer_counts.values()) if layer_counts else 1
-                content_width = (
-                    max_node_width * max_same_layer
-                    + self.node_spacing * max(0, max_same_layer - 1)
-                    + 2 * lane_padding
-                )
-                required_lane_width = max(required_lane_width, content_width)
+                max_layer_width = 0
+                for layer in per_layer_widths:
+                    count = per_layer_counts[layer]
+                    span = per_layer_widths[layer] + self.intra_lane_spacing * max(0, count - 1)
+                    if span > max_layer_width:
+                        max_layer_width = span
 
-            total_width = 2 * self.margin_x + required_lane_width * max(1, len(self.swimlanes))
+                max_node_width = max(node.width for node in lane_nodes)
+                base_width = max(max_node_width, max_layer_width)
+                lane_required = max(min_lane_width, base_width + 2 * lane_padding)
+                lane_layouts[name] = lane_required
+
+            total_width = 2 * self.margin_x
+            lane_names = list(self.swimlanes.keys())
+            for idx, name in enumerate(lane_names):
+                total_width += lane_layouts.get(name, min_lane_width)
+                if idx < len(lane_names) - 1:
+                    total_width += self.swimlane_gap
+
             if total_width > self.canvas_width:
                 self.canvas_width = total_width
+
+            self._lane_layouts = lane_layouts
         else:
             layer_widths = []
             for layer in self.layers:
@@ -816,6 +865,8 @@ class GraphLayoutManager:
                 required_width = 2 * self.margin_x + max(layer_widths)
                 if required_width > self.canvas_width:
                     self.canvas_width = required_width
+
+            self._lane_layouts = {}
     
     def _assign_coordinates(self):
         """Przypisz współrzędne - z obsługą swimlanes"""
@@ -875,6 +926,8 @@ class GraphLayoutManager:
         if num_swimlanes == 0:
             return self._assign_coordinates_simple()
         
+        lane_names = list(self.swimlanes.keys())
+        lane_layouts = self._lane_layouts or {}
         swimlane_width = (self.canvas_width - 2 * self.margin_x) // num_swimlanes
         swimlane_margin = 20  # Margines wewnętrzny toru
         
@@ -882,15 +935,18 @@ class GraphLayoutManager:
         swimlane_positions = {}
         current_x = self.margin_x
         
-        for i, (name, swimlane) in enumerate(self.swimlanes.items()):
+        for idx, (name, swimlane) in enumerate(self.swimlanes.items()):
+            lane_width = lane_layouts.get(name, swimlane_width)
             swimlane_positions[name] = {
                 'x_start': current_x,
-                'x_center': current_x + swimlane_width // 2,
-                'x_end': current_x + swimlane_width,
-                'width': swimlane_width,
-                'content_width': swimlane_width - 2 * swimlane_margin
+                'x_center': current_x + lane_width / 2,
+                'x_end': current_x + lane_width,
+                'width': lane_width,
+                'content_width': lane_width - 2 * swimlane_margin
             }
-            current_x += swimlane_width
+            current_x += lane_width
+            if idx < num_swimlanes - 1:
+                current_x += self.swimlane_gap
             
             if self.debug:
                 log_debug(f"   🏊 Tor '{name}': x={current_x-swimlane_width}-{current_x}, width={swimlane_width}")
@@ -936,17 +992,16 @@ class GraphLayoutManager:
                     available_width = pos['content_width']
                     
                     if total_width <= available_width:
-                        # Wyśrodkuj grupę w torze
-                        spacing = min(self.node_spacing, (available_width - total_width) // (len(nodes) + 1))
-                        start_x = pos['x_start'] + swimlane_margin + (available_width - total_width - spacing * (len(nodes) - 1)) // 2
+                        free_space = max(0, available_width - total_width)
+                        spacing = min(self.intra_lane_spacing, free_space // (len(nodes) + 1))
+                        start_x = pos['x_start'] + swimlane_margin + (available_width - total_width - spacing * (len(nodes) - 1)) / 2
                     else:
-                        # Ściśnij
-                        spacing = max(10, (available_width - total_width) // (len(nodes) - 1))
+                        spacing = max(10, self.intra_lane_spacing // 2)
                         start_x = pos['x_start'] + swimlane_margin
                     
                     current_x = start_x
                     for node in nodes:
-                        node.x = current_x + node.width // 2
+                        node.x = current_x + node.width / 2
                         current_x += node.width + spacing
             
             # Węzły bez toru - umieść na prawej stronie
@@ -956,6 +1011,17 @@ class GraphLayoutManager:
                 for i, node in enumerate(nodes_without_swimlane):
                     node.x = rightmost_x + i * 200
         
+        # Korekty – upewnij się, że wszystkie węzły mieszczą się w swoich torach
+        for swimlane_name, pos in swimlane_positions.items():
+            lane_nodes = [node for node in self.nodes.values() if node.swimlane == swimlane_name and not node.is_virtual]
+            for node in lane_nodes:
+                min_x = pos['x_start'] + swimlane_margin + node.width / 2
+                max_x = pos['x_end'] - swimlane_margin - node.width / 2
+                if max_x <= min_x:
+                    node.x = pos['x_center']
+                else:
+                    node.x = max(min_x, min(node.x, max_x))
+
         if self.debug:
             log_debug(f"   📍 Przypisano współrzędne dla {num_swimlanes} torów")
             
