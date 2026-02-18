@@ -6,52 +6,13 @@ import sys
 import re
 import os
 import copy
-
-
-parent_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
-sys.path.append(parent_dir)
-
-MODULES_LOADED = True
-
-try:
-    from utils.logger_utils import log_debug, log_info, log_error, log_exception, log_warning, setup_logger
-except ImportError as import_err:
-    MODULES_LOADED = False
-    print(f"Import error: {import_err}")
-    sys.exit(1)
-
-try:
-    from utils.plantuml.improved_plantuml_activity_parser import (
+from logger_utils import log_debug, log_info, log_error, log_exception, log_warning, setup_logger
+from utils.plantuml.improved_plantuml_activity_parser import (
         ImprovedPlantUMLActivityParser as PlantUMLActivityParser,
     )
-    log_info("✅ Używam ImprovedPlantUMLActivityParser")
-except ImportError:
-    try:
-        from utils.plantuml.plantuml_activity_parser import PlantUMLActivityParser
-        log_info("ℹ️ Fallback: PlantUMLActivityParser")
-    except ImportError as parser_err:
-        MODULES_LOADED = False
-        print(f"Import error: {parser_err}")
-        sys.exit(1)
+from utils.xmi.graph_layout_manager import GraphLayoutManager
 
-try:
-    from utils.xmi.ai_layout_manager import AILayoutManager
-    AI_LAYOUT_AVAILABLE = True
-    log_info("✅ AILayoutManager dostępny")
-except ImportError as ai_import_err:
-    AI_LAYOUT_AVAILABLE = False
-    AILayoutManager = None
-    log_warning(f"⚠️ AILayoutManager niedostępny: {ai_import_err}")
-
-try:
-    from utils.xmi.graph_layout_manager import GraphLayoutManager
-    GRAPH_LAYOUT_AVAILABLE = True
-except ImportError as graph_import_err:
-    GRAPH_LAYOUT_AVAILABLE = False
-    GraphLayoutManager = None
-    log_warning(f"⚠️ GraphLayoutManager niedostępny: {graph_import_err}")
-
-
+setup_logger()
 class LayoutManagerAdapter:
     """Adapter zapewniający jednolity interfejs layoutu z wieloma fallbackami."""
 
@@ -75,8 +36,6 @@ class LayoutManagerAdapter:
         self._lane_order = list(self.swimlane_ids.keys())
         self._graph_manager = (
             GraphLayoutManager(debug=debug_positioning)
-            if GRAPH_LAYOUT_AVAILABLE
-            else None
         )
 
     def set_parser_mapping(self, parser_mapping):
@@ -245,7 +204,7 @@ class LayoutManagerAdapter:
         for pid, pos in self.element_positions.items():
             log_debug(f"   {pid}: {pos}")
 
-setup_logger('xmi_activity_generator.log')
+# setup_logger('xmi_activity_generator.log')
 
 
 
@@ -995,6 +954,16 @@ class XMIActivityGenerator:
     def _process_flow_v2(self, main_activity: ET.Element, flow: list):
         self.parser_id_to_xmi_id = {}
 
+        connections = self.parsed_data.get('logical_connections') or []
+        referenced_parser_ids = set()
+        for conn in connections:
+            src = conn.get('source_id')
+            tgt = conn.get('target_id')
+            if src:
+                referenced_parser_ids.add(src)
+            if tgt:
+                referenced_parser_ids.add(tgt)
+
         for item in flow:
             node_type = item.get('type')
             parser_id = item.get('id')
@@ -1038,12 +1007,31 @@ class XMIActivityGenerator:
                     'parser_id': parser_id
                 })
             elif node_type == 'merge':
+                if parser_id and parser_id not in referenced_parser_ids:
+                    continue
                 created_id = self._add_node(main_activity, 'uml:DecisionNode', 'Decyzja', partition_id)
                 self.diagram_objects.append({
                     'id': created_id,
                     'type': 'DecisionNode',
                     'parser_id': parser_id,
                     'role': 'merge'
+                })
+            elif node_type == 'fork':
+                variant = (item.get('variant') or 'fork').lower()
+                label = 'Fork' if variant == 'fork' else 'Fork Branch'
+                created_id = self._add_node(main_activity, 'uml:ForkNode', label, partition_id)
+                self.diagram_objects.append({
+                    'id': created_id,
+                    'type': 'ForkNode',
+                    'parser_id': parser_id,
+                    'variant': variant
+                })
+            elif node_type == 'join':
+                created_id = self._add_node(main_activity, 'uml:JoinNode', 'Join', partition_id)
+                self.diagram_objects.append({
+                    'id': created_id,
+                    'type': 'JoinNode',
+                    'parser_id': parser_id
                 })
             elif node_type == 'repeat_start':
                 created_id = self._add_node(main_activity, 'uml:Action', 'Repeat Body', partition_id)
@@ -1088,7 +1076,6 @@ class XMIActivityGenerator:
                 self.parser_id_to_xmi_id[parser_id] = created_id
                 self._resolve_pending_note_links()
 
-        connections = self.parsed_data.get('logical_connections') or []
         for conn in connections:
             source_parser = conn.get('source_id')
             target_parser = conn.get('target_id')
