@@ -93,6 +93,8 @@ An application for generating, visualizing, and validating UML (PlantUML) and BP
 - Select prompt template and diagram type (sequence, activity, class, component, state, use case, etc.)
 - Visualize PlantUML diagrams (SVG)
 - **🆕 PlantUML Code Editing** - edit generated code directly in the application
+- Component diagrams from PlantUML (C4 and classic notation)
+- Activity diagrams with improved layout positioning
 - **🆕 PDF Integration** - analyze PDF documents and enrich diagram context
 - Automatic PlantUML code verification if SVG generation fails
 - **🆕 Quality Analytics** - detailed quality and performance generation metrics
@@ -104,6 +106,7 @@ An application for generating, visualizing, and validating UML (PlantUML) and BP
 - **🆕 Real-time Progress Monitoring** - track BPMN optimization progress in real-time
 - **Two interface and prompt languages (English and Polish)**
 - **🆕 Complete Documentation Suite** - comprehensive business and technical documentation
+- **🧭 Planned** - UML image refactor (diagram -> PlantUML)
 
 ---
 
@@ -176,7 +179,7 @@ PDF_CHUNK_SIZE=4000
 
 ## XMI Export
 
-XMI export is currently available **only for class, sequence, activity and component diagrams (Class Diagram, Sequence Diagram, Activity Diagram, Component Diagram)**. The "Save XMI" button (also in the context menu) is active only when the current tab contains a class, sequence, or activity diagram. For other diagram types (e.g., use case, component), XMI export is not yet supported. After importing into EA, elements may require manual arrangement.
+XMI export is currently available **only for class, sequence, activity and component diagrams (Class Diagram, Sequence Diagram, Activity Diagram, Component Diagram)**. The "Save XMI" button (also in the context menu) is active only when the current tab contains a class, sequence, activity, or component diagram. For other diagram types (e.g., use case), XMI export is not yet supported. After importing into EA, elements may require manual arrangement.
 
 ---
 
@@ -286,6 +289,8 @@ GD_python/
 - ✅ **Dual Interface Integration** - full BPMN v2 integration in desktop and web applications
 - ✅ **Performance Analytics** - detailed performance and quality generation metrics
 - ✅ **Professional Documentation** - business-grade documentation for stakeholders and technical teams
+- ✅ **Component diagrams** - C4 and classic notation from PlantUML
+- ✅ **Activity diagrams** - improved element positioning
 
 ### v3.0.0 - Project Reorganization (2025-11-20)
 - ✅ **Complete structure reorganization** - professional organization in src/, tests/, tools/, config/
@@ -308,6 +313,7 @@ GD_python/
 - Integration with Enterprise Architect
 - Multi-language support expansion
 - Performance optimization dashboard
+- UML Image Refactor (image -> PlantUML)
 
 ---
 

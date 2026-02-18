@@ -86,6 +86,8 @@ Aplikacja do generowania, wizualizacji i weryfikacji diagramów UML (PlantUML) o
 - Wybór szablonu promptu i typu diagramu (sekwencja, aktywność, klasa, komponent, stan, przypadek użycia itp.)
 - Wizualizacja diagramów PlantUML (SVG)
 - Edycja kodu PlantUML - możliwość edycji wygenerowanego kodu bezpośrednio w aplikacji
+- Diagram komponentów z PlantUML (notacja C4 i klasyczna)
+- Diagram aktywności z poprawionym pozycjonowaniem
 - **🆕 PDF Integration** - analiza dokumentów PDF i wzbogacanie kontekstu diagramów
 - Automatyczna weryfikacja kodu PlantUML w przypadku błędów generowania SVG
 - **🆕 Quality Analytics** - szczegółowe metryki jakości i wydajności generowania
@@ -97,6 +99,7 @@ Aplikacja do generowania, wizualizacji i weryfikacji diagramów UML (PlantUML) o
 - **🆕 Real-time Progress Monitoring** - śledzenie postępu optymalizacji BPMN w czasie rzeczywistym
 - **Dwie wersje językowe interfejsu i promptów (angielska i polska)**
 - **🆕 Complete Documentation Suite** - kompletna dokumentacja biznesowa i techniczna
+- **🧭 Planowane** - refaktor UML z obrazu (diagram -> PlantUML)
 
 ---
 
@@ -227,7 +230,7 @@ BMPN_SAVE_ITERATIONS=true     # Zapis historii iteracji
 
 ## Eksport XMI
 
-Eksport XMI jest obecnie dostępny **tylko dla diagramu klas, sekwencji, aktywnmości i komponentów (Class Diagram, Sequence Diagram, Activity Diagram, Component Diagram),**. Przycisk „Zapisz XMI” (również menu kontekstowe) jest aktywny wyłącznie, gdy aktywna zakładka zawiera diagram klas, diagram sekwencji lub diagram aktywności. Dla innych typów diagramów (np. przypadków użycia, komponentów) eksport XMI nie jest jeszcze obsługiwany. Po imporcie do EA elementy mogą wymagać ręcznego uporządkowania.
+Eksport XMI jest obecnie dostępny **tylko dla diagramu klas, sekwencji, aktywności i komponentów (Class Diagram, Sequence Diagram, Activity Diagram, Component Diagram),**. Przycisk „Zapisz XMI” (również menu kontekstowe) jest aktywny wyłącznie, gdy aktywna zakładka zawiera diagram klas, diagram sekwencji, diagram aktywności lub diagram komponentów. Dla innych typów diagramów (np. przypadków użycia) eksport XMI nie jest jeszcze obsługiwany. Po imporcie do EA elementy mogą wymagać ręcznego uporządkowania.
 
 ---
 
@@ -338,6 +341,8 @@ GD_python/
 - ✅ **Dual Interface Integration** - pełna integracja BPMN v2 w aplikacji desktop i web
 - ✅ **Performance Analytics** - szczegółowe metryki wydajności i jakości generowania
 - ✅ **Professional Documentation** - business-grade dokumentacja dla stakeholderów i zespołów technicznych
+- ✅ **Diagramy komponentów** - notacja C4 i klasyczna z PlantUML
+- ✅ **Diagram aktywności** - poprawione pozycjonowanie elementów
 
 ### v3.0.0 - Reorganizacja Projektu (2025-11-20)
 
@@ -366,6 +371,7 @@ GD_python/
 - PlantUML Code Editing  
 - GUI Language Selection
 - Enhanced Error Verification
+- UML Image Refactor (obraz -> PlantUML)
 
 ### Następne planowane funkcje (v3.1+):
 - Cache system dla wyników analizy PDF
