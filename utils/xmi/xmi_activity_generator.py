@@ -6,7 +6,7 @@ import sys
 import re
 import os
 import copy
-from logger_utils import log_debug, log_info, log_error, log_exception, log_warning, setup_logger
+from utils.logger_utils import log_debug, log_info, log_error, log_exception, log_warning, setup_logger
 from utils.plantuml.improved_plantuml_activity_parser import (
         ImprovedPlantUMLActivityParser as PlantUMLActivityParser,
     )

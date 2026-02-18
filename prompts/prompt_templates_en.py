@@ -297,8 +297,9 @@ prompt_templates = {
             "1. **Start:** `@startuml`\n"
             "2. **Title:** `title [Process Name] - Activity Flow`\n"
             "3. **Theme:** `!theme plain` or omit for default style\n"
-            "4. **Logical activity sequence**\n"
-            "5. **End:** `@enduml`\n\n"
+            "4. **Define the first swimlane before `start` (e.g., `|Role|`)**\n"
+            "5. **Logical activity sequence**\n"
+            "6. **End:** `@enduml`\n\n"
 
             "**BASIC ELEMENTS:**\n"
             "- `start` - starting point\n"
@@ -311,7 +312,8 @@ prompt_templates = {
             "- `while (condition?)` - loop\n"
             "- `endwhile` - end of loop\n"
             "- `repeat` - repeat-until loop\n"
-            "- `repeat while (condition?)` - end of repeat loop\n\n"
+            "- `repeat while (condition?)` - end of repeat loop\n"
+            "- After a loop, use the correct closing keywords: `endif` only closes a conditional, `endwhile` closes a `while`, and `repeat while (...)` closes a `repeat` without an extra `endif`\n\n"
 
             "**PARALLEL FLOWS:**\n"
             "- `fork` - start of parallel flows\n"
@@ -333,12 +335,10 @@ prompt_templates = {
             "- `detach` - detachment from main flow\n"
             "- `backward :Activity;` - backward activity\n\n"
 
-            "**COLORS AND STYLES:**\n"
-            "- `#LightBlue` - activity color\n"
-            "- `#Pink` - decision color\n"
-            "- `#LightGreen` - success color\n"
-            "- `#Orange` - warning color\n"
-            "- `#Red` - error color\n\n"
+            "**FORMATTING:**\n"
+            "- Define the swimlane (`|Role|`) first, then `start`\n"
+            "- Do not use any colors or stereotypes like `<<#Color>>`\n"
+            "- Avoid deprecated syntax `#Color:` before activity names\n\n"
 
             "**STRUCTURE EXAMPLE:**\n"
             "```plantuml\n"
@@ -346,10 +346,9 @@ prompt_templates = {
             "!theme plain\n"
             "title [Process Name] - Activity Flow\n\n"
 
-            "start\n\n"
-
             "' Swimlanes for roles\n"
             "|Initiator|\n"
+            "start\n\n"
             ":Start process;\n"
             ":Prepare data;\n\n"
 
@@ -384,6 +383,18 @@ prompt_templates = {
             "else (no)\n"
             "  :Obtain missing data;\n"
             "  note right : May require contact\\nwith external sources\n"
+            "  repeat\n"
+            "    |Initiator|\n"
+            "    :Provide missing data;\n"
+            "    |Processor|\n"
+            "    :Check completeness;\n"
+            "  repeat while (Missing data still present?)\n"
+            "  if (Attempt limit exceeded?) then (yes)\n"
+            "    :End process with error;\n"
+            "    stop\n"
+            "  else (no)\n"
+            "    :Continue main flow;\n"
+            "  endif\n"
             "endif\n\n"
 
             "' Process completion\n"
@@ -392,10 +403,10 @@ prompt_templates = {
 
             "if (Results acceptable?) then (yes)\n"
             "  :Approve process;\n"
-            "  #LightGreen:Process completed successfully;\n"
-            "  end\n"
+            "  :Process completed successfully;\n"
+            "  stop\n"
             "else (no)\n"
-            "  #Orange:Process requires repetition;\n"
+            "  :Process requires repetition;\n"
             "  stop\n"
             "endif\n\n"
 

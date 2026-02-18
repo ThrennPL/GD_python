@@ -1,7 +1,7 @@
 import re, uuid, json, os, sys
 from datetime import datetime
 from typing import List, Dict, Any, Set
-from logger_utils import log_debug, log_info, log_error, log_warning, log_exception, setup_logger
+from utils.logger_utils import log_debug, log_info, log_error, log_warning, log_exception, setup_logger
 
 
 class ImprovedPlantUMLActivityParser:

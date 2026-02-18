@@ -3,7 +3,7 @@ import pprint
 import uuid
 from datetime import datetime
 import os
-from logger_utils import log_debug, log_info, log_error, log_exception, log_warning, setup_logger
+from utils.logger_utils import log_debug, log_info, log_error, log_exception, log_warning, setup_logger
 
 setup_logger("plantuml_component_parser.log")
 

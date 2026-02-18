@@ -5,7 +5,7 @@ from datetime import datetime
 import re
 import os
 from typing import Dict, List, Optional, Tuple
-from logger_utils import log_debug, log_info, log_error, log_exception, log_warning, setup_logger
+from utils.logger_utils import log_debug, log_info, log_error, log_exception, log_warning, setup_logger
 from utils.plantuml.plantuml_component_parser import PlantUMLComponentParser
 
 setup_logger('xmi_component_generator.log')

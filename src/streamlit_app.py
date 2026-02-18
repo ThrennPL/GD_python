@@ -256,7 +256,13 @@ def call_api(prompt, model_name):
             if response.status_code == 200:
                 result = response.json()
                 content = result['choices'][0]['message']['content']
-                log_ai_interaction(request=prompt, response=content, model_name=model_name, status_code=response.status_code)
+                if os.getenv("DB_HOST") is not None:
+                    if os.getenv("DB_PROVIDER") == "mysql":
+                        from utils.db.mysql_connector import log_ai_interaction
+                        log_ai_interaction(request=prompt, response=content, model_name=model_name, status_code=response.status_code)
+                    elif os.getenv("DB_PROVIDER") == "postgresql":
+                        from utils.db.PostgreSQL_connector import log_ai_interaction    
+                        log_ai_interaction(request=prompt, response=content, model_name=model_name, status_code=response.status_code)
                 return content
             else:
                 return f"Błąd API: {response.status_code} - {response.text}"
@@ -579,7 +585,7 @@ with col1:
     st.header(tr("input_box"))
     process_description = st.text_area(
         "Opis procesu",
-        height=150,
+        height=300,
         placeholder=tr("input_box.setToolTip"),
     )
     
@@ -1068,7 +1074,7 @@ if st.session_state.plantuml_diagrams:
                     diagram_title = parsed_data.get('title', diagram_type)
                     xmi_content = XMIComponentGenerator(author = "195841").generate_component_diagram(
                         diagram_name=diagram_title,
-                        parsed_data1=parsed_data
+                        parsed_data=parsed_data
                     )
                     #xmi_content = plantuml_to_xmi(plantuml_code)
                     if st.download_button(
