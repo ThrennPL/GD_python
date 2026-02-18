@@ -3,16 +3,7 @@ import pprint
 import uuid
 from datetime import datetime
 import os
-import sys
-
-parent_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
-sys.path.append(parent_dir)
-
-try:
-    from utils.logger_utils import log_debug, log_info, log_error, log_exception, log_warning, setup_logger
-except ImportError as e:
-    print(f"❌ Krytyczny błąd importu podstawowych modułów: {e}")
-    sys.exit(1)
+from logger_utils import log_debug, log_info, log_error, log_exception, log_warning, setup_logger
 
 setup_logger("plantuml_component_parser.log")
 
@@ -33,24 +24,25 @@ class PlantUMLComponentParser:
         """
         self.code = plantuml_code
         self.title = ""
-        self.components = {}      # Słownik komponentów {id: component_data}
-        self.interfaces = {}      # Słownik interfejsów {id: interface_data}
-        self.packages = {}        # Słownik pakietów {id: package_data}
-        self.relationships = []   # Lista relacji między elementami
-        self.notes = []           # Lista notatek
-        self.flow = []            # Lista wszystkich elementów w kolejności występowania
-        self.current_package = None  # Aktualnie przetwarzany pakiet
-        self.boundaries = {}      # Słownik granic C4 (boundary)
-        self.is_c4_diagram = False # Czy wykryto elementy C4
-        self.c4_element_ids = {}  # Mapa ID C4 na ID wewnętrzne
-        
-        # Opcje debugowania
+        self.components = {}
+        self.interfaces = {}
+        self.packages = {}
+        self.relationships = []
+        self.notes = []
+        self.flow = []
+        self.current_package = None
+        self.boundaries = {}
+        self.is_c4_diagram = False
+        self.c4_element_ids = {}
+        self.diagram_mode = "auto"
+        self.strategy = None
+
         self.debug_options = debug_options or {
-            'parsing': False,       # Debugowanie procesu parsowania
-            'relationships': True,  # Szczegółowe informacje o relacjach
-            'structure': False,     # Informacje o strukturze komponentów
-            'packages': True,       # Informacje o pakietach
-            'c4': False,           # Debugowanie elementów C4
+            'parsing': False,
+            'relationships': True,
+            'structure': False,
+            'packages': True,
+            'c4': False,
         }
 
     def _generate_id(self):
@@ -58,493 +50,28 @@ class PlantUMLComponentParser:
         return f"id_{uuid.uuid4().hex[:8]}"
 
     def parse(self):
-        """
-        Główna metoda parsująca, która analizuje kod linia po linii.
-        """
+        """Analizuje kod PlantUML linia po linii i zwraca strukturyzowane dane."""
         if self.debug_options.get('parsing'):
             log_debug("Rozpoczynam parsowanie kodu diagramu komponentów PlantUML")
             print("Rozpoczynam parsowanie kodu diagramu komponentów PlantUML")
-        
+
         lines = self.code.strip().split('\n')
-        
-        # Sprawdź, czy diagram używa biblioteki C4
-        for line in lines:
-            if "!include" in line and "C4" in line:
-                self.is_c4_diagram = True
-                if self.debug_options.get('c4'):
-                    log_debug("Wykryto diagram C4 na podstawie include C4")
-                    print("Wykryto diagram C4 na podstawie include C4")
-                break
-        
-        # Stos do śledzenia zagnieżdżonych struktur (pakiety, granice)
-        structure_stack = []
-        
-        # Rejestr połączeń - do debugowania i weryfikacji poprawności
-        connections = []
-        
-        # Ostatnio przetworzony element - do śledzenia relacji
-        last_element = None
 
-        i = 0
-        while i < len(lines):
-            line = lines[i].strip()
-            
-            # Pomiń puste linie, komentarze i znaczniki start/end
-            if not line or line.startswith("'") or line in ["@startuml", "@enduml"] or line.startswith("!"):
-                i += 1
-                continue
-            
-            if self.debug_options.get('parsing'):
-                log_debug(f"Przetwarzanie linii {i+1}: {line}")
-                print(f"Przetwarzanie linii {i+1}: {line}")
+        self.diagram_mode = self._detect_diagram_mode(lines)
+        self.is_c4_diagram = self.diagram_mode == 'c4'
 
-            # Parsowanie tytułu
-            if line.startswith('title'):
-                match = re.match(r'^title\s+(.*)$', line)
-                if match:
-                    self.title = match.group(1).strip()
-                    if self.debug_options.get('parsing'):
-                        log_debug(f"Znaleziono tytuł: {self.title}")
-                        print(f"Znaleziono tytuł: {self.title}")
-                    i += 1
-                    continue
+        if self.debug_options.get('parsing'):
+            log_debug(f"Wybrana strategia parsowania: {self.diagram_mode}")
+            print(f"Wybrana strategia parsowania: {self.diagram_mode}")
 
-            # Parsowanie elementów C4
-            c4_element_match = re.match(r'^(Person|System|Container|Component|Boundary|Enterprise|System_Boundary|Container_Boundary|Enterprise_Boundary|Person_Ext|System_Ext)\(([^,]+),\s*"([^"]*)"(?:,\s*"([^"]*)")?(?:,\s*"([^"]*)")?(?:,\s*"([^"]*)")?\)', line)
-            if c4_element_match:
-                element_type = c4_element_match.group(1).lower()
-                element_id = c4_element_match.group(2).strip()
-                element_name = c4_element_match.group(3).strip() if c4_element_match.group(3) else element_id
-                element_tech = c4_element_match.group(4).strip() if c4_element_match.group(4) else ""
-                element_desc = c4_element_match.group(5).strip() if c4_element_match.group(5) else ""
-                element_sprite = c4_element_match.group(6).strip() if c4_element_match.group(6) and c4_element_match.group(6) else ""
-                
-                self.is_c4_diagram = True
-                
-                c4_element_id = self._generate_id()
-                
-                # Zapisz mapowanie ID C4 na wewnętrzne ID
-                self.c4_element_ids[element_id] = c4_element_id
-                
-                # Sprawdź, czy jest to granica (boundary)
-                if 'boundary' in element_type:
-                    # Obsługa granic C4 (podobne do pakietów)
-                    boundary = {
-                        'type': 'c4_boundary',
-                        'c4_type': element_type,
-                        'name': element_name,
-                        'c4_id': element_id,
-                        'id': c4_element_id,
-                        'technology': element_tech,
-                        'description': element_desc,
-                        'components': [],
-                        'interfaces': [],
-                        'parent_package': self.current_package
-                    }
-                    
-                    self.packages[c4_element_id] = boundary
-                    self.flow.append(boundary)
-                    
-                    # Zapisz poprzedni pakiet/granicę na stosie i ustaw nowy jako aktualny
-                    if self.current_package:
-                        structure_stack.append(self.current_package)
-                    self.current_package = c4_element_id
-                    
-                    if self.debug_options.get('c4'):
-                        log_debug(f"Dodano granicę C4 {element_type}: {element_name}")
-                        print(f"Dodano granicę C4 {element_type}: {element_name}")
-                    
-                    # Sprawdź czy następna linia to "{"
-                    j = i + 1
-                    while j < len(lines) and (not lines[j].strip() or lines[j].strip().startswith("'")):
-                        j += 1
-                    
-                    if j < len(lines) and lines[j].strip() == '{':
-                        i = j + 1  # Przejdź za "{"
-                    else:
-                        i += 1  # Przejdź do następnej linii
-                    continue
-                    
-                else:
-                    # Zwykły element C4 (Person, System, Container, Component)
-                    c4_element = {
-                        'type': 'c4_element',
-                        'c4_type': element_type,
-                        'c4_id': element_id,
-                        'name': element_name,
-                        'technology': element_tech,
-                        'description': element_desc,
-                        'sprite': element_sprite,
-                        'id': c4_element_id,
-                        'package': self.current_package
-                    }
-                    
-                    self.components[c4_element_id] = c4_element
-                    self.flow.append(c4_element)
-                    
-                    # Dodaj element C4 do aktualnego pakietu/granicy, jeśli istnieje
-                    if self.current_package:
-                        self.packages[self.current_package]['components'].append(c4_element_id)
-                    
-                    if self.debug_options.get('c4'):
-                        log_debug(f"Dodano element C4 {element_type}: {element_name}")
-                        print(f"Dodano element C4 {element_type}: {element_name}")
-                    
-                    i += 1
-                    continue
+        self.strategy = self._get_strategy()
+        self.strategy.initialize_state(self)
+        self.strategy.process(lines)
+        self.strategy.finalize()
 
-            # Parsowanie relacji C4
-            c4_rel_match = re.match(r'^Rel(?:\w*)\(([^,]+),\s*([^,]+),\s*"([^"]*)"(?:,\s*"([^"]*)")?(?:,\s*[^,]*)?(?:,\s*"([^"]*)")?\)', line)
-            if c4_rel_match:
-                source_id = c4_rel_match.group(1).strip()
-                target_id = c4_rel_match.group(2).strip()
-                label = c4_rel_match.group(3).strip() if c4_rel_match.group(3) else ""
-                technology = c4_rel_match.group(4).strip() if c4_rel_match.group(4) else ""
-                direction = c4_rel_match.group(5).strip() if c4_rel_match.group(5) else ""
-                
-                self.is_c4_diagram = True
-                
-                relation = {
-                    'type': 'c4_relationship',
-                    'source': source_id,
-                    'target': target_id,
-                    'label': label,
-                    'technology': technology,
-                    'direction': direction,
-                    'id': self._generate_id()
-                }
-                
-                self.relationships.append(relation)
-                self.flow.append(relation)
-                
-                if self.debug_options.get('c4'):
-                    log_debug(f"Dodano relację C4: {source_id} -> {target_id} : {label}")
-                    print(f"Dodano relację C4: {source_id} -> {target_id} : {label}")
-                
-                i += 1
-                continue
-
-                # Parsowanie aktorów i elementów zewnętrznych (cloud, database, etc.)
-            actor_match = re.match(r'^(?:actor|cloud|database|queue)\s+\"?([^"]+)\"?\s*(?:as\s+(\w+))?', line)
-            if actor_match:
-                actor_name = actor_match.group(1).strip()
-                actor_name = actor_name.strip('"') # Usuń cudzysłowy, jeśli występują
-                actor_alias = actor_match.group(2).strip() if actor_match.group(2) else None
-                
-                element_type = line.split(' ')[0]  # Typ elementu (actor, cloud, database, queue)
-                actor_id = self._generate_id()
-                
-                actor = {
-                    'type': element_type,
-                    'name': actor_name,
-                    'alias': actor_alias,
-                    'id': actor_id,
-                    'package': self.current_package
-                }
-                    
-                # Dodaj do komponentów, żeby można było je łączyć relacjami
-                self.components[actor_id] = actor
-                self.flow.append(actor)
-                    
-                if self.debug_options.get('structure'):
-                    log_debug(f"Dodano element {element_type}: {actor_name}" + 
-                            (f" (alias: {actor_alias})" if actor_alias else ""))
-                    print(f"Dodano element {element_type}: {actor_name}" + 
-                        (f" (alias: {actor_alias})" if actor_alias else ""))
-                
-                i += 1
-                continue
-
-
-            # Parsowanie pakietów (rozpoczęcie)
-            package_start = re.match(r'^package\s+"([^"]+)"\s*(?:\{|as\s+(\w+)\s*\{)?$', line)
-            if package_start:
-                package_name = package_start.group(1)
-                package_alias = package_start.group(2) if package_start.group(2) else None
-                package_id = self._generate_id()
-                
-                package = {
-                    'type': 'package',
-                    'name': package_name,
-                    'alias': package_alias,
-                    'id': package_id,
-                    'components': [],
-                    'interfaces': [],
-                    'parent_package': self.current_package
-                }
-                
-                self.packages[package_id] = package
-                self.flow.append(package)
-                
-                # Zapisz poprzedni pakiet na stosie i ustaw nowy jako aktualny
-                if self.current_package:
-                    structure_stack.append(self.current_package)
-                self.current_package = package_id
-                
-                if self.debug_options.get('packages'):
-                    log_debug(f"Rozpoczęto pakiet: {package_name}" + 
-                              (f" (alias: {package_alias})" if package_alias else ""))
-                    print(f"Rozpoczęto pakiet: {package_name}" + 
-                          (f" (alias: {package_alias})" if package_alias else ""))
-                
-                i += 1
-                continue
-
-            # Parsowanie pakietów (zakończenie)
-            if line == '}' and (self.current_package or structure_stack):
-                if self.debug_options.get('packages') or self.debug_options.get('c4'):
-                    current_type = self.packages[self.current_package]['type'] if self.current_package else "unknown"
-                    current_name = self.packages[self.current_package]['name'] if self.current_package else "unknown"
-                    log_debug(f"Zakończono {current_type}: {current_name}")
-                    print(f"Zakończono {current_type}: {current_name}")
-                
-                # Przywróć poprzedni pakiet/granicę ze stosu, jeśli istnieje
-                if structure_stack:
-                    self.current_package = structure_stack.pop()
-                else:
-                    self.current_package = None
-                
-                i += 1
-                continue
-
-            # Parsowanie komponentów
-            component_match = re.match(r'^(?:component\s+)?(?:"([^"]+)"|(?:\[([^\[\]]+)\]))(?:\s+<<([^>]+)>>)?(?:\s+as\s+(\w+))?', line)
-            if component_match:
-                if component_match.group(1):  # Format z cudzysłowami: component "Nazwa" as alias
-                    component_name = component_match.group(1).strip()
-                    component_stereotype = component_match.group(3) if component_match.group(3) else None
-                    component_alias = component_match.group(4) if component_match.group(4) else None
-                else:  # Format z nawiasami: component [Nazwa] as alias
-                    component_name = component_match.group(2).strip()
-                    component_stereotype = component_match.group(3) if component_match.group(3) else None
-                    component_alias = component_match.group(4) if component_match.group(4) else None
-                
-                # DODANE: Wykrywanie stereotypów w formacie skrótowym <<stereotyp>>
-                if component_stereotype and component_stereotype.startswith("<<") and component_stereotype.endswith(">>"):
-                    component_stereotype = component_stereotype[2:-2]  # Usuń << i >>
-
-                # Usuń nawiasy kwadratowe z nazwy, jeśli są
-                if component_name.startswith('[') and component_name.endswith(']'):
-                    component_name = component_name[1:-1]
-                
-                component_name = component_name.strip('"')  # Usuń cudzysłowy, jeśli występują
-                
-                # DODANE: Logowanie oryginalnych danych z kodu PlantUML
-                if self.debug_options.get('structure'):
-                    log_debug(f"Wykryto komponent w PlantUML: '{component_name}'" + 
-                            (f" <<{component_stereotype}>>" if component_stereotype else "") + 
-                            (f" (alias: {component_alias})" if component_alias else ""))
-                
-                component_id = self._generate_id()
-                component = {
-                    'type': 'component',
-                    'name': component_name,
-                    'alias': component_alias,
-                    'stereotype': component_stereotype,
-                    'id': component_id,
-                    'package': self.current_package
-                }
-                
-                self.components[component_id] = component
-                self.flow.append(component)
-                
-                # Dodaj komponent do aktualnego pakietu, jeśli istnieje
-                if self.current_package:
-                    self.packages[self.current_package]['components'].append(component_id)
-                
-                if self.debug_options.get('structure'):
-                    log_debug(f"Dodano komponent: {component_name}" + 
-                            (f" <<{component_stereotype}>>" if component_stereotype else "") +
-                            (f" (alias: {component_alias})" if component_alias else ""))
-                
-                # Zapamiętaj ostatni element
-                last_element = component
-                
-                i += 1
-                continue
-
-            # Parsowanie interfejsów
-            interface_match = re.match(r'^(?:interface\s+|^\(\()([^()]+)(?:\)\))?(?:\s+as\s+(\w+))?', line)
-            if interface_match:
-                interface_name = interface_match.group(1).strip()
-                
-                # Sprawdź czy interfejs jest w formacie I[Nazwa]
-                if interface_name.startswith('I[') and interface_name.endswith(']'):
-                    interface_name = interface_name[2:-1].strip()  # Usuń I[ i ]
-                
-                # Napraw nazwy interfejsów - usuń znaki cudzysłowów
-                interface_name = interface_name.strip('"')
-                
-                # Usuń "as iservice" z nazwy, jeśli zostało dołączone
-                if " as " in interface_name:
-                    parts = interface_name.split(" as ")
-                    interface_name = parts[0].strip()
-                    # Jeśli nie ma aliasu z grupy 2, użyj tego z nazwy
-                    if not interface_match.group(2):
-                        interface_alias = parts[1].strip()
-                    else:
-                        interface_alias = interface_match.group(2).strip()
-                else:
-                    interface_alias = interface_match.group(2).strip() if interface_match.group(2) else None                
-                interface_id = self._generate_id()
-                interface = {
-                    'type': 'interface',
-                    'name': interface_name,
-                    'alias': interface_alias,
-                    'id': interface_id,
-                    'package': self.current_package
-                }
-                
-                self.interfaces[interface_id] = interface
-                self.flow.append(interface)
-                
-                # Dodaj interfejs do aktualnego pakietu, jeśli istnieje
-                if self.current_package:
-                    self.packages[self.current_package]['interfaces'].append(interface_id)
-                
-                if self.debug_options.get('structure'):
-                    log_debug(f"Dodano interfejs: {interface_name}" + 
-                              (f" (alias: {interface_alias})" if interface_alias else ""))
-                    print(f"Dodano interfejs: {interface_name}" + 
-                          (f" (alias: {interface_alias})" if interface_alias else ""))
-                
-                # Zapamiętaj ostatni element
-                last_element = interface
-                
-                i += 1
-                continue
-
-            # Parsowanie komponentów wewnątrz pakietu
-            if self.current_package and re.match(r'^\[([^\]]+)\](?:\s+<<([^>]+)>>)?(?:\s+as\s+(\w+))?', line.strip()):
-                comp_match = re.match(r'^\[([^\]]+)\](?:\s+<<([^>]+)>>)?(?:\s+as\s+(\w+))?', line.strip())
-                if comp_match:
-                    comp_name = comp_match.group(1).strip()
-                    comp_stereotype = comp_match.group(2) if len(comp_match.groups()) > 1 and comp_match.group(2) else None
-                    comp_alias = comp_match.group(3) if len(comp_match.groups()) > 2 and comp_match.group(3) else None
-                    
-                    # Usuń nawiasy kwadratowe, jeśli są częścią nazwy
-                    if comp_name.startswith('[') and comp_name.endswith(']'):
-                        comp_name = comp_name[1:-1].strip()
-                    
-                    comp_name = comp_name.strip('"')  # Usuń cudzysłowy, jeśli występują
-                    comp_id = self._generate_id()
-                    
-                    component = {
-                        'type': 'component',
-                        'name': comp_name,
-                        'alias': comp_alias,
-                        'stereotype': comp_stereotype,
-                        'id': comp_id,
-                        'package': self.current_package
-                    }
-                    
-                    self.components[comp_id] = component
-                    self.flow.append(component)
-                    
-                    # Dodaj komponent do aktualnego pakietu
-                    self.packages[self.current_package]['components'].append(comp_id)
-                    
-                    if self.debug_options.get('structure'):
-                        log_debug(f"Dodano komponent w pakiecie: {comp_name}" + 
-                                (f" <<{comp_stereotype}>>" if comp_stereotype else "") + 
-                                (f" (alias: {comp_alias})" if comp_alias else ""))
-                        print(f"Dodano komponent w pakiecie: {comp_name}" + 
-                            (f" <<{comp_stereotype}>>" if comp_stereotype else "") + 
-                            (f" (alias: {comp_alias})" if comp_alias else ""))
-                    
-                    i += 1
-                    continue
-
-            # Parsowanie relacji
-            relation_match = re.match(r'^([^\s<>-]+)\s*([-\.]+)(?:>|\)|\(|\|)(?:>|\)|\(|\|)?\s*([^\s<>-]+)(?:\s*:\s*(.+))?$', line)
-            if relation_match:
-                source_name = relation_match.group(1).strip()
-                relation_type = relation_match.group(2).strip()
-                target_name = relation_match.group(3).strip()
-                label = relation_match.group(4).strip() if relation_match.group(4) else ""
-                
-                # Usuń nawiasy kwadratowe i cudzysłowy z nazw elementów
-                if source_name.startswith('[') and source_name.endswith(']'):
-                    source_name = source_name[1:-1]
-                if target_name.startswith('[') and target_name.endswith(']'):
-                    target_name = target_name[1:-1]
-                
-                source_name = source_name.strip('"')
-                target_name = target_name.strip('"')
-                
-                relation = {
-                    'type': 'relationship',
-                    'source': source_name,
-                    'target': target_name,
-                    'relation_type': relation_type,
-                    'label': label,
-                    'id': self._generate_id()
-                }
-                
-                self.relationships.append(relation)
-                self.flow.append(relation)
-                
-                if self.debug_options.get('relationships'):
-                    log_debug(f"Dodano relację: {source_name} {relation_type}> {target_name}" + 
-                            (f" : {label}" if label else ""))
-                    print(f"Dodano relację: {source_name} {relation_type}> {target_name}" + 
-                        (f" : {label}" if label else ""))
-                
-                i += 1
-                continue
-
-            # Parsowanie notatek
-            note_match = re.match(r'^note\s+(left|right|top|bottom)\s+of\s+([^:]+)\s*:\s*(.*)$', line)
-            if note_match:
-                position = note_match.group(1).strip()
-                target = note_match.group(2).strip()
-                content = note_match.group(3).strip()
-                
-                # Sprawdź, czy nota jest wieloliniowa
-                if not content.endswith('end note'):
-                    # Zbierz wszystkie linie notatki
-                    note_content = [content]
-                    j = i + 1
-                    while j < len(lines) and 'end note' not in lines[j]:
-                        note_content.append(lines[j].strip())
-                        j += 1
-                    
-                    if j < len(lines) and 'end note' in lines[j]:
-                        # Usuń 'end note' z ostatniej linii, jeśli jest częścią linii
-                        last_line = lines[j].strip()
-                        if last_line != 'end note':
-                            note_content.append(last_line.replace('end note', '').strip())
-                        i = j  # Przesuwamy indeks za 'end note'
-                    
-                    content = '\n'.join(note_content)
-                
-                note = {
-                    'type': 'note',
-                    'position': position,
-                    'target': target,
-                    'content': content,
-                    'id': self._generate_id(),
-                    'package': self.current_package
-                }
-                
-                self.notes.append(note)
-                self.flow.append(note)
-                
-                if self.debug_options.get('parsing'):
-                    log_debug(f"Dodano notatkę {position} of {target}: {content[:30]}...")
-                    print(f"Dodano notatkę {position} of {target}: {content[:30]}...")
-                
-                i += 1
-                continue
-            
-            # Jeśli żaden wzorzec nie pasował, po prostu przejdź do następnej linii
-            i += 1
-        
+        self._convert_gateway_components_to_interfaces()
         self._add_components_to_packages()
-        # Wykonaj post-processing
         self.post_process()
-
-        # Po zakończeniu parsowania, sprawdź i zaloguj statystyki i problemy
         self._debug_parser_results()
 
         return {
@@ -558,6 +85,75 @@ class PlantUMLComponentParser:
             'flow': self.flow,
             'c4_element_ids': self.c4_element_ids
         }
+
+    def _detect_diagram_mode(self, lines):
+        """Określa typ diagramu na podstawie kodu PlantUML."""
+        for raw in lines:
+            line = raw.strip()
+            if line.startswith('!') and 'C4' in line:
+                return 'c4'
+
+        c4_patterns = (
+            r'^Rel',
+            r'^(Person(?:_Ext)?|System(?:_Ext)?|Container(?:Db)?|Component(?:Db|Queue)?|Boundary|Enterprise)',
+            r'^System_Boundary',
+            r'^Container_Boundary',
+            r'^Enterprise_Boundary'
+        )
+        for raw in lines:
+            line = raw.strip()
+            for pattern in c4_patterns:
+                if re.match(pattern, line):
+                    return 'c4'
+        return 'classic'
+
+    def _convert_gateway_components_to_interfaces(self):
+        """Konwertuje komponenty o stereotypie gateway na interfejsy."""
+        gateway_ids = [
+            comp_id for comp_id, comp in list(self.components.items())
+            if (comp.get('stereotype') or '').lower() == 'gateway'
+        ]
+
+        if not gateway_ids:
+            return
+
+        for comp_id in gateway_ids:
+            component = self.components.pop(comp_id)
+            interface_entry = {
+                'type': 'interface',
+                'name': component.get('name'),
+                'alias': component.get('alias'),
+                'id': comp_id,
+                'package': component.get('package'),
+                'stereotype': component.get('stereotype')
+            }
+
+            self.interfaces[comp_id] = interface_entry
+
+            package_id = component.get('package')
+            if package_id and package_id in self.packages:
+                pkg = self.packages[package_id]
+                components_list = pkg.get('components', [])
+                if comp_id in components_list:
+                    components_list.remove(comp_id)
+                pkg.setdefault('interfaces', [])
+                if comp_id not in pkg['interfaces']:
+                    pkg['interfaces'].append(comp_id)
+
+            for element in self.flow:
+                if element.get('id') == comp_id:
+                    element['type'] = 'interface'
+                    element['stereotype'] = component.get('stereotype')
+                    break
+
+            if self.debug_options.get('structure'):
+                log_debug(f"Przekonwertowano komponent '{component.get('name')}' na interfejs gateway")
+
+    def _get_strategy(self):
+        """Zwraca instancję strategii odpowiadającej wykrytemu trybowi diagramu."""
+        if self.diagram_mode == 'c4':
+            return C4ComponentParserStrategy()
+        return ClassicComponentParserStrategy()
     
     def _add_component(self, name, stereotype, alias, package_id):
         """
@@ -893,6 +489,611 @@ class PlantUMLComponentParser:
             stats['c4_element_types'] = c4_element_types
         
         return stats
+
+
+class ComponentParserStrategy:
+    """Wspólna baza dla strategii parsowania diagramów komponentów."""
+
+    RELATION_TOKENS = (
+        ('..|>', 'realization', 'forward'),
+        ('--|>', 'inheritance', 'forward'),
+        ('<|--', 'inheritance', 'backward'),
+        ('<|..', 'realization', 'backward'),
+        ('<--', 'association', 'backward'),
+        ('<-', 'association', 'backward'),
+        ('..>', 'dependency', 'forward'),
+        ('<..', 'dependency', 'backward'),
+        ('-->', 'association', 'forward'),
+        ('->', 'association', 'forward'),
+        ('--', 'association', 'undirected'),
+        ('..', 'dependency', 'undirected')
+    )
+
+    PACKAGE_KEYWORDS = ('package', 'frame', 'node', 'folder', 'cloud')
+    ACTOR_KEYWORDS = ('actor', 'cloud', 'database', 'queue', 'entity', 'control', 'boundary')
+
+    def initialize_state(self, parser):
+        self.parser = parser
+        self.structure_stack = []
+        self.last_element = None
+        parser.current_package = None
+
+    def process(self, lines):
+        raise NotImplementedError
+
+    def finalize(self):
+        return None
+
+    def _should_skip_line(self, line):
+        return (
+            not line or
+            line.startswith("'") or
+            line in ["@startuml", "@enduml"] or
+            line.startswith('!')
+        )
+
+    def _log_parsing(self, index, line):
+        if self.parser.debug_options.get('parsing'):
+            log_debug(f"Przetwarzanie linii {index + 1}: {line}")
+            print(f"Przetwarzanie linii {index + 1}: {line}")
+
+    def _handle_common_line(self, lines, index):
+        handlers = (
+            self._handle_title,
+            self._handle_actor,
+            self._handle_package_start,
+            self._handle_package_end,
+            self._handle_component,
+            self._handle_interface,
+            self._handle_inline_component,
+            self._handle_relationship,
+            self._handle_note,
+        )
+
+        for handler in handlers:
+            handled, new_index = handler(lines, index)
+            if handled:
+                return True, new_index
+        return False, index
+
+    def _handle_title(self, lines, index):
+        line = lines[index].strip()
+        if not line.startswith('title'):
+            return False, index
+
+        match = re.match(r'^title\s+(.*)$', line)
+        if match:
+            self.parser.title = match.group(1).strip()
+            if self.parser.debug_options.get('parsing'):
+                log_debug(f"Znaleziono tytuł: {self.parser.title}")
+                print(f"Znaleziono tytuł: {self.parser.title}")
+        return True, index + 1
+
+    def _handle_actor(self, lines, index):
+        line = lines[index].strip()
+        parts = line.split()
+        if not parts or parts[0] not in self.ACTOR_KEYWORDS:
+            return False, index
+
+        actor_match = re.match(r'^(\w+)\s+"?([^"]+)"?(?:\s+as\s+([\w\.]+))?', line)
+        if not actor_match:
+            return False, index
+
+        element_type = actor_match.group(1)
+        actor_name = actor_match.group(2).strip().strip('"')
+        actor_alias = actor_match.group(3).strip() if actor_match.group(3) else None
+
+        actor_id = self.parser._generate_id()
+        actor_stereotype = None
+        if element_type == 'database':
+            actor_stereotype = 'database'
+
+        actor = {
+            'type': element_type,
+            'name': actor_name,
+            'alias': actor_alias,
+            'stereotype': actor_stereotype,
+            'id': actor_id,
+            'package': self.parser.current_package
+        }
+
+        self.parser.components[actor_id] = actor
+        self.parser.flow.append(actor)
+
+        if self.parser.current_package:
+            pkg = self.parser.packages.get(self.parser.current_package)
+            if pkg is not None:
+                pkg.setdefault('components', []).append(actor_id)
+
+        if self.parser.debug_options.get('structure'):
+            details = f" (alias: {actor_alias})" if actor_alias else ""
+            log_debug(f"Dodano element {element_type}: {actor_name}{details}")
+            print(f"Dodano element {element_type}: {actor_name}{details}")
+
+        return True, index + 1
+
+    def _handle_package_start(self, lines, index):
+        line = lines[index].strip()
+        if not any(line.startswith(keyword) for keyword in self.PACKAGE_KEYWORDS):
+            return False, index
+
+        package_match = re.match(r'^(package|frame|node|folder|cloud)\s+"([^"]+)"\s*(?:as\s+(\w+))?\s*\{?$', line)
+        if not package_match:
+            return False, index
+
+        package_type = package_match.group(1)
+        package_name = package_match.group(2)
+        package_alias = package_match.group(3) if package_match.group(3) else None
+
+        package_id = self.parser._generate_id()
+        package = {
+            'type': 'package',
+            'package_kind': package_type,
+            'name': package_name,
+            'alias': package_alias,
+            'id': package_id,
+            'components': [],
+            'interfaces': [],
+            'parent_package': self.parser.current_package
+        }
+
+        self.parser.packages[package_id] = package
+        self.parser.flow.append(package)
+
+        self._push_scope(package_id)
+
+        if self.parser.debug_options.get('packages'):
+            alias_info = f" (alias: {package_alias})" if package_alias else ""
+            log_debug(f"Rozpoczęto {package_type}: {package_name}{alias_info}")
+            print(f"Rozpoczęto {package_type}: {package_name}{alias_info}")
+
+        # Jeśli bieżąca linia nie kończy się nawiasem otwierającym, poszukaj go w kolejnych liniach
+        next_index = index + 1
+        if not line.rstrip().endswith('{'):
+            j = next_index
+            while j < len(lines) and (not lines[j].strip() or lines[j].strip().startswith("'")):
+                j += 1
+            if j < len(lines) and lines[j].strip() == '{':
+                next_index = j + 1
+            else:
+                next_index = index + 1
+
+        return True, next_index
+
+    def _handle_package_end(self, lines, index):
+        line = lines[index].strip()
+        if line != '}' or (self.parser.current_package is None and not self.structure_stack):
+            return False, index
+
+        current_id = self.parser.current_package
+        if self.parser.debug_options.get('packages') or self.parser.debug_options.get('c4'):
+            if current_id and current_id in self.parser.packages:
+                current_pkg = self.parser.packages[current_id]
+                pkg_type = current_pkg.get('type', 'unknown')
+                pkg_name = current_pkg.get('name', 'unknown')
+            else:
+                pkg_type = 'unknown'
+                pkg_name = 'unknown'
+            log_debug(f"Zakończono {pkg_type}: {pkg_name}")
+            print(f"Zakończono {pkg_type}: {pkg_name}")
+
+        self._pop_scope()
+        return True, index + 1
+
+    def _handle_component(self, lines, index):
+        line = lines[index].strip()
+        if any(token in line for token in ['--', '->', '..', '<-', '<|']):
+            return False, index
+
+        component_match = re.match(
+            r'^(?:component\s+)?(?:"([^"]+)"|\[([^\[\]]+)\]|([\w\.]+))(?:\s+<<(.*?)>>)?(?:\s+as\s+([\w\.]+))?$',
+            line
+        )
+        if not component_match:
+            return False, index
+
+        if component_match.group(1):
+            component_name = component_match.group(1).strip()
+        elif component_match.group(2):
+            component_name = component_match.group(2).strip()
+        else:
+            component_name = component_match.group(3).strip()
+
+        component_stereotype = component_match.group(4)
+        component_alias = component_match.group(5)
+
+        if component_stereotype and component_stereotype.startswith('<<') and component_stereotype.endswith('>>'):
+            component_stereotype = component_stereotype[2:-2]
+
+        component_name = component_name.strip('"')
+        if component_name.startswith('[') and component_name.endswith(']'):
+            component_name = component_name[1:-1]
+
+        component_id = self.parser._generate_id()
+        component = {
+            'type': 'component',
+            'name': component_name,
+            'alias': component_alias,
+            'stereotype': component_stereotype,
+            'id': component_id,
+            'package': self.parser.current_package
+        }
+
+        self.parser.components[component_id] = component
+        self.parser.flow.append(component)
+
+        if self.parser.current_package:
+            self.parser.packages[self.parser.current_package]['components'].append(component_id)
+
+        if self.parser.debug_options.get('structure'):
+            alias_info = f" (alias: {component_alias})" if component_alias else ""
+            stereo_info = f" <<{component_stereotype}>>" if component_stereotype else ""
+            log_debug(f"Dodano komponent: {component_name}{stereo_info}{alias_info}")
+            print(f"Dodano komponent: {component_name}{stereo_info}{alias_info}")
+
+        self.last_element = component
+        return True, index + 1
+
+    def _handle_interface(self, lines, index):
+        line = lines[index].strip()
+        interface_match = re.match(r'^(?:interface\s+|^\(\()([^()]+)(?:\)\))?(?:\s+as\s+(\w+))?', line)
+        if not interface_match:
+            return False, index
+
+        interface_name = interface_match.group(1).strip()
+        if interface_name.startswith('I[') and interface_name.endswith(']'):
+            interface_name = interface_name[2:-1].strip()
+        interface_name = interface_name.strip('"')
+
+        if ' as ' in interface_name and not interface_match.group(2):
+            name_part, alias_part = interface_name.split(' as ', 1)
+            interface_name = name_part.strip()
+            interface_alias = alias_part.strip()
+        else:
+            interface_alias = interface_match.group(2).strip() if interface_match.group(2) else None
+
+        interface_name = interface_name.strip('"')
+
+        interface_id = self.parser._generate_id()
+        interface = {
+            'type': 'interface',
+            'name': interface_name,
+            'alias': interface_alias,
+            'id': interface_id,
+            'package': self.parser.current_package
+        }
+
+        self.parser.interfaces[interface_id] = interface
+        self.parser.flow.append(interface)
+
+        if self.parser.current_package:
+            self.parser.packages[self.parser.current_package]['interfaces'].append(interface_id)
+
+        if self.parser.debug_options.get('structure'):
+            alias_info = f" (alias: {interface_alias})" if interface_alias else ""
+            log_debug(f"Dodano interfejs: {interface_name}{alias_info}")
+            print(f"Dodano interfejs: {interface_name}{alias_info}")
+
+        self.last_element = interface
+        return True, index + 1
+
+    def _handle_inline_component(self, lines, index):
+        line = lines[index].strip()
+        if self.parser.current_package is None:
+            return False, index
+
+        inline_match = re.match(r'^\[([^\]]+)\](?:\s+<<(.*?)>>)?(?:\s+as\s+([\w\.]+))?', line)
+        if not inline_match:
+            return False, index
+
+        comp_name = inline_match.group(1).strip()
+        comp_stereotype = inline_match.group(2) if inline_match.group(2) else None
+        comp_alias = inline_match.group(3) if inline_match.group(3) else None
+
+        if comp_stereotype:
+            comp_stereotype = comp_stereotype.strip()
+            if comp_stereotype.startswith('<<') and comp_stereotype.endswith('>>'):
+                comp_stereotype = comp_stereotype[2:-2]
+        if comp_alias:
+            comp_alias = comp_alias.strip()
+
+        if comp_name.startswith('[') and comp_name.endswith(']'):
+            comp_name = comp_name[1:-1].strip()
+        comp_name = comp_name.strip('"')
+
+        comp_id = self.parser._generate_id()
+        component = {
+            'type': 'component',
+            'name': comp_name,
+            'alias': comp_alias,
+            'stereotype': comp_stereotype,
+            'id': comp_id,
+            'package': self.parser.current_package
+        }
+
+        self.parser.components[comp_id] = component
+        self.parser.flow.append(component)
+        self.parser.packages[self.parser.current_package]['components'].append(comp_id)
+
+        if self.parser.debug_options.get('structure'):
+            alias_info = f" (alias: {comp_alias})" if comp_alias else ""
+            stereo_info = f" <<{comp_stereotype}>>" if comp_stereotype else ""
+            log_debug(f"Dodano komponent w pakiecie: {comp_name}{stereo_info}{alias_info}")
+            print(f"Dodano komponent w pakiecie: {comp_name}{stereo_info}{alias_info}")
+
+        return True, index + 1
+
+    def _handle_relationship(self, lines, index):
+        line = lines[index].strip()
+        label = None
+
+        if ':' in line:
+            relation_part, label_part = line.split(':', 1)
+            label = label_part.strip()
+        else:
+            relation_part = line
+
+        for token, rel_type, direction in self.RELATION_TOKENS:
+            if token in relation_part:
+                source_part, target_part = relation_part.split(token, 1)
+                source = self._normalize_reference(source_part)
+                target = self._normalize_reference(target_part)
+                if direction == 'backward':
+                    source, target = target, source
+
+                if not source or not target:
+                    continue
+
+                relation = {
+                    'type': 'relationship',
+                    'source': source,
+                    'target': target,
+                    'relation_type': rel_type,
+                    'raw_arrow': token,
+                    'direction': direction,
+                    'label': label or '',
+                    'id': self.parser._generate_id()
+                }
+
+                self.parser.relationships.append(relation)
+                self.parser.flow.append(relation)
+
+                if self.parser.debug_options.get('relationships'):
+                    label_info = f" : {relation['label']}" if relation['label'] else ''
+                    log_debug(f"Dodano relację: {relation['source']} {token} {relation['target']}{label_info}")
+                    print(f"Dodano relację: {relation['source']} {token} {relation['target']}{label_info}")
+
+                return True, index + 1
+
+        return False, index
+
+    def _handle_note(self, lines, index):
+        line = lines[index].strip()
+        note_match = re.match(r'^note\s+(left|right|top|bottom)\s+of\s+([^:]+)\s*:\s*(.*)$', line)
+        if not note_match:
+            return False, index
+
+        position = note_match.group(1).strip()
+        target = note_match.group(2).strip()
+        content = note_match.group(3).strip()
+
+        note_lines = [content]
+        j = index + 1
+        if not content.endswith('end note'):
+            while j < len(lines) and 'end note' not in lines[j]:
+                note_lines.append(lines[j].strip())
+                j += 1
+            if j < len(lines):
+                end_line = lines[j].strip()
+                if end_line != 'end note':
+                    note_lines.append(end_line.replace('end note', '').strip())
+                j += 1
+        else:
+            note_lines[-1] = content.replace('end note', '').strip()
+
+        note = {
+            'type': 'note',
+            'position': position,
+            'target': target,
+            'content': '\n'.join([line for line in note_lines if line]),
+            'id': self.parser._generate_id(),
+            'package': self.parser.current_package
+        }
+
+        self.parser.notes.append(note)
+        self.parser.flow.append(note)
+
+        if self.parser.debug_options.get('parsing'):
+            log_debug(f"Dodano notatkę {position} of {target}: {note['content'][:30]}...")
+            print(f"Dodano notatkę {position} of {target}: {note['content'][:30]}...")
+
+        return True, j if j > index + 1 else index + 1
+
+    def _normalize_reference(self, reference):
+        ref = reference.strip()
+        if ref.startswith('[') and ref.endswith(']'):
+            ref = ref[1:-1]
+        ref = ref.strip('"')
+        return ref.strip()
+
+    def _push_scope(self, package_id):
+        if self.parser.current_package:
+            self.structure_stack.append(self.parser.current_package)
+        self.parser.current_package = package_id
+
+    def _pop_scope(self):
+        if self.structure_stack:
+            self.parser.current_package = self.structure_stack.pop()
+        else:
+            self.parser.current_package = None
+
+
+class C4ComponentParserStrategy(ComponentParserStrategy):
+    """Strategia parsowania diagramów C4."""
+
+    def process(self, lines):
+        parser = self.parser
+        i = 0
+        while i < len(lines):
+            line = lines[i].strip()
+
+            if self._should_skip_line(line):
+                i += 1
+                continue
+
+            self._log_parsing(i, line)
+
+            handled, next_index = self._handle_c4_element(lines, i)
+            if handled:
+                i = next_index
+                continue
+
+            handled, next_index = self._handle_c4_relation(lines, i)
+            if handled:
+                i = next_index
+                continue
+
+            handled, next_index = self._handle_common_line(lines, i)
+            if handled:
+                i = next_index
+                continue
+
+            i += 1
+
+    def _handle_c4_element(self, lines, index):
+        line = lines[index].strip()
+        parser = self.parser
+        element_match = re.match(
+            r'^(Person(?:_Ext)?|System(?:_Ext)?|Container(?:Db)?|Component(?:Db|Queue)?|Boundary|Enterprise|System_Boundary|Container_Boundary|Enterprise_Boundary)\(([^,]+),\s*"([^"]*)"(?:,\s*"([^"]*)")?(?:,\s*"([^"]*)")?(?:,\s*"([^"]*)")?\)',
+            line
+        )
+        if not element_match:
+            return False, index
+
+        element_type = element_match.group(1).lower()
+        element_id = element_match.group(2).strip()
+        element_name = element_match.group(3).strip() if element_match.group(3) else element_id
+        element_tech = element_match.group(4).strip() if element_match.group(4) else ""
+        element_desc = element_match.group(5).strip() if element_match.group(5) else ""
+        element_sprite = element_match.group(6).strip() if element_match.group(6) else ""
+
+        parser.is_c4_diagram = True
+
+        generated_id = parser._generate_id()
+        parser.c4_element_ids[element_id] = generated_id
+
+        if 'boundary' in element_type:
+            boundary = {
+                'type': 'c4_boundary',
+                'c4_type': element_type,
+                'name': element_name,
+                'c4_id': element_id,
+                'id': generated_id,
+                'technology': element_tech,
+                'description': element_desc,
+                'components': [],
+                'interfaces': [],
+                'parent_package': parser.current_package
+            }
+
+            parser.packages[generated_id] = boundary
+            parser.flow.append(boundary)
+            self._push_scope(generated_id)
+
+            if parser.debug_options.get('c4'):
+                log_debug(f"Dodano granicę C4 {element_type}: {element_name}")
+                print(f"Dodano granicę C4 {element_type}: {element_name}")
+
+            next_index = index + 1
+            j = next_index
+            while j < len(lines) and (not lines[j].strip() or lines[j].strip().startswith("'")):
+                j += 1
+            if j < len(lines) and lines[j].strip() == '{':
+                next_index = j + 1
+            return True, next_index
+
+        c4_element = {
+            'type': 'c4_element',
+            'c4_type': element_type,
+            'c4_id': element_id,
+            'name': element_name,
+            'technology': element_tech,
+            'description': element_desc,
+            'sprite': element_sprite,
+            'id': generated_id,
+            'package': parser.current_package
+        }
+
+        parser.components[generated_id] = c4_element
+        parser.flow.append(c4_element)
+
+        if parser.current_package:
+            parser.packages[parser.current_package]['components'].append(generated_id)
+
+        if parser.debug_options.get('c4'):
+            log_debug(f"Dodano element C4 {element_type}: {element_name}")
+            print(f"Dodano element C4 {element_type}: {element_name}")
+
+        return True, index + 1
+
+    def _handle_c4_relation(self, lines, index):
+        line = lines[index].strip()
+        parser = self.parser
+        relation_match = re.match(
+            r'^Rel(?:\w*)\(([^,]+),\s*([^,]+),\s*"([^"]*)"(?:,\s*"([^"]*)")?(?:,\s*[^,]*)?(?:,\s*"([^"]*)")?\)',
+            line
+        )
+        if not relation_match:
+            return False, index
+
+        source_id = relation_match.group(1).strip()
+        target_id = relation_match.group(2).strip()
+        label = relation_match.group(3).strip() if relation_match.group(3) else ""
+        technology = relation_match.group(4).strip() if relation_match.group(4) else ""
+        direction = relation_match.group(5).strip() if relation_match.group(5) else ""
+
+        parser.is_c4_diagram = True
+
+        relation = {
+            'type': 'c4_relationship',
+            'source': source_id,
+            'target': target_id,
+            'label': label,
+            'technology': technology,
+            'direction': direction,
+            'id': parser._generate_id()
+        }
+
+        parser.relationships.append(relation)
+        parser.flow.append(relation)
+
+        if parser.debug_options.get('c4'):
+            log_debug(f"Dodano relację C4: {source_id} -> {target_id} : {label}")
+            print(f"Dodano relację C4: {source_id} -> {target_id} : {label}")
+
+        return True, index + 1
+
+
+class ClassicComponentParserStrategy(ComponentParserStrategy):
+    """Strategia parsowania klasycznych diagramów komponentów."""
+
+    def process(self, lines):
+        i = 0
+        while i < len(lines):
+            line = lines[i].strip()
+
+            if self._should_skip_line(line):
+                i += 1
+                continue
+
+            self._log_parsing(i, line)
+
+            handled, next_index = self._handle_common_line(lines, i)
+            if handled:
+                i = next_index
+                continue
+
+            i += 1
 
 if __name__ == '__main__':
     print("Parser diagramów komponentów PlantUML")
