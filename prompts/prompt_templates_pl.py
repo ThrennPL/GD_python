@@ -218,7 +218,7 @@ prompt_templates = {
             },
             "Diagram aktywności": {
                 "template": (
-                    "Jako specjalista od kodu PlantUML na podstawie opisu procesu biznesowego: {process_description}\n\n"
+                    "Na podstawie opisu procesu biznesowego: {process_description}\n\n"
 
                     "**KROK 1: ANALIZA PROCESU BIZNESOWEGO**\n"
                     "Przeanalizuj opisany proces i zidentyfikuj:\n"
@@ -299,10 +299,9 @@ prompt_templates = {
                     "1. **Rozpocznij:** `@startuml`\n"
                     "2. **Tytuł:** `title [Nazwa Procesu] - Przepływ Aktywności`\n"
                     "3. **Tema:** `!theme plain` lub pomiń dla domyślnego stylu\n"
-                    "4. **WAŻNE - Swimlanes:** Jeśli używasz swimlanes, zdefiniuj je PRZED `start`\n"
-                    "5. **Start:** `start` - punkt początkowy\n"
-                    "6. **Logiczna sekwencja aktywności**\n"
-                    "7. **Zakończ:** `@enduml`\n\n"
+                    "4. **Pierwszy swimlane zdefiniuj przed `start` (np. `|Rola|`)**\n"
+                    "5. **Logiczna sekwencja aktywności**\n"
+                    "6. **Zakończ:** `@enduml`\n\n"
 
                     "**PODSTAWOWE ELEMENTY:**\n"
                     "- `start` - punkt początkowy\n"
@@ -310,13 +309,13 @@ prompt_templates = {
                     "- `stop` - punkt zatrzymania\n"
                     "- `:Nazwa aktywności;` - aktywność\n"
                     "- `if (warunek?) then (tak)` - decyzja z warunkiem\n"
-                    "- `elseif (warunek2) then` - dodatkowy warunek\n"
                     "- `else (nie)` - alternatywa\n"
                     "- `endif` - koniec decyzji\n"
                     "- `while (warunek?)` - pętla\n"
                     "- `endwhile` - koniec pętli\n"
                     "- `repeat` - pętla repeat-until\n"
-                    "- `repeat while (warunek?)` - koniec pętli repeat\n\n"
+                    "- `repeat while (warunek?)` - koniec pętli repeat\n"
+                    "- Po zakończeniu pętli używaj właściwych słów kluczowych: `endif` domyka tylko instrukcję warunkową, `endwhile` domyka pętlę `while`, a `repeat while (...)` kończy pętlę `repeat` bez dodatkowego `endif`\n\n"
 
                     "**PRZEPŁYWY RÓWNOLEGŁE:**\n"
                     "- `fork` - rozpoczęcie przepływów równoległych\n"
@@ -338,27 +337,21 @@ prompt_templates = {
                     "- `detach` - odłączenie od głównego przepływu\n"
                     "- `backward :Aktywność;` - aktywność wsteczna\n\n"
 
-                    "**KOLORY I STYLE:**\n"
-                    "- `#LightBlue` - kolor aktywności\n"
-                    "- `#Pink` - kolor decyzji\n"
-                    "- `#LightGreen` - kolor sukcesu\n"
-                    "- `#Orange` - kolor ostrzeżenia\n"
-                    "- `#Red` - kolor błędu\n\n"
+                    "**FORMATOWANIE:**\n"
+                    "- Najpierw zdefiniuj swimlane (`|Rola|`), a dopiero za nim `start`\n"
+                    "- Nie stosuj żadnych kolorów ani stereotypów typu `<<#Color>>`\n"
+                    "- Unikaj przestarzałej składni `#Color:` przed nazwą aktywności\n\n"
 
                     "**PRZYKŁAD STRUKTURY:**\n"
                     "```plantuml\n"
                     "@startuml\n"
+                    "!theme plain\n"
                     "title [Nazwa Procesu] - Przepływ Aktywności\n\n"
 
-                    "' WAŻNE: Swimlanes muszą być zdefiniowane PRZED start\n"
+                    "' Swimlanes dla ról\n"
                     "|Inicjator|\n"
-                    "|Procesor|\n"
-                    "|Zarządzający|\n\n"
-
                     "start\n\n"
 
-                    "' Aktywności w swimlanes\n"
-                    "|Inicjator|\n"
                     ":Rozpoczęcie procesu;\n"
                     ":Przygotowanie danych;\n\n"
 
@@ -378,7 +371,6 @@ prompt_templates = {
                     "    end fork\n"
                     "    \n"
                     "    :Finalizacja procesu;\n"
-                    "    \n"
                     "  else (nie)\n"
                     "    :Obsługa błędów walidacji;\n"
                     "    |Inicjator|\n"
@@ -393,6 +385,18 @@ prompt_templates = {
                     "else (nie)\n"
                     "  :Pozyskanie brakujących danych;\n"
                     "  note right : Może wymagać kontaktu\\nz zewnętrznymi źródłami\n"
+                    "  repeat\n"
+                    "    |Inicjator|\n"
+                    "    :Dostarcz brakujące dane;\n"
+                    "    |Procesor|\n"
+                    "    :Sprawdź kompletność;\n"
+                    "  repeat while (Braki nadal występują?)\n"
+                    "  if (Limit prób przekroczony?) then (tak)\n"
+                    "    :Zakończ proces z błędem;\n"
+                    "    stop\n"
+                    "  else (nie)\n"
+                    "    :Kontynuuj główny przepływ;\n"
+                    "  endif\n"
                     "endif\n\n"
 
                     "' Zakończenie procesu\n"
@@ -401,10 +405,10 @@ prompt_templates = {
 
                     "if (Wyniki akceptowalne?) then (tak)\n"
                     "  :Zatwierdzenie procesu;\n"
-                    "  #LightGreen:Proces zakończony sukcesem;\n"
-                    "  end\n"
+                    "  :Proces zakończony sukcesem;\n"
+                    "  stop\n"
                     "else (nie)\n"
-                    "  #Orange:Proces wymaga ponowienia;\n"
+                    "  :Proces wymaga ponowienia;\n"
                     "  stop\n"
                     "endif\n\n"
 
