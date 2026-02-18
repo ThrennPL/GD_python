@@ -1,18 +1,8 @@
 import re, uuid, json, os, sys
 from datetime import datetime
 from typing import List, Dict, Any, Set
+from logger_utils import log_debug, log_info, log_error, log_warning, log_exception, setup_logger
 
-parent_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
-sys.path.append(parent_dir)
-try:
-    from logger_utils import log_debug, log_info, log_error, log_warning, log_exception, setup_logger
-except Exception:
-    def log_debug(x): print(x)
-    def log_info(x): print(x)
-    def log_error(x): print(x)
-    def log_warning(x): print(x)
-    def log_exception(x): print(x)
-    def setup_logger(_): pass
 
 class ImprovedPlantUMLActivityParser:
     def __init__(self, plantuml_code: str, debug_options=None):
@@ -21,6 +11,7 @@ class ImprovedPlantUMLActivityParser:
         self.tokens: List[Dict[str, Any]] = []
         self.ast: List[Dict[str, Any]] = []
         self.structure_contexts: List[Dict[str, Any]] = []
+        self.parallel_contexts: List[Dict[str, Any]] = []
         self.elements: Dict[str, Dict[str, Any]] = {}
         self.connections: List[Dict[str, Any]] = []
         self.swimlanes: Dict[str, Dict[str, Any]] = {}
@@ -78,6 +69,7 @@ class ImprovedPlantUMLActivityParser:
             ('NOTE_START', r'^note\s+(left|right|top|bottom)(?:\s+of\s+([^:]+))?\s*(?::\s*(.*))?$'),
             ('NOTE_END', r'^end note$'),
             ('COMMENT', r"^'.*$"),
+            ('DIRECTIVE', r'^![A-Za-z][A-Za-z0-9_]*(?:\s+.*)?$'),
             ('EMPTY', r'^\s*$'),
             ('STARTUML', r'^@startuml$'),
             ('ENDUML', r'^@enduml$')
@@ -184,11 +176,35 @@ class ImprovedPlantUMLActivityParser:
 
     # ---------------- AST ----------------
     def _build_ast(self):
+        self.parallel_contexts = []
+
+        def _record_in_parallel(parent_stack, token):
+            if token['type'] in ('FORK_AGAIN', 'ENDFORK'):
+                return
+            for ctx in reversed(parent_stack):
+                if ctx.get('type') == 'parallel':
+                    branch_idx = ctx.get('current_branch', 0)
+                    branch = ctx['branches'][branch_idx]
+                    if token not in branch:
+                        branch.append(token)
+                    break
+
+        def _append_to_parent_context(parent_stack, token):
+            if not parent_stack:
+                return
+            parent = parent_stack[-1]
+            parent_type = parent.get('type')
+            if parent_type == 'decision':
+                branch = parent['then_branch'] if parent.get('current', 'then') == 'then' else parent['else_branch']
+                branch.append(token)
+            elif parent_type in ('repeat', 'loop'):
+                parent['body'].append(token)
+            _record_in_parallel(parent_stack, token)
         stack = []
         current_swimlane = None
         for tok in self.tokens:
             t = tok['type']
-            if t in ('COMMENT', 'EMPTY', 'STARTUML', 'ENDUML'):
+            if t in ('COMMENT', 'EMPTY', 'STARTUML', 'ENDUML', 'DIRECTIVE'):
                 continue
             if t == 'TITLE':
                 self.title = tok.get('title') or tok.get('text','').replace('title','',1).strip()
@@ -205,6 +221,7 @@ class ImprovedPlantUMLActivityParser:
             tok['swimlane'] = current_swimlane
 
             if t == 'IF':
+                _append_to_parent_context(stack, tok)
                 ctx = {
                     'type': 'decision',
                     'token': tok,
@@ -229,6 +246,7 @@ class ImprovedPlantUMLActivityParser:
                 self.ast.append(tok)
                 continue
             if t == 'REPEAT':
+                _append_to_parent_context(stack, tok)
                 ctx = {'type': 'repeat', 'token': tok, 'body': []}
                 stack.append(ctx)
                 self.structure_contexts.append(ctx)
@@ -241,6 +259,7 @@ class ImprovedPlantUMLActivityParser:
                 self.ast.append(tok)
                 continue
             if t == 'LOOP':
+                _append_to_parent_context(stack, tok)
                 ctx = {'type': 'loop', 'token': tok, 'body': []}
                 stack.append(ctx)
                 self.structure_contexts.append(ctx)
@@ -249,6 +268,33 @@ class ImprovedPlantUMLActivityParser:
             if t == 'ENDLOOP':
                 if stack and stack[-1]['type'] == 'loop':
                     tok['loop_id'] = stack[-1]['token']['id']
+                    stack.pop()
+                self.ast.append(tok)
+                continue
+            if t == 'FORK':
+                _append_to_parent_context(stack, tok)
+                ctx = {
+                    'type': 'parallel',
+                    'fork_token': tok,
+                    'branches': [[]],
+                    'current_branch': 0,
+                    'join_token': None
+                }
+                stack.append(ctx)
+                self.parallel_contexts.append(ctx)
+                self.ast.append(tok)
+                continue
+            if t == 'FORK_AGAIN':
+                if stack and stack[-1].get('type') == 'parallel':
+                    ctx = stack[-1]
+                    ctx['current_branch'] += 1
+                    ctx['branches'].append([])
+                self.ast.append(tok)
+                continue
+            if t == 'ENDFORK':
+                if stack and stack[-1].get('type') == 'parallel':
+                    ctx = stack[-1]
+                    ctx['join_token'] = tok
                     stack.pop()
                 self.ast.append(tok)
                 continue
@@ -261,6 +307,7 @@ class ImprovedPlantUMLActivityParser:
                     (top['then_branch'] if top['current'] == 'then' else top['else_branch']).append(tok)
                 elif top['type'] in ('repeat', 'loop'):
                     top['body'].append(tok)
+            _record_in_parallel(stack, tok)
 
         if stack:
             for ctx in stack:
@@ -418,12 +465,15 @@ class ImprovedPlantUMLActivityParser:
                     'swimlane': tok.get('swimlane')
                 }
 
-            elif t in ('FORK','FORK_AGAIN'):
+            elif t == 'FORK':
                 elem = {
                     'type': 'fork',
-                    'variant': t.lower(),
+                    'variant': 'fork',
                     'swimlane': tok.get('swimlane')
                 }
+
+            elif t == 'FORK_AGAIN':
+                continue
 
             elif t == 'ENDFORK':
                 elem = {
@@ -477,6 +527,15 @@ class ImprovedPlantUMLActivityParser:
     def _linear_sequence(self):
         seq = [tok for tok in self.ast if tok['type'] not in ('SWIMLANE', 'TITLE')]
         n = len(seq)
+        parallel_membership = {}
+        for pctx in self.parallel_contexts:
+            fork_tok = pctx.get('fork_token') or {}
+            fork_id = fork_tok.get('id')
+            if not fork_id:
+                continue
+            for idx, branch in enumerate(pctx.get('branches', [])):
+                for btok in branch:
+                    parallel_membership[btok['id']] = (fork_id, idx)
         # zbuduj mapę: decision_id -> zbiór id w gałęzi else
         else_members = {}
         for ctx in self.structure_contexts:
@@ -517,6 +576,12 @@ class ImprovedPlantUMLActivityParser:
                     blocked = True
                     break
             if blocked:
+                continue
+            a_mem = parallel_membership.get(a_tok['id'])
+            b_mem = parallel_membership.get(b_tok['id'])
+            if a_mem and b_mem and a_mem[0] == b_mem[0] and a_mem[1] != b_mem[1]:
+                continue
+            if a_mem and (not b_mem or a_mem[0] != b_mem[0]):
                 continue
             b_elem = self.elements[b_tok['id']]
             if b_elem['type'] in ('decision_end', 'repeat_end', 'loop_end'):
@@ -616,6 +681,28 @@ class ImprovedPlantUMLActivityParser:
                 nxt = self._first_after_token(decision_end_id)
                 if nxt:
                     self._add_edge(decision_end_id, nxt)
+
+    def _parallel_edges(self):
+        for ctx in self.parallel_contexts:
+            fork_tok = ctx.get('fork_token')
+            join_tok = ctx.get('join_token')
+            fork_id = fork_tok['id'] if fork_tok else None
+            join_id = join_tok['id'] if join_tok else None
+            if not fork_id or fork_id not in self.elements:
+                continue
+            branches = ctx.get('branches', [])
+            for branch in branches:
+                first = self._first_executable(branch) if branch else None
+                last = self._last_executable(branch) if branch else None
+                if first:
+                    self._add_edge(fork_id, first)
+                elif join_id and join_id in self.elements:
+                    self._add_edge(fork_id, join_id)
+                if join_id and join_id in self.elements:
+                    if last and last != join_id:
+                        self._add_edge(last, join_id)
+                    elif not first:
+                        self._add_edge(fork_id, join_id)
 
     def _loop_edges(self):
         # repeat ... repeat while(condition)
@@ -752,7 +839,7 @@ class ImprovedPlantUMLActivityParser:
             decision_sources = {c['source_id'] for c in inc if self.elements.get(c['source_id'],{}).get('type') in ('activity','decision')}
             if len(decision_sources) >= 2:
                 # sprawdź czy target nie jest już merge / decision_end
-                if self.elements.get(target,{}).get('type') in ('merge','decision_end'):
+                if self.elements.get(target,{}).get('type') in ('merge','decision_end','join'):
                     continue
                 # wstaw merge przed target
                 merge_id = self._gen_id()
@@ -774,6 +861,7 @@ class ImprovedPlantUMLActivityParser:
 
     def _build_control_flow(self):
         self._linear_sequence()
+        self._parallel_edges()
         self._decision_edges()
         self._loop_edges()
 
